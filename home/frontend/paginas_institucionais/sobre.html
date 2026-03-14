@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre Nós - Chateau du Pet</title>
+    <link rel="icon" type="image/png" href="../img/logo_peuqena4.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* ==========================================================================
+           CSS DO home.css (Para Navbar, Footer, Botões)
+           ========================================================================== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root { 
+            --chateau-purple: #FE8697; 
+            --chateau-light-purple: #f0e6f0; 
+        }
+        body { background-color: #f8f9fa; color: #333; font-family: Arial, sans-serif; }
+        button, input, textarea, select { font-family: inherit; }
+        .main-purple-text { color: var(--chateau-purple) !important; }
+
+        /* --- Navbar --- */
+        .navbar { background-color: var(--chateau-purple) !important; padding: 0.5rem 1rem; }
+        .navbar .nav-link { color: #fff !important; }
+        .navbar-brand { font-weight: bold !important; }
+        
+        /* --- Botão Customizado --- */
+        .btn-custom { background-color: var(--chateau-purple); color: #fff; border-radius: 20px; padding: 8px 20px; border: 1px solid var(--chateau-purple); transition: 0.3s; display: inline-block; text-decoration: none; text-align: center; }
+        .btn-custom:hover { background-color: #FE8697; border-color: #FE8697; color: #fff; }
+
+        /* --- Footer --- */
+        .main-footer { background-color: #f8f8f8; border-top: 1px solid #ddd; color: #333; font-size: 0.95rem; }
+        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--chateau-purple); margin-bottom: 1rem; }
+        .main-footer a { color: #6c757d; text-decoration: none; line-height: 2; transition: color 0.2s; }
+        .main-footer a:hover { color: var(--chateau-purple); text-decoration: underline; }
+        .footer-cta { background-color: var(--chateau-purple); border-radius: 8px; }
+        .footer-hr { border-color: #eee; }
+        
+        /* ==========================================================================
+           CSS para Páginas Institucionais (Sobre, Lojas, Contatos)
+           ========================================================================== */
+        
+        /* Card de Informação (Usado para o texto "Sobre Nós") */
+        .info-card {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            height: 100%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        /* NOVO: Card de Valores */
+        .value-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            height: 100%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .value-card i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--chateau-purple);
+        }
+
+        /* NOVO: Imagem da galeria de serviços */
+        .service-gallery-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* NOVO: Imagem da galeria de amigos */
+        .friend-gallery-img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .friend-gallery-img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg shadow-sm">
+        <div class="container">
+            <a class="btn text-white d-flex align-items-center" href="javascript:history.back()">
+                <i class="bi bi-arrow-left me-2"></i>
+                <span class="d-none d-sm-inline">Voltar</span>
+            </a>
+            <a class="navbar-brand fw-bold text-white mx-auto" href="../index.html">Sobre Nós</a>
+            <div style="width: 80px;"></div> </div>
+    </nav>
+
+    <main>
+        <div class="container my-5">
+            <div class="row g-4 align-items-stretch">
+                <div class="col-lg-6">
+                    <div class="info-card d-flex flex-column justify-content-center">
+                        <h1 class="main-purple-text fw-bold">Nossa História</h1>
+                        <p class="lead">A Chateau du Pet nasceu da paixão por animais e do desejo de criar um espaço onde eles não fossem apenas clientes, mas membros da nossa família.</p>
+                        <p>Desde 2020, trabalhamos para oferecer um serviço completo e integrado, que vai desde a saúde e bem-estar em nossa clínica veterinária até a diversão e socialização em nosso hotel e day care.</p>
+                        
+                        <h4 class="mt-4 main-purple-text">Nossa Missão</h4>
+                        <p class="mb-0">Promover a felicidade e a saúde dos pets, oferecendo serviços de excelência com amor, respeito e profissionalismo, fortalecendo o vínculo entre os animais e suas famílias.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <img src="../img/loja2.webp" class="img-fluid rounded-3 shadow" alt="Fachada da loja Chateau du Pet" style="width: 100%; height: 100%; object-fit: cover; min-height: 400px;">
+                </div>
+            </div>
+        </div>
+
+        <div class="container my-5">
+            <h2 class="text-center main-purple-text fw-bold mb-4">Nossos Valores</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <i class="bi bi-heart-fill"></i>
+                        <h5 class="fw-bold">Amor aos Animais</h5>
+                        <p class="mb-0">Nossa paixão é o motor de tudo que fazemos. Tratamos cada pet como se fosse nosso.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <i class="bi bi-shield-check"></i>
+                        <h5 class="fw-bold">Qualidade e Segurança</h5>
+                        <p class="mb-0">Profissionais qualificados e um ambiente seguro para o bem-estar do seu melhor amigo.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="value-card">
+                        <i class="bi bi-people-fill"></i>
+                        <h5 class="fw-bold">Confiança e Transparência</h5>
+                        <p class="mb-0">Construímos relações de confiança com os tutores, com comunicação clara e honesta.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container my-5">
+            <h2 class="text-center main-purple-text fw-bold mb-5">Um Espaço Completo para seu Pet</h2>
+            
+            <div class="row g-4 align-items-center mb-5">
+                <div class="col-lg-6">
+                    <h3 class="main-purple-text fw-bold">Clínica Veterinária de Ponta</h3>
+                    <p>Contamos com equipamentos modernos e uma equipe de veterinários especializados e prontos para emergências, consultas de rotina, vacinação e cirurgias, cuidando da saúde do seu pet com total dedicação.</p>
+                    <a href="../servicos/veterinaria.html" class="btn btn-custom fw-bold">Conheça a Clínica</a>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <img src="../img/veteri_1.webp" alt="Clínica Veterinária" class="service-gallery-img">
+                        </div>
+                        <div class="col-6">
+                            <img src="../img/veteri_2.webp" alt="Cuidado veterinário" class="service-gallery-img">
+                        </div>
+                        <div class="col-6">
+                            <img src="../img/veteri_3.webp" alt="Atendimento veterinário" class="service-gallery-img">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6 order-lg-2">
+                    <h3 class="main-purple-text fw-bold">Day Care e Hotel com Recreação</h3>
+                    <p>Mais do que um hotel, somos uma segunda casa. Nosso Day Care tem monitores treinados, socialização controlada e muito espaço para seu pet gastar energia e fazer amigos em um ambiente seguro e divertido.</p>
+                    <a href="../servicos/day_care.html" class="btn btn-custom fw-bold">Veja o Day Care</a>
+                </div>
+                <div class="col-lg-6 order-lg-1">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <img src="../img/day_care1.webp" alt="Day Care" class="service-gallery-img">
+                        </div>
+                        <div class="col-6">
+                            <img src="../img/day_care2.webp" alt="Cachorros brincando" class="service-gallery-img">
+                        </div>
+                        <div class="col-6">
+                            <img src="../img/day_care3.webp" alt="Recreação Day Care" class="service-gallery-img">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container my-5">
+            <h2 class="text-center main-purple-text fw-bold mb-4">Galeria: Nossos Amigos</h2>
+            <div class="row g-3">
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal1.webp" alt="Cliente pet 1" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal2.webp" alt="Cliente pet 2" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal3.webp" alt="Cliente pet 3" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal4.webp" alt="Cliente pet 4" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal5.webp" alt="Cliente pet 5" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal6.webp" alt="Cliente pet 6" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal7.webp" alt="Cliente pet 7" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal8.webp" alt="Cliente pet 8" class="friend-gallery-img"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="main-footer pt-5 pb-4 mt-5">
+        <div class="container">
+            <div class="row footer-links mb-4">
+                <div class="col-lg-3 col-md-6 mb-4"><div class="footer-cta p-4"><h4 class="text-white">Como podemos ajudar?</h4><p class="text-white-50">Conheça mais sobre nós.</p><a href="contatos.html" class="btn btn-light btn-sm fw-bold">Fale Conosco</a></div></div>
+                <div class="col-lg-3 col-md-6 mb-4"><h5>Atendimento</h5><ul class="list-unstyled"><li><a href="contatos.html">Central de Ajuda/FAQ</a></li><li><a href="#">Trocas e Devoluções</a></li></ul></div>
+                <div class="col-lg-3 col-md-6 mb-4"><h5>Nossos Serviços</h5><ul class="list-unstyled"><li><a href="../servicos/veterinaria.html">Veterinária 🐾</a></li><li><a href="../servicos/servicos.html">Estética</a></li><li><a href="../servicos/hotel.html">Hotel Pet</a></li><li><a href="../servicos/day_care.html">Day Care</a></li></ul></div>
+                <div class="col-lg-3 col-md-6 mb-4"><h5>Informações Legais</h5><ul class="list-unstyled"><li><a href="#">Política de Privacidade</a></li><li><a href="lojas.html">Nossas Lojas</a></li></ul></div>
+            </div>
+            <hr class="footer-hr">
+            <div class="text-center mt-3 small text-muted">
+                <p class="mb-0">CHATUAL DU PET | CNPJ: 10.864.846/0001-23</p>
+                <p class="mb-0">© Copyright 2025 CHATUAL DU PET - Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
