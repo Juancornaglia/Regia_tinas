@@ -292,3 +292,15 @@ def get_recomendados():
 if __name__ == '__main__':
     # O Render usará Gunicorn, mas deixamos para execução local
     app.run(debug=False)
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def read_root():
+    return {"Python": "on Vercel"}
+
+# Importante: A Vercel usa o objeto 'app', 
+# você não precisa do app.run() para o deploy, 
+# mas pode deixar para testes locais.
