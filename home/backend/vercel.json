@@ -10,6 +10,10 @@
     {
       "src": "/api/(.*)",
       "dest": "backend/app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "front-end/$1"
     }
   ]
 }
