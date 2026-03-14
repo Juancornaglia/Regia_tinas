@@ -33,14 +33,7 @@ INTERVALO_SLOT_MINUTOS = 30  # Granularidade dos horários
 # --- 4. CONFIGURAÇÃO DO FLASK E CORS ---
 app = Flask(__name__)
 
-# Permitir chamadas do Netlify (produção) e de testes locais
-origins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "null"  # Importante para testes locais via file://
-]
-
-CORS(app, origins=origins, methods=["GET", "POST", "OPTIONS"])
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # --- 5. ROTA DE TESTE (Health Check) ---
 @app.route('/api/', methods=['GET'])
@@ -293,14 +286,3 @@ if __name__ == '__main__':
     # O Render usará Gunicorn, mas deixamos para execução local
     app.run(debug=False)
 
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route("/")
-def read_root():
-    return {"Python": "on Vercel"}
-
-# Importante: A Vercel usa o objeto 'app', 
-# você não precisa do app.run() para o deploy, 
-# mas pode deixar para testes locais.
