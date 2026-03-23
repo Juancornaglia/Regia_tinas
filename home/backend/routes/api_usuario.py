@@ -1,60 +1,80 @@
-# backend/routes/api_usuario.py
-
 from flask import Blueprint, jsonify, request
 from http import HTTPStatus
-from ..app import supabase
+from db.neon_db import executar_query
 
-# Define o Blueprint para rotas do usuário (acesso restrito)
+# Define o Blueprint para rotas do usuário
 api_usuario = Blueprint('api_usuario', __name__, url_prefix='/api/usuario')
 
-# NOTA: Estas rotas geralmente seriam protegidas com JWT ou sessões,
-# mas no contexto do Supabase, o frontend lida com a autenticação e envia o token
-# de sessão nas chamadas. Aqui no backend, apenas expomos o endpoint CRUD.
-
-# --- ROTA: CRUD de Pets ---
+# --- ROTA: CRUD de Pets (Listar e Cadastrar) ---
 @api_usuario.route('/pets', methods=['GET', 'POST'])
 def pets_usuario():
-    if not supabase: return jsonify({"error": "DB indisponível."}), HTTPStatus.SERVICE_UNAVAILABLE
-    
-    # Esta rota precisa do ID do cliente. Assumimos que o frontend envia o 'id_tutor' no GET params
-    # ou no corpo do POST (ou que o token JWT é validado e o ID é extraído do token).
-    # Por simplicidade, assumimos que o ID do tutor é enviado (para GET) ou está no corpo (para POST).
-
+    # No GET, o frontend envia o ID do tutor na URL: /api/usuario/pets?cliente_id=123
     if request.method == 'GET':
-        cliente_id = request.args.get('cliente_id') # Exemplo: /api/usuario/pets?cliente_id=UUID_AQUI
-        if not cliente_id: return jsonify({"error": "ID do cliente é obrigatório."}), HTTPStatus.BAD_REQUEST
+        cliente_id = request.args.get('cliente_id')
+        if not cliente_id: 
+            return jsonify({"error": "ID do tutor não informado."}), HTTPStatus.BAD_REQUEST
+        
         try:
-            res = supabase.table('pets').select('*').eq('id_tutor', cliente_id).order('nome_pet').execute()
-            return jsonify(res.data), HTTPStatus.OK
-        except Exception:
-            return jsonify({"error": "Falha ao listar pets."}), HTTPStatus.INTERNAL_SERVER_ERROR
+            # Busca todos os pets vinculados ao ID do tutor no Neon
+            sql = "SELECT * FROM public.pets WHERE id_tutor = %s ORDER BY nome_pet"
+            pets = executar_query(sql, (cliente_id,))
+            return jsonify(pets), HTTPStatus.OK
+        except Exception as e:
+            return jsonify({"error": "Erro ao carregar seus pets."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
+    # No POST, recebemos os dados do novo pet no corpo do JSON
     if request.method == 'POST':
         dados = request.get_json()
-        if not dados: return jsonify({"error": "Corpo JSON vazio."}), HTTPStatus.BAD_REQUEST
-        # Assumindo que 'id_tutor' está no corpo dos dados (dados['id_tutor'])
+        if not dados: 
+            return jsonify({"error": "Dados do pet vazios."}), HTTPStatus.BAD_REQUEST
+        
         try:
-            res = supabase.table('pets').insert(dados).execute()
-            return jsonify(res.data), HTTPStatus.CREATED
-        except Exception:
-            return jsonify({"error": "Falha ao inserir pet."}), HTTPStatus.INTERNAL_SERVER_ERROR
-            
-# --- ROTA: Atualizar/Deletar Pet por ID ---
+            # Insere o novo pet no Neon
+            sql = """
+                INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, idade, observacoes)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            valores = (
+                dados['id_tutor'], 
+                dados['nome_pet'], 
+                dados.get('especie'), 
+                dados.get('raca'), 
+                dados.get('idade'), 
+                dados.get('observacoes')
+            )
+            executar_query(sql, valores)
+            return jsonify({"message": "Pet cadastrado com sucesso!"}), HTTPStatus.CREATED
+        except Exception as e:
+            return jsonify({"error": f"Erro ao inserir pet: {str(e)}"}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+# --- ROTA: Atualizar e Deletar Pet por ID ---
 @api_usuario.route('/pets/<int:pet_id>', methods=['PUT', 'DELETE'])
 def pet_por_id(pet_id):
-    if not supabase: return jsonify({"error": "DB indisponível."}), HTTPStatus.SERVICE_UNAVAILABLE
-
+    
     if request.method == 'PUT':
         dados = request.get_json()
         try:
-            res = supabase.table('pets').update(dados).eq('id_pet', pet_id).execute()
-            return jsonify(res.data), HTTPStatus.OK
-        except Exception:
-            return jsonify({"error": "Falha ao atualizar pet."}), HTTPStatus.INTERNAL_SERVER_ERROR
+            sql = """
+                UPDATE public.pets 
+                SET nome_pet = %s, especie = %s, raca = %s, idade = %s, observacoes = %s
+                WHERE id_pet = %s
+            """
+            valores = (
+                dados['nome_pet'], 
+                dados.get('especie'), 
+                dados.get('raca'), 
+                dados.get('idade'), 
+                dados.get('observacoes'),
+                pet_id
+            )
+            executar_query(sql, valores)
+            return jsonify({"message": "Dados do pet atualizados!"}), HTTPStatus.OK
+        except Exception as e:
+            return jsonify({"error": "Erro ao atualizar pet."}), HTTPStatus.INTERNAL_SERVER_ERROR
     
     if request.method == 'DELETE':
         try:
-            supabase.table('pets').delete().eq('id_pet', pet_id).execute()
-            return jsonify({"message": "Pet deletado."}), HTTPStatus.NO_CONTENT
-        except Exception:
-            return jsonify({"error": "Falha ao deletar pet."}), HTTPStatus.INTERNAL_SERVER_ERROR
+            executar_query("DELETE FROM public.pets WHERE id_pet = %s", (pet_id,))
+            return jsonify({"message": "Pet removido da sua conta."}), HTTPStatus.OK
+        except Exception as e:
+            return jsonify({"error": "Erro ao remover pet."}), HTTPStatus.INTERNAL_SERVER_ERROR

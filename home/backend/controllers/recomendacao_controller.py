@@ -1,43 +1,55 @@
-# backend/controllers/recomendacao_controller.py
+from db.neon_db import executar_query
 
-from supabase import Client
-
-def buscar_ofertas(supabase: Client):
-    """Busca produtos com preço promocional para a Home."""
+def buscar_ofertas_neon(loja_id: int):
+    """
+    Busca produtos com preço promocional no Neon.
+    Filtra por loja_id para respeitar a unidade selecionada.
+    """
     try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, data_cadastro') \
-            .not_eq('preco_promocional', None) \
-            .order('data_cadastro', desc=True) \
-            .limit(8) \
-            .execute()
-        return res.data
+        sql = """
+            SELECT id_produto, nome_produto, url_imagem, preco, preco_promocional 
+            FROM public.produtos 
+            WHERE id_loja = %s 
+              AND preco_promocional < preco 
+              AND preco_promocional IS NOT NULL
+            ORDER BY id_produto DESC 
+            LIMIT 8
+        """
+        return executar_query(sql, (loja_id,))
     except Exception as e:
         print(f"[RecomendacaoController] Erro ao buscar ofertas: {e}")
-        raise
+        return []
 
-def buscar_novidades(supabase: Client, limite: int = 8):
-    """Busca produtos mais recentes para a seção Novidades e Recomendados."""
+def buscar_novidades_neon(loja_id: int, limite: int = 8):
+    """
+    Busca os produtos cadastrados mais recentemente no Neon.
+    """
     try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, data_cadastro') \
-            .order('data_cadastro', desc=True) \
-            .limit(limite) \
-            .execute()
-        return res.data
+        sql = """
+            SELECT id_produto, nome_produto, url_imagem, preco, preco_promocional 
+            FROM public.produtos 
+            WHERE id_loja = %s 
+            ORDER BY id_produto DESC 
+            LIMIT %s
+        """
+        return executar_query(sql, (loja_id, limite))
     except Exception as e:
         print(f"[RecomendacaoController] Erro ao buscar novidades: {e}")
-        raise
-        
-def buscar_mais_vendidos(supabase: Client, limite: int = 12):
-    """Busca produtos com maior estoque (simulação de mais vendidos) para o Grid."""
+        return []
+
+def buscar_mais_vendidos_neon(loja_id: int, limite: int = 12):
+    """
+    Simula 'mais vendidos' trazendo os itens com maior estoque na unidade.
+    """
     try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, quantidade_estoque') \
-            .order('quantidade_estoque', desc=True) \
-            .limit(limite) \
-            .execute()
-        return res.data
+        sql = """
+            SELECT id_produto, nome_produto, url_imagem, preco, preco_promocional, quantidade_estoque 
+            FROM public.produtos 
+            WHERE id_loja = %s 
+            ORDER BY quantidade_estoque DESC 
+            LIMIT %s
+        """
+        return executar_query(sql, (loja_id, limite))
     except Exception as e:
         print(f"[RecomendacaoController] Erro ao buscar mais vendidos: {e}")
-        raise
+        return []

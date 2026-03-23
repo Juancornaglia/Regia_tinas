@@ -1,87 +1,83 @@
-// js/produtos.js
-// Este script busca os produtos no Supabase e exibe na página 'produtos.html'
+const API_URL = 'http://localhost:5000/api';
 
-import { supabase } from './supabaseClient.js';
-
-// Função para formatar o preço
+// Função para formatar o preço (Mantida original)
 function formatPrice(price) {
     if (typeof price !== 'number' || isNaN(price)) { return 'R$ 0,00'; }
     return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Função principal para carregar os produtos
+// Função principal para carregar os produtos do Neon via Python
 async function loadPublicProducts() {
     const container = document.getElementById('product-list-container');
     const loading = document.getElementById('loading-products');
     const noProducts = document.getElementById('no-products');
 
     if (!container || !loading || !noProducts) {
-        console.error("Elementos da página não encontrados.");
+        console.error("Elementos da página não encontrados no HTML.");
         return;
     }
 
     try {
-        // 1. Busca os produtos na tabela 'produtos'
-        // (Igual o admin faz, mas agora para mostrar ao público)
-        let { data: produtos, error } = await supabase
-            .from('produtos')
-            .select('id_produto, nome_produto, preco, url_imagem, descricao')
-            .order('nome_produto', { ascending: true });
-
-        if (error) { throw error; }
+        // 1. Busca os produtos no seu servidor Python
+        const response = await fetch(`${API_URL}/admin/produtos`);
+        const produtos = await response.json();
 
         // Esconde o "Carregando"
         loading.style.display = 'none';
 
-        // 2. Verifica se encontrou produtos
+        // 2. Verifica se encontrou produtos no banco Neon
         if (produtos && produtos.length > 0) {
             
-            // Limpa o container (caso tenha algo)
-            container.innerHTML = ''; 
+            container.innerHTML = ''; // Limpa o container
 
             // 3. Cria um card para cada produto
             produtos.forEach(produto => {
-                // Imagem Padrão (caso 'url_imagem' esteja vazia)
                 const imageUrl = produto.url_imagem || 'img/produto_sem_imagem.png'; 
                 
-                // Limita a descrição (opcional)
+                // Limita a descrição para o card não ficar gigante
                 const shortDescription = produto.descricao 
-                    ? produto.descricao.substring(0, 100) + (produto.descricao.length > 100 ? '...' : '') 
-                    : 'Veja mais detalhes';
+                    ? produto.descricao.substring(0, 80) + (produto.descricao.length > 80 ? '...' : '') 
+                    : 'Clique para ver mais detalhes deste produto.';
 
-                // ESTE É O LINK MÁGICO (a "interação")
-                // Ele leva para a página de 'detalhe' e passa o ID do produto na URL
+                // Link para a página de detalhes com o ID na URL
                 const detailUrl = `produto_detalhe.html?id=${produto.id_produto}`;
 
                 const cardHtml = `
-                    <div class="col-md-4 col-lg-3">
-                        <a href="${detailUrl}" class="card h-100 product-card">
-                            <img src="${imageUrl}" class="card-img-top" alt="${produto.nome_produto}">
-                            <div class="card-body">
-                                <h5 class="card-title">${produto.nome_produto}</h5>
-                                <p class="card-text text-muted small">${shortDescription}</p>
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden product-card-hover">
+                            <a href="${detailUrl}" class="text-decoration-none text-dark">
+                                <div class="position-relative">
+                                    <img src="${imageUrl}" class="card-img-top" alt="${produto.nome_produto}" 
+                                         style="height: 200px; object-fit: contain; padding: 15px;"
+                                         onerror="this.src='img/produto_sem_imagem.png'">
+                                    ${produto.quantidade_estoque < 3 ? '<span class="badge bg-danger position-absolute top-0 end-0 m-2">Últimas unidades!</span>' : ''}
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title fw-bold mb-1">${produto.nome_produto}</h6>
+                                    <p class="card-text text-muted small mb-2">${shortDescription}</p>
+                                    <h5 class="text-primary fw-bold">${formatPrice(produto.preco)}</h5>
+                                </div>
+                            </a>
+                            <div class="card-footer bg-white border-0 pb-3">
+                                <button class="btn btn-outline-primary w-100 rounded-pill" onclick="location.href='${detailUrl}'">
+                                    Ver detalhes
+                                </button>
                             </div>
-                            <div class="card-footer bg-white border-top-0 pb-3">
-                                <h4 class="card-title text-primary">${formatPrice(produto.preco)}</h4>
-                                <span class="btn btn-primary w-100">Ver detalhes</span>
-                            </div>
-                        </a>
+                        </div>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', cardHtml);
             });
 
         } else {
-            // Se não tiver produtos, mostra a mensagem
             noProducts.style.display = 'block';
         }
 
     } catch (error) {
-        console.error('Erro ao carregar produtos:', error.message);
-        loading.style.display = 'none';
-        container.innerHTML = `<p class="text-danger">Erro ao carregar produtos. Tente novamente.</p>`;
+        console.error('Erro ao carregar catálogo:', error);
+        if (loading) loading.style.display = 'none';
+        container.innerHTML = `<div class="col-12 text-center py-5"><p class="text-danger">Não foi possível carregar o catálogo no momento.</p></div>`;
     }
 }
 
-// Inicia o carregamento quando a página estiver pronta
 document.addEventListener('DOMContentLoaded', loadPublicProducts);

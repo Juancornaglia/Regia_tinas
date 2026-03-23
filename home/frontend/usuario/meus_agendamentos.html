@@ -44,13 +44,77 @@
 
         <h4 class="mt-5">Histórico</h4>
         <div class="list-group">
-             <div class="list-group-item text-muted">
+            
+            <div id="aba-agendamentos" class="aba-conteudo">
+    <h3>Novo Agendamento</h3>
+    <form id="form-agendamento" class="card p-3 shadow-sm">
+        <div class="mb-3">
+            <label class="form-label">Qual Pet?</label>
+            <select id="select-pet" class="form-select" required>
+                <option value="">Carregando seus pets...</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Qual Serviço?</label>
+            <select id="select-servico" class="form-select" required>
+                <option value="1">Banho</option>
+                <option value="2">Tosa</option>
+                <option value="3">Hospedagem (Hotel)</option>
+                <option value="4">Veterinário</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Data e Horário</label>
+            <input type="datetime-local" id="data_agendamento" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn-rosa w-100">Confirmar Agendamento</button>
+    </form>
+
+    <hr>
+    <h4>Meus Próximos Horários</h4>
+    <div id="lista-agendamentos-cliente"></div>
+</div>
+            
+            <div class="list-group-item text-muted">
                 <p class="mb-1">Consulta Veterinária para Bob</p>
                 <small>Data: 15/09/2025 - Status: <span class="badge bg-secondary">Finalizado</span></small>
             </div>
         </div>
     </main>
+<div class="container mt-5">
+    <h2 class="mb-4">Painel de Controle - Regia & Tinas Care</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white p-3">
+                <h5>Agendamentos de Hoje</h5>
+                <h2 id="total-hoje">0</h2>
+            </div>
+        </div>
+    </div>
 
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-pink" style="background-color: #FE8697; color: white;">
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Cliente (Dono)</th>
+                        <th>Pet (Cachorro)</th>
+                        <th>Serviço</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-agendamentos-admin">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
     <footer class="main-footer pt-5 pb-4">
         <div class="container text-center"><p>© 2025 CHATUAL DU PET</p></div>
     </footer>

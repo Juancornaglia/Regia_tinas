@@ -5,82 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Criar Conta - Chateau du Pet</title>
     
-    <link rel="shortcut icon" href="../img/Chateau.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../img/logo_pequena4.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Ribeye&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua:wght@400;700&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <link rel="stylesheet" href="../css/auth.css"> 
 
 <style>
-    /* ATENÇÃO: É recomendado mover estes estilos para '../css/auth.css' */
     :root {
         --cor-principal: #FE8697;
-        --cor-fundo: #f0f2f5;
-        --cor-texto: #333;
-        --cor-input-borda: #ccc;
-        --cor-input-fundo: #f8f9fa;
+        --cor-texto-claro: #ffffff;
     }
-    html, body {
-        margin: 0; padding: 0; width: 100%; min-height: 100vh;
-        background-color: var(--cor-fundo); font-family: 'Poppins', sans-serif; box-sizing: border-box;
-    }
-    header {
-        font-family: 'Ribeye', cursive; background-color: var(--cor-principal); color: white;
-        font-size: clamp(20px, 4vw, 50px); display: flex; justify-content: center;
-        align-items: center; text-align: center; padding: 10px 0; height: 80px;
-        position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; box-sizing: border-box;
-    }
-    .form-container {
-        display: flex; justify-content: center; align-items: center;
-        padding: 120px 20px 40px 20px; width: 100%; box-sizing: border-box;
-    }
+
+    /* Ajuste do container para centralizar o card rosa */
     .form-box {
-        background-color: white; padding: 40px; border-radius: 8px; 
-        width: 100%; max-width: 500px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); position: relative;
+        background-color: var(--cor-principal) !important; /* Fundo rosa como no Login */
+        padding: 40px;
+        border-radius: 15px; 
+        width: 100%;
+        max-width: 450px;
+        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
+        position: relative;
     }
-    .form-header {
-        position: relative; display: flex; justify-content: center;
-        align-items: center; margin-bottom: 30px;
-    }
+
     .form-header h1 {
-        font-family: 'Inknut Antiqua', serif; font-size: 1.75rem;
-        color: var(--cor-texto); margin: 0; text-align: center;
+        font-family: 'Inknut Antiqua', serif;
+        font-size: 1.5rem;
+        color: var(--cor-texto-claro) !important;
+        margin: 0;
     }
+
     .back-button {
-        position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-        font-size: 2rem; color: #333; text-decoration: none;
+        color: var(--cor-texto-claro) !important;
+        font-size: 1.5rem;
     }
+
+    /* Estilização dos Inputs */
     .input-group {
-        position: relative; margin-bottom: 20px;
+        position: relative;
+        margin-bottom: 15px;
     }
+
     .input-group input {
-        width: 100%; padding: 15px; font-size: 16px;
-        border: 1px solid var(--cor-input-borda); background-color: var(--cor-input-fundo);
-        border-radius: 4px; box-sizing: border-box;
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: none;
+        outline: none;
+        box-sizing: border-box;
     }
-    .input-group .eye-icon {
-        position: absolute; right: 15px; top: 50%;
-        transform: translateY(-50%); cursor: pointer; font-size: 1.5rem; color: #777;
+
+    /* Olhinho no padrão corrigido */
+    .eye-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #666;
+        z-index: 10;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
     }
-    .btn {
-        padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: bold;
-        cursor: pointer; border: 2px solid var(--cor-principal); transition: all 0.3s;
-        width: 100%; margin-bottom: 20px;
+
+    #senha, #confirmar_senha {
+        padding-right: 45px;
     }
+
+    /* Botão no padrão do Login */
     .btn-solid {
-        background-color: var(--cor-principal); color: white;
+        background-color: #ffffff !important;
+        color: var(--cor-principal) !important;
+        border: none;
+        padding: 12px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 20px;
     }
+
     .btn-solid:hover {
-        background-color: #FE8697; border-color: #FE8697;
+        background-color: #f8f9fa !important;
+        transform: scale(1.02);
     }
+
     .login-link {
-        text-align: center; font-size: 0.9rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--cor-texto-claro);
     }
+
     .login-link a {
-        color: var(--cor-principal); text-decoration: none; font-weight: bold;
+        color: var(--cor-texto-claro);
+        text-decoration: none;
+        font-weight: bold;
     }
+
     .login-link a:hover {
         text-decoration: underline;
     }
@@ -88,7 +116,7 @@
 </head>
 <body>
     
-    <header>Chateau du Pet</header>
+    <header class="auth-header">Chateau du Pet</header>
 
     <div class="form-container">
         <div class="form-box">
@@ -110,6 +138,7 @@
                 </div>
                 <div class="input-group">
                     <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Confirme sua senha" required>
+                    <i class="bi bi-eye-fill eye-icon" id="toggleConfirmPassword"></i>
                 </div>
                 
                 <button type="submit" class="btn btn-solid">CRIAR CONTA</button>
@@ -121,9 +150,25 @@
         </div> 
     </div>
 
+    <script>
+        function setupToggle(iconId, inputId) {
+            const icon = document.getElementById(iconId);
+            const input = document.getElementById(inputId);
+            if (icon && input) {
+                icon.addEventListener('click', () => {
+                    const type = input.type === 'password' ? 'text' : 'password';
+                    input.type = type;
+                    icon.classList.toggle('bi-eye-fill');
+                    icon.classList.toggle('bi-eye-slash-fill');
+                });
+            }
+        }
+        setupToggle('togglePassword', 'senha');
+        setupToggle('toggleConfirmPassword', 'confirmar_senha');
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
     
-    <script src="../js/supabaseClient.js" type="module"></script>
     <script src="../js/criar_conta.js" type="module"></script>
 </body>
 </html>

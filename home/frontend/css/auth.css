@@ -27,12 +27,20 @@ body {
 }
 
 .form-box {
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background-color: #FE8697; /* Rosa do Regia & Tinas */
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     max-width: 400px;
     width: 100%;
+    box-sizing: border-box; /* Garante que o padding não jogue os campos para fora */
+}
+
+.form-box h2, .form-box h1 {
+    color: #333 !important; 
+    text-align: center;
+    margin-bottom: 30px;
+    font-weight: bold;
 }
 
 .form-header {
@@ -60,17 +68,37 @@ body {
 }
 
 .input-group {
-    position: relative;
+    width: 100%;
     margin-bottom: 20px;
 }
 
 .input-group input {
-    width: 100%;
-    padding: 12px 15px;
-    padding-right: 40px; /* Espaço para o ícone de olho */
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
+    width: 100%; /* Agora ele respeita o limite do rosa */
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: white;
+    color: #333 !important; /* Texto em preto dentro do campo branco */
+    box-sizing: border-box; /* RESOLVE O PROBLEMA DE SAIR PARA FORA */
+}
+.form-options, .form-options label {
+    color: #333 !important; /* Mudando de branco para preto */
+}
+.btn-acessar {
+    background: none;
+    border: 2px solid #333;
+    color: #333 !important;
+    font-weight: bold;
+    padding: 10px 25px;
+    border-radius: 20px;
+    float: right;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-acessar:hover {
+    background-color: #333;
+    color: #FE8697 !important;
 }
 
 .input-group input:focus {
@@ -150,7 +178,7 @@ body {
 }
 
 .btn-outline {
-    background-color: white;
+    background-color: #FE8697;
     color: #FE8697;
     border: 2px solid #FE8697;
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -216,4 +244,48 @@ body {
     .btn {
         width: 100%;
     }
+}
+/* Estilo Moderno para Regia & Tinas Care */
+:root {
+    --rosa-principal: #FE8697;
+    --cinza-claro: #f8f9fa;
+}
+
+.perfil-container {
+    max-width: 900px;
+    margin: 40px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+/* Esconder o formulário de pet por padrão (vamos usar um Modal ou mostrar só ao clicar) */
+#sessao-cadastro-pet {
+    display: none; 
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 10px;
+    background: var(--cinza-claro);
+}
+
+.pet-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    transition: 0.3s;
+}
+
+.pet-card:hover { background: #fff5f6; }
+
+.btn-rosa {
+    background-color: var(--rosa-principal);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
 }

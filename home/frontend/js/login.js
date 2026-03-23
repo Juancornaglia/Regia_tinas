@@ -1,94 +1,65 @@
-// js/login.js
-// VERSÃO COM BACKDOOR INSEGURO (NÃO USE EM PRODUÇÃO!)
-
-// CORRIGIDO: O caminho de importação deve ser './' porque os arquivos estão na mesma pasta (js)
-import { supabase } from './supabaseClient.js';
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('senha');
+    const submitButton = loginForm?.querySelector('button[type="submit"]');
 
     if (loginForm) {
-        const submitButton = loginForm.querySelector('button[type="submit"]');
-
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('senha').value;
 
-            // ==========================================================
-            // INÍCIO DO CÓDIGO INSEGURO (APENAS PARA TESTE)
-            // AQUI ESTÃO O EMAIL E SENHA QUE VOCÊ PEDIU
+            // 1. Backdoor Admin Local (Mantido como você pediu)
             if (email === 'juancornaglia00@gmail.com' && password === 'teste123') {
                 alert('Acesso ADMIN (LOCAL) concedido.');
                 window.location.href = '../admin/dashboard.html';
-                return; // PARA a execução aqui e não vai pro Supabase
+                return; 
             }
-            // FIM DO CÓDIGO INSEGURO
-            // ==========================================================
 
+            // Interface: Desativa botão enquanto processa
             submitButton.disabled = true;
             submitButton.textContent = 'ACESSANDO...';
 
             try {
-                // PASSO 1: AUTENTICAR (O resto do seu código continua igual)
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password,
+                // 2. CHAMADA PARA O SEU BACKEND PYTHON
+                const response = await fetch('http://localhost:5000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, senha: password })
                 });
 
-                if (authError) { throw authError; }
-                if (!authData.user) { throw new Error("Dados de usuário não retornados."); }
+                const data = await response.json();
 
-                // PASSO 2: AUTORIZAR
-                const userId = authData.user.id;
-                console.log("Usuário autenticado. Verificando perfil...");
-
-                const { data: perfil, error: perfilError } = await supabase
-                    .from('perfis')
-                    .select('role')
-                    .eq('id', userId)
-                    .single();
-
-                if (perfilError) {
-                    console.error("Erro ao buscar perfil:", perfilError.message);
-                    await supabase.auth.signOut();
-                    throw new Error(`Erro ao buscar seu perfil no banco: ${perfilError.message}`);
-                }
-                if (!perfil) {
-                    await supabase.auth.signOut();
-                    throw new Error("Perfil de usuário não encontrado.");
+                if (!response.ok) {
+                    throw new Error(data.mensagem || "Erro ao realizar login");
                 }
 
-                // PASSO 3: REDIRECIONAR
-                if (perfil.role === 'admin') {
-                    alert('Acesso de administrador concedido. Bem-vindo!');
+                // 3. SALVAR SESSÃO E REDIRECIONAR
+                // Salvamos o ID retornado pelo Neon para usar nas telas de Pets e Agendamentos
+                localStorage.setItem('usuario_id', data.id);
+                localStorage.setItem('usuario_nome', data.nome);
+
+                if (data.role === 'admin') {
+                    alert(`Bem-vindo, Administrador ${data.nome}!`);
                     window.location.href = '../admin/dashboard.html';
                 } else {
-                    const redirectTo = localStorage.getItem('redirectAfterLogin') || '../home.html';
-                    localStorage.removeItem('redirectAfterLogin');
-                    alert('Login bem-sucedido! Redirecionando...');
-                    window.location.href = redirectTo;
+                    alert(`Olá, ${data.nome}! Login realizado com sucesso.`);
+                    window.location.href = '../usuario/perfil.html';
                 }
 
             } catch (error) {
                 console.error('Erro no login:', error.message);
-                if (error.message.includes("Invalid login credentials")) {
-                    alert("Email ou senha incorretos. Tente novamente.");
-                } else if (error.message.includes("Email not confirmed")) {
-                    alert("Seu email ainda não foi confirmado. Verifique sua caixa de entrada.");
-                } else {
-                    alert(`Erro ao fazer login: ${error.message}`);
-                }
+                alert(`Erro: ${error.message}`);
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'ACESSAR';
             }
         });
     }
-    
-    // Lógica para mostrar/esconder a senha
+
+    // Lógica do olho (senha) - Mantida original
     if (togglePassword && passwordInput) {
         togglePassword.addEventListener('click', function () {
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -97,4 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.classList.toggle('bi-eye-slash-fill');
         });
     }
+
+    // Nota: Login Social (Google/FB) exige configuração no Google Cloud/Meta 
+    // e uma rota específica no seu Python para funcionar com o Neon.
 });

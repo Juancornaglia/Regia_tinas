@@ -1,49 +1,85 @@
-# backend/controllers/produto_controller.py
+from db.neon_db import executar_query
 
-from supabase import Client
-
-def listar_produtos(supabase: Client):
-    """Lista todos os produtos para o Painel ADM."""
+def listar_produtos():
+    """Lista todos os produtos para o Painel ADM usando Neon."""
     try:
-        res = supabase.table('produtos').select('*').order('nome_produto').execute()
-        return res.data
+        sql = "SELECT * FROM public.produtos ORDER BY nome_produto ASC"
+        return executar_query(sql)
     except Exception as e:
         print(f"[ProdutoController] Erro ao listar produtos: {e}")
-        raise
+        return []
 
-def buscar_produto_por_id(supabase: Client, produto_id: int):
-    """Busca um produto pelo ID (para edição e consulta)."""
+def buscar_produto_por_id_neon(produto_id: int):
+    """Busca um produto pelo ID para edição e consulta no Neon."""
     try:
-        res = supabase.table('produtos').select('*').eq('id_produto', produto_id).maybe_single().execute()
-        return res.data
+        sql = "SELECT * FROM public.produtos WHERE id_produto = %s"
+        resultado = executar_query(sql, (produto_id,))
+        return resultado[0] if resultado else None
     except Exception as e:
         print(f"[ProdutoController] Erro ao buscar produto ID {produto_id}: {e}")
-        raise
+        return None
 
-def inserir_produto(supabase: Client, dados: dict):
-    """Insere um novo produto."""
+def inserir_produto_neon(dados: dict):
+    """Insere um novo produto no banco Neon."""
     try:
-        res = supabase.table('produtos').insert(dados).execute()
-        return res.data
+        sql = """
+            INSERT INTO public.produtos 
+            (nome_produto, preco, preco_promocional, quantidade_estoque, url_imagem, descricao, marca, tipo_produto, id_loja)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id_produto
+        """
+        valores = (
+            dados['nome_produto'],
+            dados['preco'],
+            dados.get('preco_promocional'),
+            dados.get('quantidade_estoque', 0),
+            dados.get('url_imagem'),
+            dados.get('descricao'),
+            dados.get('marca'),
+            dados.get('tipo_produto'),
+            dados.get('id_loja', 1)
+        )
+        return executar_query(sql, valores)
     except Exception as e:
         print(f"[ProdutoController] Erro ao inserir produto: {e}")
         raise
 
-def atualizar_produto(supabase: Client, produto_id: int, dados: dict):
-    """Atualiza um produto existente."""
+def atualizar_produto_neon(produto_id: int, dados: dict):
+    """Atualiza um produto existente no Neon."""
     try:
+        # Removemos o ID dos dados para não tentar atualizar a chave primária
         dados.pop('id_produto', None)
-        res = supabase.table('produtos').update(dados).eq('id_produto', produto_id).execute()
-        return res.data
+        
+        sql = """
+            UPDATE public.produtos 
+            SET nome_produto = %s, preco = %s, preco_promocional = %s, 
+                quantidade_estoque = %s, url_imagem = %s, descricao = %s, 
+                marca = %s, tipo_produto = %s
+            WHERE id_produto = %s
+        """
+        valores = (
+            dados['nome_produto'],
+            dados['preco'],
+            dados.get('preco_promocional'),
+            dados.get('quantidade_estoque'),
+            dados.get('url_imagem'),
+            dados.get('descricao'),
+            dados.get('marca'),
+            dados.get('tipo_produto'),
+            produto_id
+        )
+        executar_query(sql, valores)
+        return True
     except Exception as e:
         print(f"[ProdutoController] Erro ao atualizar produto ID {produto_id}: {e}")
-        raise
+        return False
 
-def deletar_produto(supabase: Client, produto_id: int):
-    """Deleta um produto pelo ID."""
+def deletar_produto_neon(produto_id: int):
+    """Deleta um produto pelo ID no Neon."""
     try:
-        supabase.table('produtos').delete().eq('id_produto', produto_id).execute()
+        sql = "DELETE FROM public.produtos WHERE id_produto = %s"
+        executar_query(sql, (produto_id,))
         return True
     except Exception as e:
         print(f"[ProdutoController] Erro ao deletar produto ID {produto_id}: {e}")
-        raise
+        return False

@@ -1,288 +1,1104 @@
-# backend/app.py — Versão Final Unificada (Agendamento + E-commerce + CORS Ajustado)
-
 import os
-from flask import Flask, jsonify, request
+import psycopg2 
+import traceback 
+from datetime import datetime, time, timedelta 
+from psycopg2.extras import RealDictCursor 
+from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
-from supabase import create_client, Client
-from datetime import datetime, timedelta, time, timezone
-import traceback
+from werkzeug.security import generate_password_hash
 
-# --- 1. CARREGAMENTO DE VARIÁVEIS DE AMBIENTE ---
+# Importação da sua função de query simplificada
+from db.neon_db import executar_query 
+
+# 1. Configurações Iniciais
 load_dotenv()
+# O static_folder aponta para a pasta onde estão seus HTMLs, CSS e Imagens
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
 
-# --- 2. CONFIGURAÇÃO DO CLIENTE SUPABASE ---
-url: str = os.getenv("https://wnqetycslpufcutqerrd.supabase.co")
-key: str = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducWV0eWNzbHB1ZmN1dHFlcnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjY1ODEsImV4cCI6MjA4ODg0MjU4MX0.jY4Fnd1xgCYZGKm3_BygbU3pFFlZpQrBRISSFQcMY7U")  # Use sempre a Service Role Key!
+# Configuração do CORS (Unificada e Segura)
+CORS(app, origins=["http://127.0.0.1:5000", "http://localhost:5000", "null"])
 
-supabase: Client = None
-if not url or not key:
-    print("ERRO CRÍTICO: Variáveis SUPABASE_URL e SUPABASE_KEY não definidas no .env")
-else:
-    try:
-        supabase = create_client(url, key)
-        print("Cliente Supabase inicializado com sucesso!")
-    except Exception as e:
-        print(f"ERRO CRÍTICO ao inicializar Supabase: {e}")
+# 2. Importação das Rotas (Blueprints)
+from routes.api_admin import api_admin
+from routes.api_agendamento import api_agendamento
+from routes.api_ecommerce import api_ecommerce
+from routes.api_usuario import api_usuario
 
-# --- 3. CONSTANTES E CONFIGURAÇÕES ---
+# 3. Constantes Globais
 HORA_INICIO_PADRAO = time(9, 0)
 HORA_FIM_PADRAO = time(18, 0)
-INTERVALO_SLOT_MINUTOS = 30  # Granularidade dos horários
+INTERVALO_SLOT_MINUTOS = 30 
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend'))
 
-# --- 4. CONFIGURAÇÃO DO FLASK E CORS ---
-app = Flask(__name__)
+# 4. Registro dos Blueprints
+app.register_blueprint(api_admin, url_prefix='/api/admin')
+app.register_blueprint(api_agendamento, url_prefix='/api/agendamento')
+app.register_blueprint(api_ecommerce, url_prefix='/api/ecommerce')
+app.register_blueprint(api_usuario, url_prefix='/api/usuario')
 
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# 5. Funções de Banco de Dados (Opcional ter aqui, mas corrigido)
+def get_db_connection():
+ return psycopg2.connect(os.getenv("DATABASE_URL"))
 
-# --- 5. ROTA DE TESTE (Health Check) ---
-@app.route('/api/', methods=['GET'])
-def health_check():
-    """Verifica se a API está no ar e conectada ao Supabase."""
-    if supabase:
-        return jsonify({"status": "API Funcionando", "supabase_connection": "OK"}), 200
-    else:
-        return jsonify({"status": "API Funcionando", "supabase_connection": "FALHA - Verifique .env"}), 503
+# --- ROTAS PARA SERVIR O FRONTEND ---
 
-# --- 6. ROTA DE CÁLCULO DE HORÁRIOS DISPONÍVEIS ---
+def index():
+  return send_from_directory(FRONTEND_DIR, 'index.html')
+
+@app.route('/img/<path:filename>')
+def imagens(filename):
+ return send_from_directory(os.path.join(FRONTEND_DIR, 'img'), filename)
+
+@app.route('/videos/<path:filename>')
+def videos(filename):
+    # Dê um TAB antes do return abaixo:
+    return send_from_directory(os.path.join(FRONTEND_DIR, 'videos'), filename)
+
+@app.route('/<path:path>')
+def servir_paginas(path):
+    # Dê um TAB antes do return abaixo:
+    return send_from_directory(FRONTEND_DIR, path)
+
+# --- ROTAS DE API (CONTEÚDO GERAL) ---
+
+@app.route('/api/produtos')
+def listar_produtos():
+    # Dê um TAB em todas as linhas dentro da função:
+    produtos = executar_query("SELECT * FROM public.produtos WHERE status_produto = 'Ativo'")
+    return jsonify(produtos)
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    # 1. Pega os dados (4 espaços/1 TAB)
+    dados = request.get_json() 
+    
+    # 2. O try precisa de uma linha própria (4 espaços/1 TAB)
+    try:
+        # 3. Tudo dentro do try precisa de MAIS recuo (8 espaços/2 TABs)
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('SELECT id, nome_completo, role FROM public.perfis WHERE email = %s', (dados.get('email'),))
+        usuario = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if usuario:
+            return jsonify({"status": "sucesso", "id": usuario['id'], "nome": usuario['nome_completo'], "role": usuario['role']}), 200
+        
+        return jsonify({"status": "erro", "mensagem": "Usuário não encontrado"}), 401
+
+    # 4. O except deve estar alinhado com o try (4 espaços/1 TAB)
+    except Exception as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+# --- ROTAS DE ADMIN (AGENDAMENTOS E PRODUTOS) ---
+
+@app.route('/api/admin/agendamentos', methods=['GET'])
+def buscar_todos_agendamentos():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # O SQL precisa estar bem alinhado dentro das aspas triplas
+        cur.execute('''
+            SELECT a.*, per.nome_completo as dono_nome, p.nome_pet, s.nome_servico, l.nome_loja
+            FROM public.agendamentos a
+            JOIN public.perfis per ON a.id_cliente = per.id
+            JOIN public.pets p ON a.id_pet = p.id_pet
+            JOIN public.servicos s ON a.id_servico = s.id_servico
+            JOIN public.lojas l ON a.id_loja = l.id_loja
+            ORDER BY a.data_hora_inicio ASC
+        ''')
+        
+        res = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify(res), 200
+
+    except Exception as e:
+        # Importante: o except deve estar alinhado com o try
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Busca faturamento
+        cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
+        faturamento = cur.fetchone()['faturamento'] or 0
+        
+        # Busca total de agendamentos
+        cur.execute('SELECT COUNT(*) as total FROM public.agendamentos')
+        agendamentos = cur.fetchone()['total']
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({"faturamento": float(faturamento), "agendamentos": agendamentos}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- ROTAS HTML (PÁGINAS) ---
+
+@app.route('/<path:path>')
+def serving_static(path):
+    # O return precisa de 1 TAB (4 espaços)
+    return send_from_directory(FRONTEND_DIR, path)
+
+# --- INICIALIZAÇÃO (SEMPRE POR ÚLTIMO) ---
+
+if __name__ == '__main__':
+    # Esta parte deve ser a ÚLTIMA coisa escrita no seu arquivo app.py
+    print("🚀 Servidor Regia & Tina's Care rodando em http://127.0.0.1:5000")
+    app.run(debug=True, port=5000)
+
+# 1. Rota para carregar o index.html na raiz (DEVE VIR ANTES DA INICIALIZAÇÃO)
+@app.route('/')
+def index():
+    # Usamos FRONTEND_DIR para garantir que o Python ache a pasta
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+# 2. Rota curinga para carregar CSS, JS e Imagens automaticamente
+@app.route('/<path:path>')
+def serving_static(path):
+    return send_from_directory(FRONTEND_DIR, path)
+
+# 3. --- INICIALIZAÇÃO (SEMPRE A ÚLTIMA COISA DO ARQUIVO) ---
+if __name__ == '__main__':
+    print("🚀 Servidor Regia & Tina's Care rodando em http://127.0.0.1:5000")
+    app.run(debug=True, port=5000)
+    
+# 1. Rota Principal (Sempre deixe o '/' explícito primeiro)
+@app.route('/')
+def index():
+    # Centralizando para buscar sempre na pasta correta
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+# 2. Rota de API (Dados do Banco Neon)
+@app.route('/api/produtos')
+def listar_produtos():
+    # Busca todos os produtos para a vitrine
+    produtos = executar_query("SELECT * FROM public.produtos")
+    return jsonify(produtos)
+
+# 3. Rota para a pasta 'usuario' (Subpastas)
+@app.route('/usuario/<path:path>')
+def servir_usuario(path):
+    # Garante que arquivos dentro de frontend/usuario sejam achados
+    return send_from_directory(os.path.join(FRONTEND_DIR, 'usuario'), path)
+
+# 4. Rota Curinga (DEVE SER A ÚLTIMA desta lista)
+@app.route('/<path:path>')
+def static_proxy(path):
+    # Serve CSS, JS e Imagens da pasta raiz do frontend
+    return send_from_directory(FRONTEND_DIR, path)
+
+# 1. Rota de Cadastro de Usuário (APIs sempre vêm ANTES das rotas de arquivos)
+@app.route('/api/usuario/cadastrar', methods=['POST'])
+def cadastrar_usuario():
+    dados = request.get_json()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Inserindo no Neon e retornando o ID gerado
+        cur.execute('''
+            INSERT INTO public.perfis (nome_completo, email, cpf, telefone, role)
+            VALUES (%s, %s, %s, %s, 'cliente')
+            RETURNING id
+        ''', (dados['nome'], dados['email'], dados['cpf'], dados['telefone']))
+        
+        novo_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"status": "sucesso", "id": novo_id}), 201
+        
+    except Exception as e:
+        # Retorna o erro real caso o banco Neon falhe (ex: email repetido)
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+# 2. Rota para servir arquivos estáticos (DEVE SER A ÚLTIMA DO ARQUIVO)
+@app.route('/<path:path>')
+def static_proxy(path):
+    # Ajustado para usar FRONTEND_DIR e evitar erro de 'pasta não encontrada'
+    return send_from_directory(FRONTEND_DIR, path)
+
+# --- 4. ROTA ADMIN: TODOS OS AGENDAMENTOS ---
+@app.route('/api/admin/agendamentos', methods=['GET'])
+def buscar_todos_agendamentos():
+    try:
+        # Tudo aqui dentro tem 1 TAB (4 espaços)
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # O SQL precisa estar bem recuado dentro das aspas
+        cur.execute('''
+            SELECT 
+                a.id_agendamento,
+                a.data_hora_inicio, 
+                a.status, 
+                per.nome_completo as dono_nome,
+                per.telefone as dono_tel,
+                p.nome_pet, 
+                s.nome_servico, 
+                l.nome_loja
+            FROM public.agendamentos a
+            JOIN public.perfis per ON a.id_cliente = per.id
+            JOIN public.pets p ON a.id_pet = p.id_pet
+            JOIN public.servicos s ON a.id_servico = s.id_servico
+            JOIN public.lojas l ON a.id_loja = l.id_loja
+            ORDER BY a.data_hora_inicio ASC
+        ''')
+        
+        agendamentos = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        # O retorno bem alinhado
+        return jsonify(agendamentos), 200
+
+    except Exception as e:
+        # O except fica na mesma linha do try
+        return jsonify({"error": str(e)}), 500
+
+# --- ROTAS DE GESTÃO DE PEDIDOS ---
+
+@app.route('/api/admin/pedidos', methods=['GET'])
+def listar_todos_pedidos():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # JOIN para trazer o nome do cliente que fez a compra
+        cur.execute('''
+            SELECT p.*, per.nome_completo 
+            FROM public.pedidos p
+            JOIN public.perfis per ON p.id_cliente = per.id
+            ORDER BY p.data_pedido DESC
+        ''')
+        
+        pedidos = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify(pedidos), 200
+    except Exception as e:
+        # O except deve estar na mesma coluna do try acima
+        return jsonify({"error": str(e)}), 500
+
+# --- ROTAS DE GESTÃO DE PRODUTOS ---
+
+@app.route('/api/admin/produtos', methods=['GET'])
+def listar_produtos_admin():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Lista todos os produtos cadastrados para edição/exclusão
+        cur.execute('SELECT * FROM public.produtos ORDER BY nome_produto ASC')
+        
+        produtos = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify(produtos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/produtos', methods=['POST'])
+def criar_produto():
+    dados = request.get_json()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Inserção de novo produto no Neon
+        cur.execute('''
+            INSERT INTO public.produtos (nome_produto, preco, quantidade_estoque, url_imagem, descricao, marca, tipo_produto)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ''', (dados['nome_produto'], dados['preco'], dados['quantidade_estoque'], dados['url_imagem'], 
+              dados['descricao'], dados['marca'], dados['tipo_produto']))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Produto criado!"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/produtos/<int:id>', methods=['PUT'])
+def editar_produto(id):
+    dados = request.get_json()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Atualização de produto existente usando o ID
+        cur.execute('''
+            UPDATE public.produtos 
+            SET nome_produto=%s, preco=%s, quantidade_estoque=%s, 
+                url_imagem=%s, descricao=%s, marca=%s, tipo_produto=%s
+            WHERE id_produto = %s
+        ''', (dados['nome_produto'], dados['preco'], dados['quantidade_estoque'], 
+              dados['url_imagem'], dados['descricao'], dados['marca'], dados['tipo_produto'], id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Produto atualizado!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/cms/content', methods=['GET'])
+def get_cms_content():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Busca todas as configurações de design do site (Textos, cores, banners)
+        cur.execute('SELECT element_id, content_value FROM public.cms_content')
+        content = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(content), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- ROTAS DE BUSCA E E-COMMERCE ---
+
+@app.route('/api/busca', methods=['GET'])
+def buscar_produtos():
+    # Pega os filtros que vêm da URL (ex: ?q=racao&preco_min=50)
+    termo = request.args.get('q', '').strip()
+    categoria = request.args.get('categoria', '')
+    marca = request.args.get('marca', '')
+    preco_min = request.args.get('preco_min')
+    preco_max = request.args.get('preco_max')
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Base da Query
+        sql = "SELECT * FROM public.produtos WHERE status_produto = 'Ativo'"
+        params = []
+
+        # Filtro de Nome/Marca/Descrição (ILIKE para ignorar maiúsculas/minúsculas)
+        if termo:
+            sql += " AND (nome_produto ILIKE %s OR marca ILIKE %s OR descricao ILIKE %s)"
+            search_param = f"%{termo}%"
+            params.extend([search_param, search_param, search_param])
+
+        if categoria:
+            sql += " AND tipo_produto = %s"
+            params.append(categoria)
+        
+        if marca:
+            sql += " AND marca = %s"
+            params.append(marca)
+
+        if preco_min:
+            sql += " AND preco >= %s"
+            params.append(float(preco_min))
+
+        if preco_max:
+            sql += " AND preco <= %s"
+            params.append(float(preco_max))
+
+        sql += " ORDER BY nome_produto ASC"
+        
+        # Executa a query montada dinamicamente
+        cur.execute(sql, tuple(params))
+        produtos = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(produtos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/finalizar-pedido', methods=['POST'])
+def finalizar_pedido():
+    dados = request.get_json()
+    id_usuario = dados.get('id_usuario')
+    itens = dados.get('itens') # Lista de {id, quantidade}
+    total = dados.get('total')
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Cria o Pedido Principal
+        cur.execute('''
+            INSERT INTO public.pedidos (id_cliente, total_pedido, status_pedido, data_pedido)
+            VALUES (%s, %s, 'processando', NOW())
+            RETURNING id_pedido
+        ''', (id_usuario, total))
+        
+        id_pedido = cur.fetchone()[0]
+
+        # 2. Registra os Itens do Pedido
+        for item in itens:
+            # Tudo dentro do FOR precisa de 8 espaços (2 TABs)
+            cur.execute('''
+                INSERT INTO public.itens_pedido (id_pedido, id_produto, quantidade)
+                VALUES (%s, %s, %s)
+            ''', (id_pedido, item['id'], item['quantidade']))
+            
+            # 3. Baixa o estoque automaticamente
+            cur.execute('''
+                UPDATE public.produtos 
+                SET quantidade_estoque = quantidade_estoque - %s 
+                WHERE id_produto = %s
+            ''', (item['quantidade'], item['id']))
+
+        # 4. Finalização (volta para 4 espaços/1 TAB)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "sucesso", "id_pedido": id_pedido}), 201
+
+    except Exception as e:
+        # Importante: o except alinhado com o try
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+@app.route('/api/checkout/finalizar', methods=['POST'])
+def finalizar_checkout():
+    dados = request.get_json()
+    id_usuario = dados.get('id_usuario')
+    carrinho = dados.get('itens') # Lista de {id, quantidade}
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        total_venda = 0
+        
+        # 1. Validar Estoque e Somar Total
+        for item in carrinho:
+            cur.execute('SELECT preco, quantidade_estoque, nome_produto FROM public.produtos WHERE id_produto = %s', (item['id'],))
+            prod = cur.fetchone()
+            
+            # Verificação de segurança (8 espaços para o if, 12 para o return)
+            if not prod or prod['quantidade_estoque'] < item['quantidade']:
+                return jsonify({"error": f"Estoque insuficiente: {prod['nome_produto'] if prod else 'Produto'}"}), 400
+            
+            total_venda += float(prod['preco']) * item['quantidade']
+
+        # 2. Registrar Pedido Principal
+        cur.execute('''
+            INSERT INTO public.pedidos (id_cliente, total_pedido, status_pedido, data_pedido)
+            VALUES (%s, %s, 'pago', NOW()) RETURNING id_pedido
+        ''', (id_usuario, total_venda))
+        
+        id_pedido = cur.fetchone()['id_pedido']
+
+        # 3. Baixar Estoque dos Itens
+        for item in carrinho:
+            cur.execute('UPDATE public.produtos SET quantidade_estoque = quantidade_estoque - %s WHERE id_produto = %s',
+                        (item['quantidade'], item['id']))
+
+        # 4. Lógica de Fidelidade (1 Real = 1 Ponto)
+        pontos_ganhos = int(total_venda)
+        cur.execute('''
+            INSERT INTO public.fidelidade_pontos (id_cliente, saldo_pontos, data_atualizacao)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (id_cliente) 
+            DO UPDATE SET saldo_pontos = fidelidade_pontos.saldo_pontos + %s, data_atualizacao = NOW()
+        ''', (id_usuario, pontos_ganhos, pontos_ganhos))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "sucesso", 
+            "id_pedido": id_pedido, 
+            "pontos": pontos_ganhos
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- ROTAS DE AUTENTICAÇÃO E SEGURANÇA ---
+
+@app.route('/api/auth/verificar-role/<id_usuario>', methods=['GET'])
+def verificar_role(id_usuario):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Busca apenas o cargo (role) do usuário no Neon
+        cur.execute('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
+        usuario = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if usuario:
+            return jsonify({"role": usuario['role']}), 200
+        else:
+            return jsonify({"role": None}), 404
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/usuario/cadastrar', methods=['POST'])
+def cadastrar_usuario():
+    dados = request.get_json()
+    nome = dados.get('nome')
+    email = dados.get('email')
+    senha = dados.get('senha')
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Verifica se o e-mail já existe
+        cur.execute('SELECT id FROM public.perfis WHERE email = %s', (email,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"status": "erro", "mensagem": "Este e-mail já está cadastrado."}), 400
+
+        # 2. Criptografa a senha (Segurança é tudo!)
+        # Certifique-se de que o import generate_password_hash está no topo do arquivo
+        senha_hash = generate_password_hash(senha)
+
+        # 3. Insere na tabela perfis
+        cur.execute('''
+            INSERT INTO public.perfis (nome_completo, email, senha, role)
+            VALUES (%s, %s, %s, 'cliente')
+        ''', (nome, email, senha_hash))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"status": "sucesso", "mensagem": "Conta criada com sucesso!"}), 201
+    except Exception as e:
+        print(f"Erro ao cadastrar: {e}")
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+@app.route('/api/fidelidade/adicionar', methods=['POST'])
+def adicionar_pontos():
+    dados = request.get_json()
+    id_cliente = dados.get('id_cliente')
+    valor_gasto = float(dados.get('valor_gasto', 0))
+    tipo = dados.get('tipo') # 'pedido' ou 'agendamento'
+    id_referencia = dados.get('id_referencia')
+
+    pontos_ganhos = int(valor_gasto) # Regra: 1 Real = 1 Ponto
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # 1. Registra no Histórico (8 espaços para cur.execute)
+        cur.execute('''
+            INSERT INTO public.fidelidade_historico 
+            (id_cliente, pontos, tipo, id_referencia_pedido, id_referencia_agendamento, data_registro)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+        ''', (
+            id_cliente, 
+            pontos_ganhos, 
+            tipo, 
+            id_referencia if tipo == 'pedido' else None,
+            id_referencia if tipo == 'agendamento' else None
+        ))
+
+        # 2. Atualiza o Saldo Total (Upsert)
+        cur.execute('''
+            INSERT INTO public.fidelidade_pontos (id_cliente, saldo_pontos, data_atualizacao)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (id_cliente) 
+            DO UPDATE SET saldo_pontos = fidelidade_pontos.saldo_pontos + %s, data_atualizacao = NOW()
+        ''', (id_cliente, pontos_ganhos, pontos_ganhos))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"status": "sucesso", "pontos_ganhos": pontos_ganhos}), 200
+
+    except Exception as e:
+        # Alinhado com o try
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+@app.route('/api/usuario/redefinir-senha', methods=['POST'])
+def redefinir_senha():
+    dados = request.get_json()
+    email = dados.get('email')
+    nova_senha = dados.get('nova_senha')
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Verifica se o usuário existe no Neon
+        cur.execute('SELECT id FROM public.perfis WHERE email = %s', (email,))
+        usuario = cur.fetchone()
+        
+        if not usuario:
+            cur.close()
+            conn.close()
+            return jsonify({"status": "erro", "mensagem": "E-mail não encontrado."}), 404
+
+        # 2. Criptografa a nova senha antes de salvar
+        senha_hash = generate_password_hash(nova_senha)
+
+        # 3. Atualiza a senha no banco
+        cur.execute('UPDATE public.perfis SET senha = %s WHERE email = %s', (senha_hash, email))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"status": "sucesso", "mensagem": "Senha alterada com sucesso!"}), 200
+    except Exception as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+@app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
+def atualizar_perfil(id_usuario):
+    dados = request.get_json()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Atualiza apenas nome e telefone
+        cur.execute('''
+            UPDATE public.perfis 
+            SET nome_completo = %s, telefone = %s 
+            WHERE id = %s
+        ''', (dados['nome_completo'], dados['telefone'], id_usuario))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Perfil atualizado!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/filtros', methods=['GET'])
+def get_filtros():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Busca categorias únicas que realmente existem no estoque
+        cur.execute('SELECT DISTINCT tipo_produto FROM public.produtos WHERE tipo_produto IS NOT NULL')
+        categorias = [r['tipo_produto'] for r in cur.fetchall()]
+        
+        # Busca marcas únicas que realmente existem no estoque
+        cur.execute('SELECT DISTINCT marca FROM public.produtos WHERE marca IS NOT NULL')
+        marcas = [r['marca'] for r in cur.fetchall()]
+        
+        cur.close()
+        conn.close()
+        return jsonify({"categorias": categorias, "marcas": marcas}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/cms/update', methods=['POST'])
+def update_cms_content():
+    # Espera uma lista de objetos: [{"element_id": "topo_banner", "content_value": "Promoção!"}]
+    dados = request.get_json() 
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # O loop FOR precisa de 4 espaços, e o que está DENTRO dele precisa de 8 espaços
+        for item in dados:
+            cur.execute('''
+                INSERT INTO public.cms_content (element_id, content_value, updated_at)
+                VALUES (%s, %s, NOW())
+                ON CONFLICT (element_id) 
+                DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()
+            ''', (item['element_id'], item['content_value']))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Conteúdo atualizado com sucesso!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/produtos/<int:id>', methods=['DELETE'])
+def excluir_produto(id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Remove o produto usando o ID da URL
+        cur.execute('DELETE FROM public.produtos WHERE id_produto = %s', (id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Produto excluído!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/atualizar-status-pedido/<int:id_pedido>', methods=['PUT'])
+def atualizar_status_pedido(id_pedido):
+    # Pega o novo status (ex: 'cancelado', 'entregue') do JSON enviado
+    novo_status = request.get_json().get('status')
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            UPDATE public.pedidos 
+            SET status_pedido = %s 
+            WHERE id_pedido = %s
+        ''', (novo_status, id_pedido))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Status atualizado"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- GESTÃO DE BLOQUEIOS DE CALENDÁRIO ---
+
+@app.route('/api/admin/remover-bloqueio/<int:id_bloqueio>', methods=['DELETE'])
+def remover_bloqueio(id_bloqueio):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM public.dias_bloqueados WHERE id_bloqueio = %s', (id_bloqueio,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Removido"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/bloquear-dia', methods=['POST'])
+def bloquear_dia():
+    dados = request.get_json()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Lógica para bloqueio global ou por loja específica
+        id_loja = None if dados['id_loja'] == 'ALL' else int(dados['id_loja'])
+        
+        cur.execute('''
+            INSERT INTO public.dias_bloqueados (id_loja, data_bloqueada, motivo)
+            VALUES (%s, %s, %s)
+        ''', (id_loja, dados['data'], dados['motivo']))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Dia bloqueado com sucesso!"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/dias-bloqueados', methods=['GET'])
+def listar_bloqueios():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # O LEFT JOIN garante que bloqueios globais (sem loja) também apareçam
+        cur.execute('''
+            SELECT b.*, l.nome_loja 
+            FROM public.dias_bloqueados b
+            LEFT JOIN public.lojas l ON b.id_loja = l.id_loja
+            ORDER BY b.data_bloqueada DESC
+        ''')
+        bloqueios = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(bloqueios), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- GESTÃO DE LOJAS E CANCELAMENTOS ---
+
+@app.route('/api/admin/lojas', methods=['GET'])
+def listar_lojas_admin():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
+        lojas = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(lojas), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/cancelar-agendamento/<int:id_agendamento>', methods=['POST'])
+def cancelar_agendamento(id_agendamento):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Apenas muda o status para cancelado (não deletamos para manter o histórico)
+        cur.execute("UPDATE public.agendamentos SET status = 'cancelado' WHERE id_agendamento = %s", (id_agendamento,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Agendamento cancelado com sucesso"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # 1. Faturamento Total
+        cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
+        faturamento = cur.fetchone()['faturamento'] or 0
+        
+        # 2. Total de Agendamentos
+        cur.execute('SELECT COUNT(*) as total FROM public.agendamentos')
+        total_agendamentos = cur.fetchone()['total']
+        
+        # 3. Total de Pets
+        cur.execute('SELECT COUNT(*) as total FROM public.pets')
+        total_pets = cur.fetchone()['total']
+        
+        # 4. Total de Clientes (Corrigido: agora dentro do try)
+        cur.execute("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = cur.fetchone()['total']
+        
+        # 5. Estoque Crítico (Produtos acabando)
+        cur.execute('SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5')
+        criticos = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        # O return precisa de 8 espaços (dentro do try)
+        return jsonify({
+            "faturamento": float(faturamento),
+            "agendamentos": total_agendamentos,
+            "pets": total_pets,
+            "clientes": total_clientes,
+            "criticos": criticos 
+        }), 200
+
+    except Exception as e:
+        # O except fica alinhado com o try (4 espaços)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/cadastrar-pet', methods=['POST'])
+def cadastrar_pet():
+    dados = request.get_json()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id_pet
+        ''', (
+            dados['id_tutor'], 
+            dados['nome_pet'], 
+            dados.get('especie'), 
+            dados.get('raca'), 
+            dados.get('porte'), 
+            dados.get('observacoes')
+        ))
+        
+        novo_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"message": "Pet cadastrado!", "id": novo_id}), 201
+    except Exception as e:
+        print(f"Erro ao cadastrar pet: {e}")
+        return jsonify({"error": str(e)}), 500
+    
+# --- 5. ROTA DE CÁLCULO DE HORÁRIOS ---
 @app.route('/api/horarios-disponiveis', methods=['GET'])
 def get_available_slots():
-    """Calcula e retorna os horários disponíveis para agendamento."""
-    if not supabase:
-        return jsonify({"error": "Erro interno: Conexão com banco de dados indisponível."}), 503
-
     try:
-        loja_id_str = request.args.get('loja_id')
-        servico_id_str = request.args.get('servico_id')
+        loja_id = request.args.get('loja_id')
+        servico_id = request.args.get('servico_id')
         data_str = request.args.get('data')
 
-        if not loja_id_str or not servico_id_str or not data_str:
-            raise ValueError("Parâmetros 'loja_id', 'servico_id' e 'data' são obrigatórios.")
+        if not all([loja_id, servico_id, data_str]):
+            return jsonify({"error": "Parâmetros obrigatórios faltando."}), 400
 
-        loja_id = int(loja_id_str)
-        servico_id = int(servico_id_str)
         data_selecionada = datetime.strptime(data_str, '%Y-%m-%d').date()
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    except (TypeError, ValueError, AttributeError) as e:
-        print(f"Erro nos parâmetros recebidos: {e}")
-        return jsonify({"error": "Parâmetros inválidos."}), 400
-
-    try:
-        # 1. Verificar bloqueios
-        bloqueio_res = supabase.table('dias_bloqueados') \
-            .select('id_bloqueio, motivo') \
-            .eq('data_bloqueada', data_str) \
-            .or_(f'id_loja.eq.{loja_id},id_loja.is.null') \
-            .execute()
-        if bloqueio_res.data:
+        # 1. Verificar se o dia está bloqueado (Feriados/Folgas)
+        cur.execute('''
+            SELECT motivo FROM public.dias_bloqueados 
+            WHERE data_bloqueada = %s AND (id_loja = %s OR id_loja IS NULL)
+        ''', (data_str, loja_id))
+        
+        if cur.fetchone():
             return jsonify([]), 200
 
-        # 2. Buscar regra de capacidade e duração
-        regra_res = supabase.table('servicos_loja_regras') \
-            .select('capacidade_simultanea, ativo, servicos(duracao_media_minutos)') \
-            .eq('id_loja', loja_id) \
-            .eq('id_servico', servico_id) \
-            .maybe_single() \
-            .execute()
-        regra = regra_res.data
-        if not regra or not regra['ativo']:
+        # 2. Buscar regra de capacidade (Quantos pets cabem por vez)
+        cur.execute('''
+            SELECT r.capacidade_simultanea, s.duracao_media_minutos 
+            FROM public.servicos_loja_regras r
+            JOIN public.servicos s ON r.id_servico = s.id_servico
+            WHERE r.id_loja = %s AND r.id_servico = %s AND r.ativo = true
+        ''', (loja_id, servico_id))
+        
+        regra = cur.fetchone()
+        if not regra: 
             return jsonify([]), 200
 
-        capacidade = regra['capacidade_simultanea']
-        duracao_servico = regra.get('servicos', {}).get('duracao_media_minutos')
-        if not duracao_servico or duracao_servico <= 0:
-            duracao_servico = INTERVALO_SLOT_MINUTOS
+        duracao = regra['duracao_media_minutos'] or INTERVALO_SLOT_MINUTOS
 
-        # 3. Buscar agendamentos existentes
-        start_of_day = datetime.combine(data_selecionada, time.min).isoformat() + "+00:00"
-        end_of_day = datetime.combine(data_selecionada, time.max).isoformat() + "+00:00"
-        agendamentos_existentes_res = supabase.table('agendamentos') \
-            .select('data_hora_inicio, data_hora_fim') \
-            .eq('id_loja', loja_id) \
-            .gte('data_hora_inicio', start_of_day) \
-            .lt('data_hora_inicio', end_of_day) \
-            .neq('status', 'cancelado') \
-            .execute()
-        agendamentos_existentes = agendamentos_existentes_res.data or []
+        # 3. Buscar agendamentos já existentes para comparar
+        cur.execute('''
+            SELECT data_hora_inicio, data_hora_fundo FROM public.agendamentos 
+            WHERE id_loja = %s AND CAST(data_hora_inicio AS DATE) = %s AND status != 'cancelado'
+        ''', (loja_id, data_str))
+        agendamentos = cur.fetchall()
 
-        # 4. Cálculo de horários disponíveis
+        # 4. Lógica de varredura de horários
         horarios_disponiveis = []
         hora_atual = datetime.combine(data_selecionada, HORA_INICIO_PADRAO)
         hora_fim_dia = datetime.combine(data_selecionada, HORA_FIM_PADRAO)
 
         while hora_atual < hora_fim_dia:
             slot_inicio = hora_atual
-            slot_fim = hora_atual + timedelta(minutes=duracao_servico)
-            if slot_fim.time() > HORA_FIM_PADRAO:
+            slot_fim = hora_atual + timedelta(minutes=duracao)
+            
+            if slot_fim.time() > HORA_FIM_PADRAO: 
                 break
 
-            agendamentos_conflitantes = 0
-            for ag in agendamentos_existentes:
-                try:
-                    inicio_ag = datetime.fromisoformat(ag['data_hora_inicio'].replace('Z', '+00:00')).replace(tzinfo=None)
-                    fim_ag = datetime.fromisoformat(ag['data_hora_fim'].replace('Z', '+00:00')).replace(tzinfo=None)
-                    if slot_inicio < fim_ag and slot_fim > inicio_ag:
-                        agendamentos_conflitantes += 1
-                except Exception:
-                    pass
-
-            if agendamentos_conflitantes < capacidade:
+            conflitos = 0
+            for ag in agendamentos:
+                # Remove timezone para comparação segura
+                ag_inicio = ag['data_hora_inicio'].replace(tzinfo=None)
+                ag_fim = ag['data_hora_fundo'].replace(tzinfo=None) if ag['data_hora_fundo'] else ag_inicio + timedelta(minutes=duracao)
+                
+                # Verifica se o horário pretendido bate com algum já ocupado
+                if slot_inicio < ag_fim and slot_fim > ag_inicio:
+                    conflitos += 1
+            
+            # Só adiciona se a loja ainda tiver "vagas" (capacidade) naquele horário
+            if conflitos < regra['capacidade_simultanea']:
                 horarios_disponiveis.append(slot_inicio.strftime('%H:%M'))
-
+            
             hora_atual += timedelta(minutes=INTERVALO_SLOT_MINUTOS)
 
+        cur.close()
+        conn.close()
         return jsonify(horarios_disponiveis), 200
 
     except Exception as e:
-        print(f"ERRO GERAL /api/horarios-disponiveis: {e}")
         traceback.print_exc()
-        return jsonify({"error": "Erro interno ao calcular horários."}), 500
+        return jsonify({"error": str(e)}), 500
 
-
-# --- 7. ROTA DE CRIAÇÃO DE AGENDAMENTO ---
-@app.route('/api/agendar', methods=['POST'])
-def create_appointment():
-    """Cria um novo agendamento."""
-    if not supabase:
-        return jsonify({"error": "Erro DB indisponível."}), 503
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Sem corpo JSON."}), 400
-
-    try:
-        required_fields = ['id_cliente', 'id_loja', 'id_servico', 'data_hora_inicio']
-        if not all(f in data and data[f] is not None for f in required_fields):
-            missing = [f for f in required_fields if f not in data or data[f] is None]
-            raise ValueError(f"Dados incompletos. Campos faltando: {', '.join(missing)}")
-
-        id_cliente = data['id_cliente']
-        id_pet = data.get('id_pet')
-        loja_id = int(data['id_loja'])
-        servico_id = int(data['id_servico'])
-        data_hora_inicio_local = datetime.fromisoformat(data['data_hora_inicio'])
-
-        servico_info_res = supabase.table('servicos').select('duracao_media_minutos').eq('id_servico', servico_id).maybe_single().execute()
-        duracao = servico_info_res.data['duracao_media_minutos']
-        data_hora_fim_local = data_hora_inicio_local + timedelta(minutes=duracao)
-
-        regra_res = supabase.table('servicos_loja_regras').select('capacidade_simultanea').eq('id_loja', loja_id).eq('id_servico', servico_id).single().execute()
-        capacidade = regra_res.data['capacidade_simultanea']
-
-        data_hora_inicio_utc = data_hora_inicio_local.astimezone(timezone.utc)
-        data_hora_fim_utc = data_hora_fim_local.astimezone(timezone.utc)
-
-        agendamentos_conflitantes_res = supabase.table('agendamentos') \
-            .select('id_agendamento', count='exact') \
-            .eq('id_loja', loja_id) \
-            .lt('data_hora_inicio', data_hora_fim_utc.isoformat()) \
-            .gt('data_hora_fim', data_hora_inicio_utc.isoformat()) \
-            .neq('status', 'cancelado') \
-            .execute()
-        agendamentos_conflitantes = agendamentos_conflitantes_res.count or 0
-
-        if agendamentos_conflitantes >= capacidade:
-            raise ValueError(f"Horário {data_hora_inicio_local.strftime('%H:%M')} não mais disponível.")
-
-        insert_data = {
-            'id_cliente': id_cliente,
-            'id_pet': id_pet,
-            'id_loja': loja_id,
-            'id_servico': servico_id,
-            'data_hora_inicio': data_hora_inicio_utc.isoformat(),
-            'data_hora_fim': data_hora_fim_utc.isoformat(),
-            'status': 'confirmado',
-            'observacoes_cliente': data.get('observacoes_cliente')
-        }
-
-        insert_res = supabase.table('agendamentos').insert(insert_data).execute()
-        if hasattr(insert_res, 'error') and insert_res.error:
-            raise Exception("Erro DB ao salvar agendamento.")
-        elif not insert_res.data:
-            raise Exception("Não foi possível confirmar retorno do DB.")
-
-        return jsonify({"message": "Agendamento criado!", "agendamento": insert_res.data[0]}), 201
-
-    except ValueError as ve:
-        print(f"Erro Validação/Conflito: {ve}")
-        return jsonify({"error": str(ve)}), 409
-    except Exception as e:
-        print(f"ERRO GERAL /api/agendar: {e}")
-        traceback.print_exc()
-        return jsonify({"error": "Erro interno ao agendar."}), 500
-
-
-# --- 8. ROTAS E-COMMERCE ---
-@app.route('/api/ecommerce/ofertas', methods=['GET'])
-def get_ofertas():
-    """Busca produtos com preço promocional."""
-    if not supabase:
-        return jsonify({"error": "DB indisponível."}), 503
-    try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, data_cadastro') \
-            .not_eq('preco_promocional', None) \
-            .order('data_cadastro', desc=True) \
-            .limit(8) \
-            .execute()
-        return jsonify(res.data), 200
-    except Exception as e:
-        print(f"[API_ECOMMERCE] Erro ao buscar ofertas: {e}")
-        return jsonify({"error": "Falha ao carregar ofertas."}), 500
-
-
+# --- 6. ROTA DE E-COMMERCE (Novidades e Ofertas) ---
 @app.route('/api/ecommerce/novidades', methods=['GET'])
 def get_novidades():
-    """Busca produtos mais recentes."""
-    if not supabase:
-        return jsonify({"error": "DB indisponível."}), 503
     try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, data_cadastro') \
-            .order('data_cadastro', desc=True) \
-            .limit(8) \
-            .execute()
-        return jsonify(res.data), 200
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Busca os 8 produtos mais recentes para a Home
+        cur.execute('''
+            SELECT id_produto, nome_produto, url_imagem, preco, preco_promocional 
+            FROM public.produtos 
+            ORDER BY data_cadastro DESC LIMIT 8
+        ''')
+        produtos = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(produtos), 200
     except Exception as e:
-        print(f"[API_ECOMMERCE] Erro ao buscar novidades: {e}")
-        return jsonify({"error": "Falha ao carregar novidades."}), 500
+        return jsonify({"error": str(e)}), 500
 
-
-@app.route('/api/ecommerce/mais-vendidos', methods=['GET'])
-def get_mais_vendidos():
-    """Busca produtos mais vendidos (simulado pelo estoque)."""
-    if not supabase:
-        return jsonify({"error": "DB indisponível."}), 503
+# --- 7. ROTA DE AGENDAR (POST) ---
+@app.route('/api/agendar', methods=['POST'])
+def create_appointment():
+    data = request.get_json()
     try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, quantidade_estoque') \
-            .order('quantidade_estoque', desc=True) \
-            .limit(12) \
-            .execute()
-        return jsonify(res.data), 200
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Busca a duração para calcular o horário de fim automaticamente
+        cur.execute('SELECT duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (data['id_servico'],))
+        resultado_servico = cur.fetchone()
+        
+        if not resultado_servico:
+            return jsonify({"error": "Serviço não encontrado"}), 404
+            
+        duracao = resultado_servico[0]
+        
+        # 2. Converte a string da data para objeto datetime do Python
+        inicio = datetime.fromisoformat(data['data_hora_inicio'].replace('Z', '+00:00'))
+        fim = inicio + timedelta(minutes=duracao)
+
+        # 3. Insere o agendamento no banco Neon
+        cur.execute('''
+            INSERT INTO public.agendamentos 
+            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fundo, status, observacoes_cliente)
+            VALUES (%s, %s, %s, %s, %s, %s, 'confirmado', %s)
+            RETURNING id_agendamento
+        ''', (
+            data['id_cliente'], 
+            data.get('id_pet'), 
+            data['id_loja'], 
+            data['id_servico'], 
+            inicio, 
+            fim, 
+            data.get('observacoes_cliente')
+        ))
+        
+        id_novo = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"message": "Agendado!", "id": id_novo}), 201
     except Exception as e:
-        print(f"[API_ECOMMERCE] Erro ao buscar mais vendidos: {e}")
-        return jsonify({"error": "Falha ao carregar mais vendidos."}), 500
+        return jsonify({"error": str(e)}), 500
 
-
-@app.route('/api/ecommerce/recomendados', methods=['GET'])
-def get_recomendados():
-    """Busca produtos recomendados (simulado por data)."""
-    if not supabase:
-        return jsonify({"error": "DB indisponível."}), 503
+@app.route('/api/login', methods=['POST'])
+def login():
+    dados = request.get_json()
+    email = dados.get('email')
+    # A senha está aqui caso você queira adicionar o check_password_hash depois
+    senha = dados.get('senha') 
+    
     try:
-        res = supabase.table('produtos') \
-            .select('id_produto, nome_produto, url_imagem, preco, preco_promocional, data_cadastro') \
-            .order('data_cadastro', desc=True) \
-            .limit(8) \
-            .execute()
-        return jsonify(res.data), 200
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Busca o usuário no Neon pelo e-mail
+        cur.execute('SELECT id, nome_completo, role FROM public.perfis WHERE email = %s', (email,))
+        usuario = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if usuario:
+            # Retorna os dados para o Frontend salvar no localStorage
+            return jsonify({
+                "status": "sucesso",
+                "id": usuario['id'],
+                "nome": usuario['nome_completo'],
+                "role": usuario['role']
+            }), 200
+        else:
+            return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401
+            
     except Exception as e:
-        print(f"[API_ECOMMERCE] Erro ao buscar recomendados: {e}")
-        return jsonify({"error": "Falha ao carregar recomendados."}), 500
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500 
 
-
-# --- 9. EXECUÇÃO LOCAL ---
+# --- 8. EXECUÇÃO (SEMPRE A ÚLTIMA LINHA DO ARQUIVO) ---
 if __name__ == '__main__':
-    # O Render usará Gunicorn, mas deixamos para execução local
-    app.run(debug=False)
-
+    print("🚀 Servidor Regia & Tina's Care ON em http://127.0.0.1:5000")
+    app.run(debug=True, port=5000)

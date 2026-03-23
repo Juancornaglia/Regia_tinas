@@ -1,18 +1,11 @@
-// js/geolocator.js
-
-// --- DEFINIÇÃO DAS LOJAS COM COORDENADAS ---
-// ATENÇÃO: Seus dados do DB devem ser usados aqui, mas para o frontend funcionar, usamos esses MOCKs.
-export const UNIDADES = [
-    { id_loja: 1, nome_loja: 'Mooca', coords: { lat: -23.5670, lon: -46.5997 } },    // Exemplo para Mooca
-    { id_loja: 2, nome_loja: 'Tatuapé', coords: { lat: -23.5420, lon: -46.5610 } }, // Exemplo para Tatuapé
-    { id_loja: 3, nome_loja: 'Ipiranga', coords: { lat: -23.5900, lon: -46.6110 } },// Exemplo para Ipiranga
-    { id_loja: 4, nome_loja: 'Santos', coords: { lat: -23.9630, lon: -46.3360 } }   // Exemplo para Santos
-];
+// --- CONFIGURAÇÃO ---
+const API_URL = 'http://localhost:5000/api';
 export const CHATEAU_SELECTED_STORE_KEY = 'chateau_selected_store';
 
-// --- FUNÇÕES AUXILIARES DE CÁLCULO GEOGRÁFICO (Haversine) ---
+// Função Haversine (Cálculo matemático de distância entre dois pontos no globo)
+
 function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
+    const R = 6371; // Raio da Terra em km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -21,45 +14,50 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// --- FUNÇÕES DE ARMAZENAMENTO E INTERFACE ---
+// 1. BUSCAR LOJAS REAIS DO NEON (Via Python)
+async function getUnidadesDoBanco() {
+    try {
+        const response = await fetch(`${API_URL}/admin/lojas`);
+        const lojas = await response.json();
+        // Nota: Garanta que sua tabela 'lojas' no Neon tenha as colunas 'latitude' e 'longitude'
+        return lojas;
+    } catch (error) {
+        console.error("Erro ao carregar unidades:", error);
+        return [];
+    }
+}
+
+// 2. DEFINIR LOJA SELECIONADA
 function setSelectedStore(storeId, storeName, distance = null) {
     const locationSpan = document.getElementById('unidade-proxima');
-    const changeBtn = document.getElementById('change-store-btn');
     
     localStorage.setItem(CHATEAU_SELECTED_STORE_KEY, JSON.stringify({ id: storeId, name: storeName }));
     
-    let display = `📍 ${storeName}`;
+    let display = `📍 Unidade: ${storeName}`;
     if (distance !== null) {
-        display += ` (${distance.toFixed(1)} km)`;
-    
+        display += ` (a ${distance.toFixed(1)} km de você)`;
     }
 
     if (locationSpan) locationSpan.textContent = display;
-    if (changeBtn) changeBtn.style.display = 'inline'; 
     
-    // Dispara um evento customizado para que o home.js saiba que deve recarregar
+    // Dispara evento para outros scripts (como o de produtos) filtrarem pela loja
     window.dispatchEvent(new Event('chateauStoreChanged'));
 }
 
-function loadInitialStore() {
-    const savedStore = localStorage.getItem(CHATEAU_SELECTED_STORE_KEY);
-    if (savedStore) {
-        const { id, name } = JSON.parse(savedStore);
-        setSelectedStore(id, name);
-        return true;
-    }
-    return false;
-}
-
-function findNearestStore(userLat, userLon) {
+// 3. ENCONTRAR A MAIS PRÓXIMA
+async function findNearestStore(userLat, userLon) {
+    const unidades = await getUnidadesDoBanco();
     let nearestStore = null;
     let minDistance = Infinity;
 
-    UNIDADES.forEach(store => {
-        const dist = getDistance(userLat, userLon, store.coords.lat, store.coords.lon);
-        if (dist < minDistance) {
-            minDistance = dist;
-            nearestStore = store;
+    unidades.forEach(store => {
+        // Assume que o banco retorna 'latitude' e 'longitude'
+        if (store.latitude && store.longitude) {
+            const dist = getDistance(userLat, userLon, store.latitude, store.longitude);
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearestStore = store;
+            }
         }
     });
 
@@ -68,72 +66,27 @@ function findNearestStore(userLat, userLon) {
     }
 }
 
-
-// --- FUNÇÃO PRINCIPAL DE GEOLOCALIZAÇÃO ---
-
+// 4. INICIALIZAÇÃO
 export function initGeolocation() {
     const locationSpan = document.getElementById('unidade-proxima');
-    
-    // 1. Tenta carregar do LocalStorage (se já foi salvo)
-    if (loadInitialStore()) {
-        return; 
+
+    // Se já escolheu uma antes, mantém
+    const saved = localStorage.getItem(CHATEAU_SELECTED_STORE_KEY);
+    if (saved) {
+        const { id, name } = JSON.parse(saved);
+        setSelectedStore(id, name);
+        return;
     }
 
-    if (locationSpan) locationSpan.textContent = "Buscando localização (Aguarde permissão)...";
-
-    // 2. Tenta obter a localização via navegador
     if (navigator.geolocation) {
+        if (locationSpan) locationSpan.textContent = "📍 Localizando unidade mais próxima...";
+        
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                findNearestStore(lat, lon); 
-            },
-            (error) => {
-                // Usuário negou ou houve erro - Define padrão (Mooca)
-                console.warn("[GeoLocator] Erro/Negação:", error.message);
-                if (locationSpan) locationSpan.textContent = "📍 Geolocalização negada. Usando Mooca (Padrão)";
-                setSelectedStore(UNIDADES[0].id_loja, UNIDADES[0].nome_loja, null); 
-            },
-            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+            (pos) => findNearestStore(pos.coords.latitude, pos.coords.longitude),
+            () => setSelectedStore(1, "Mooca (Padrão)"), // Fallback se negar
+            { timeout: 5000 }
         );
-    } else {
-        // 3. Navegador não suporta - Define padrão (Mooca)
-        if (locationSpan) locationSpan.textContent = "📍 Geolocalização não suportada. Usando Mooca (Padrão)";
-        setSelectedStore(UNIDADES[0].id_loja, UNIDADES[0].nome_loja, null);
     }
 }
 
-// --- FUNÇÃO DE TROCA MANUAL DE LOJA ---
-
-function setupManualStoreChange() {
-    const changeBtn = document.getElementById('change-store-btn');
-    if (!changeBtn) return;
-
-    changeBtn.addEventListener('click', () => {
-        let promptMessage = "Digite o ID da loja para qual deseja trocar:\n";
-        UNIDADES.forEach(u => promptMessage += `${u.id_loja}=${u.nome_loja}\n`);
-        
-        const newStoreId = prompt(promptMessage);
-
-        if (newStoreId) {
-            const idNum = parseInt(newStoreId);
-            const selected = UNIDADES.find(u => u.id_loja === idNum);
-
-            if (selected) {
-                setSelectedStore(selected.id_loja, selected.nome_loja, null);
-                alert(`Troca realizada! Agora você vê os produtos de ${selected.nome_loja}.`);
-                window.location.reload(); 
-            } else {
-                alert("ID de loja inválido.");
-            }
-        }
-    });
-}
-
-
-// --- INICIALIZAÇÃO ---
-document.addEventListener('DOMContentLoaded', () => {
-    initGeolocation();
-    setupManualStoreChange();
-});
+document.addEventListener('DOMContentLoaded', initGeolocation);

@@ -1,70 +1,111 @@
 /* ==========================================================================
-   ARQUIVO CSS DO PRODUTO - Estilos exclusivos da página de produto
+   ESTILOS DE PRODUTO - REGIA & TINAS CARE
    ========================================================================== */
 
+:root {
+    --rosa-principal: #FE8697;
+    --rosa-hover: #ff6b81;
+    --verde-sucesso: #198754;
+    --vermelho-erro: #dc3545;
+    --cinza-fundo: #f8f9fa;
+}
+
+/* Títulos e Preços */
 .product-title {
-    font-weight: 600;
+    font-weight: 700;
+    color: #333;
+    font-size: 1.8rem;
 }
 
 .price-original {
     text-decoration: line-through;
-    color: #6c757d;
-    font-size: 1rem;
+    color: #adb5bd;
+    font-size: 0.9rem;
+    margin-right: 10px;
 }
 
-/* * REMOVIDO: .quantity-selector 
- * (Não precisamos mais dele)
- */
+.price-current {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--rosa-principal);
+}
 
-/* Estilos para o Accordion (Detalhes, Ficha Técnica) */
+/* Accordion Customizado (Detalhes e Ficha) */
 .accordion-button:not(.collapsed) {
     color: #fff;
-    background-color: var(--chateau-purple, #FE8697);
+    background-color: var(--rosa-principal);
+    box-shadow: none;
 }
 
 .accordion-button:focus {
-    box-shadow: 0 0 0 0.25rem rgba(137, 0, 106, 0.25);
+    box-shadow: 0 0 0 0.25rem rgba(254, 134, 151, 0.25);
+    border-color: var(--rosa-principal);
 }
 
 /* ======================================================
-   NOVA SEÇÃO: DISPONIBILIDADE
+   SEÇÃO: DISPONIBILIDADE EM LOJA
    ====================================================== */
 #store-availability-container {
     margin-top: 2rem;
     padding: 1.5rem;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    border: 1px solid #e9ecef;
+    background-color: var(--cinza-fundo);
+    border-radius: 12px;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 #store-availability-container h4 {
     font-weight: 600;
-    color: var(--chateau-purple);
-    margin-bottom: 1rem;
+    color: var(--rosa-principal);
+    margin-bottom: 1.2rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--chateau-purple);
+    border-bottom: 2px solid var(--rosa-principal);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .store-availability-list {
     list-style: none;
     padding-left: 0;
+    margin-bottom: 0;
 }
 
 .store-availability-list li {
-    font-size: 1.1rem;
-    padding: 0.5rem 0;
+    font-size: 1rem;
+    padding: 0.8rem;
+    background: white;
+    margin-bottom: 8px;
+    border-radius: 8px;
     display: flex;
+    justify-content: space-between; /* Deixa o nome de um lado e o ícone do outro */
     align-items: center;
+    border: 1px solid transparent;
+    transition: 0.2s;
 }
 
+.store-availability-list li:hover {
+    border-color: var(--rosa-principal);
+    transform: translateX(5px);
+}
+
+/* Ícones de Status */
 .store-availability-list i.bi-check-circle-fill {
-    color: #198754; /* Verde */
-    font-size: 1.4rem;
-    margin-right: 10px;
+    color: var(--verde-sucesso);
+    font-size: 1.2rem;
 }
 
 .store-availability-list i.bi-x-circle-fill {
-    color: #dc3545; /* Vermelho */
-    font-size: 1.4rem;
-    margin-right: 10px;
+    color: var(--vermelho-erro);
+    font-size: 1.2rem;
+}
+
+/* Badge de Estoque Baixo */
+.low-stock-warning {
+    font-size: 0.8rem;
+    color: #856404;
+    background-color: #fff3cd;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 10px;
 }

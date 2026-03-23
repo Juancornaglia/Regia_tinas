@@ -90,4 +90,22 @@
     <script src="../js/supabaseClient.js" type="module"></script>
     <script src="../js/perfil.js" type="module"></script>
 </body>
+<form id="formCadastroPet">
+    <input type="text" id="nome_pet" placeholder="Nome do Pet" required>
+    <input type="text" id="especie" placeholder="Espécie (ex: Cão)">
+    <input type="text" id="raca" placeholder="Raça">
+    <select id="porte">
+        <option value="Pequeno">Pequeno</option>
+        <option value="Médio">Médio</option>
+        <option value="Grande">Grande</option>
+    </select>
+    <input type="date" id="data_nascimento">
+    <textarea id="observacoes" placeholder="Alguma observação?"></textarea>
+    
+    <button type="submit">CADASTRAR PET</button>
+</form>
+
+<div id="lista-pets"></div>
+
+<script src="../js/meus_pets.js" type="module"></script>
 </html>

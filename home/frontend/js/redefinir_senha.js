@@ -1,135 +1,82 @@
-// js/redefinir_senha.js
+const API_URL = 'http://localhost:5000/api';
 
-// Importa o cliente Supabase
-import { supabase } from '../js/supabaseClient.js';
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Seleciona os elementos da página
+document.addEventListener('DOMContentLoaded', () => {
+    const section1 = document.getElementById('reset-section-1'); // Parte de pedir email
+    const section2 = document.getElementById('reset-section-2'); // Parte de nova senha
     const sendCodeForm = document.getElementById('sendCodeForm');
     const resetPasswordForm = document.getElementById('resetPasswordForm');
-    const section1 = document.getElementById('reset-section-1');
-    const section2 = document.getElementById('reset-section-2');
-    const backToStep1Button = document.getElementById('back-to-step1');
 
-    // Variável para armazenar o token de recuperação (se houver)
-    let recoveryToken = null;
+    // Variável para simular o fluxo sem precisar abrir e-mail real no TCC
+    let emailSolicitado = "";
 
-    // --- LÓGICA DE CONTROLE DAS ETAPAS ---
-
-    // Função para mostrar a etapa 2 (Redefinir Senha)
-    const showResetForm = () => {
-        section1.style.display = 'none';
-        section2.style.display = 'block';
-    };
-
-    // Função para mostrar a etapa 1 (Enviar Email)
-    const showRequestForm = () => {
-        section1.style.display = 'block';
-        section2.style.display = 'none';
-    };
-
-    // Verifica se a URL contém um token de recuperação
-    // O Supabase envia o usuário de volta para esta página com um token na URL
-    if (window.location.hash.includes('access_token=')) {
-        // Extrai o token da URL
-        const params = new URLSearchParams(window.location.hash.substring(1)); // Remove o '#'
-        recoveryToken = params.get('access_token');
-        
-        // Se temos um token, pula direto para a Etapa 2
-        if (recoveryToken) {
-            console.log('Token de recuperação encontrado.');
-            showResetForm();
-        }
-    } else {
-        // Se não tem token, começa na Etapa 1
-        showRequestForm();
-    }
-
-    // --- LÓGICA DOS FORMULÁRIOS ---
-
-    // ETAPA 1: Enviar o link de recuperação
+    // ETAPA 1: Solicitar Recuperação
     if (sendCodeForm) {
-        sendCodeForm.addEventListener('submit', async function(e) {
+        sendCodeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
+            emailSolicitado = document.getElementById('email').value.trim();
+            
             const button = e.target.querySelector('button[type="submit"]');
             button.disabled = true;
-            button.textContent = 'ENVIANDO...';
+            button.textContent = 'VERIFICANDO...';
 
-            try {
-                // Pede ao Supabase para enviar o e-mail de redefinição
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    // Diz ao Supabase para onde redirecionar o usuário após clicar no link
-                    // (Deve ser esta mesma página)
-                    redirectTo: window.location.origin + window.location.pathname,
-                });
-
-                if (error) throw error;
-
-                alert("E-mail de recuperação enviado! Verifique sua caixa de entrada (e spam) e clique no link para redefinir sua senha.");
-                
-                // Mesmo que o e-mail tenha sido enviado, o usuário precisa
-                // CLICAR NO LINK. Não o deixamos ir para a etapa 2 ainda.
-                // A página será recarregada com o token *depois* que ele clicar.
-
-            } catch (error) {
-                console.error('Erro ao enviar e-mail de recuperação:', error.message);
-                alert(`Erro: ${error.message}`);
-            } finally {
+            // Simulação de envio para o TCC
+            setTimeout(() => {
+                alert("Link de recuperação enviado para " + emailSolicitado + " (Simulação). Redirecionando para definir nova senha...");
+                section1.style.display = 'none';
+                section2.style.display = 'block';
                 button.disabled = false;
                 button.textContent = 'ENVIAR CÓDIGO';
-            }
+            }, 1500);
         });
     }
 
-    // ETAPA 2: Redefinir a senha (após clicar no link do e-mail)
+    // ETAPA 2: Definir Nova Senha (Conecta ao Neon via Python)
     if (resetPasswordForm) {
-        resetPasswordForm.addEventListener('submit', async function(e) {
+        resetPasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const newPassword = document.getElementById('new_password').value;
-            const confirmNewPassword = document.getElementById('confirm_new_password').value;
+            const nova_senha = document.getElementById('new_password').value;
+            const confirmar = document.getElementById('confirm_new_password').value;
+
+            if (nova_senha !== confirmar) {
+                alert("As senhas não coincidem!");
+                return;
+            }
+
             const button = e.target.querySelector('button[type="submit"]');
-
-            if (newPassword !== confirmNewPassword) {
-                alert("As novas senhas não coincidem. Tente novamente.");
-                return;
-            }
-
-            if (!recoveryToken) {
-                // Isso não deveria acontecer se o fluxo estiver correto
-                alert("Token de recuperação inválido. Por favor, solicite um novo link.");
-                showRequestForm(); // Volta para a etapa 1
-                return;
-            }
-
             button.disabled = true;
             button.textContent = 'SALVANDO...';
 
             try {
-                // Usa o token (que já está na sessão) para atualizar o usuário
-                const { error } = await supabase.auth.updateUser({
-                    password: newPassword
+                const response = await fetch(`${API_URL}/usuario/redefinir-senha`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: emailSolicitado, 
+                        nova_senha: nova_senha 
+                    })
                 });
 
-                if (error) throw error;
+                const result = await response.json();
 
-                alert("Senha redefinida com sucesso! Você já pode fazer o login.");
-                window.location.href = "login.html"; // Redireciona para a tela de login
-
+                if (response.ok) {
+                    alert("Senha redefinida com sucesso! Use sua nova senha para entrar.");
+                    window.location.href = 'login.html';
+                } else {
+                    alert("Erro: " + result.mensagem);
+                }
             } catch (error) {
-                console.error('Erro ao redefinir senha:', error.message);
-                alert(`Erro ao salvar nova senha: ${error.message}`);
+                alert("Erro ao conectar com o servidor.");
+            } finally {
                 button.disabled = false;
                 button.textContent = 'SALVAR SENHA';
             }
         });
     }
 
-    // Lógica para o botão de voltar da Etapa 2 para a Etapa 1
-    if (backToStep1Button) {
-        backToStep1Button.addEventListener('click', function(e) {
-            e.preventDefault();
-            showRequestForm();
-        });
-    }
+    // Botão de Voltar
+    document.getElementById('back-to-step1')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        section1.style.display = 'block';
+        section2.style.display = 'none';
+    });
 });

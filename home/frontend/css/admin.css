@@ -1,94 +1,296 @@
-/* Estilos para o Painel do Administrador */
+/* 1. Reset e Definições de Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Fundamental para nada vazar */
+}
+
 :root {
-    --admin-bg: #f8f9fa;
-    --sidebar-bg: #343a40;
+    --admin-bg: #f4f7f6;
+    --sidebar-bg: #2c3e50; /* Um tom mais escuro e profissional */
     --sidebar-text: #adb5bd;
     --sidebar-text-hover: #fff;
-    --chateau-purple: #FE8697;
+    --rosa-principal: #FE8697;
 }
 
 body {
     background-color: var(--admin-bg);
-    display: flex;
+    font-family: 'Poppins', sans-serif;
+    display: flex; /* Sidebar e Main lado a lado */
+    min-height: 100vh;
+    overflow-x: hidden;
 }
 
+/* 2. Sidebar Lateral */
 .admin-sidebar {
-    width: 280px;
+    width: 260px;
+    min-width: 260px;
     background-color: var(--sidebar-bg);
     color: var(--sidebar-text);
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    padding: 1rem;
     display: flex;
     flex-direction: column;
+    padding: 1.5rem;
+    position: sticky; /* Ela fica fixa enquanto você rola a tabela */
+    top: 0;
+    height: 100vh;
 }
 
-.admin-sidebar .sidebar-header {
-    padding: 1rem 0;
+.sidebar-header {
+    padding-bottom: 1.5rem;
     margin-bottom: 1rem;
     text-align: center;
-    border-bottom: 1px solid #495057;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.admin-sidebar .sidebar-header h3 {
+.sidebar-header h3 {
     color: #fff;
+    font-size: 1.3rem;
     font-weight: bold;
 }
 
 .admin-sidebar .nav-link {
     color: var(--sidebar-text);
-    padding: 0.75rem 1rem;
-    border-radius: 0.25rem;
-    margin-bottom: 0.5rem;
-    transition: background-color 0.2s, color 0.2s;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.admin-sidebar .nav-link i {
+    font-size: 1.1rem;
 }
 
 .admin-sidebar .nav-link:hover,
 .admin-sidebar .nav-link.active {
-    background-color: var(--chateau-purple);
-    color: var(--sidebar-text-hover);
+    background-color: var(--rosa-principal);
+    color: white !important;
+    transform: translateX(5px);
 }
 
-.admin-sidebar .logout-link {
+.logout-link {
     margin-top: auto;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1rem;
 }
 
+/* 3. Conteúdo Principal */
 .admin-main-content {
-    margin-left: 280px;
-    padding: 2rem;
-    width: calc(100% - 280px);
+    flex-grow: 1; /* Ocupa todo o resto do espaço */
+    padding: 2.5rem;
+    width: 100%;
+}
+
+.admin-main-content h1 {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+/* 4. Tabelas e Cards */
+.table-responsive {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-top: 1.5rem;
+}
+
+.table {
+    margin-bottom: 0;
 }
 
 .table th {
-    background-color: #e9ecef;
+    background-color: #f8f9fa;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    border-top: none;
+}
+
+.table td {
+    vertical-align: middle;
 }
 
 .btn-action {
-    width: 35px;
-    height: 35px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-right: 5px;
+    border-radius: 6px;
+    transition: 0.2s;
 }
 
-/* ================================================ */
-/* NOVO: Animação para novos agendamentos em tempo real */
-/* ================================================ */
+/* 5. Animação de Novo Agendamento */
 @keyframes highlight-new-row {
-  from {
-    background-color: #d1f7d1; /* Verde claro */
-    opacity: 1;
-  }
-  to {
-    background-color: transparent;
-    opacity: 1;
-  }
+    0% { background-color: #d1f7d1; }
+    100% { background-color: transparent; }
 }
 
 .new-appointment-highlight {
-  /* Aplica a animação: nome, duração, tipo */
-  animation: highlight-new-row 3s ease-out;
+    animation: highlight-new-row 3s ease-out forwards;
 }
+
+/* Ajuste de imagem na tabela */
+.table img {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 10px;
+}
+/* Garante que as imagens dos produtos fiquem padronizadas */
+.table img {
+    border: 1px solid #eee;
+    background-color: #fff;
+}
+
+/* Deixa as badges mais arredondadas e modernas */
+.badge {
+    padding: 0.4em 0.8em;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Ajuste na largura das colunas para evitar o "vazamento" */
+.table th:nth-child(2) { width: 35%; } /* Nome do Produto */
+.table th:nth-child(3) { width: 15%; } /* Preço */
+.table th:nth-child(4) { width: 15%; } /* Estoque */
+/* RESET TOTAL */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex; /* Sidebar e Main ficam um ao lado do outro */
+    background-color: #f4f7f6;
+    min-height: 100vh;
+}
+
+/* SIDEBAR FIXA NA ESQUERDA */
+.admin-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background-color: #2c3e50;
+    color: white;
+    height: 100vh;
+    position: sticky; /* Ela não sai do lugar ao rolar a página */
+    top: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+/* CONTEÚDO PRINCIPAL (TABELA) */
+.admin-main-content {
+    flex-grow: 1; /* Ocupa 100% do espaço que sobra */
+    padding: 40px;
+    background-color: #f4f7f6;
+    min-width: 0; /* Evita que a tabela empurre o layout para fora */
+}
+
+/* AJUSTE DO BOTÃO E BUSCA */
+.header-acoes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 20px;
+}
+
+.busca-container {
+    flex-grow: 1; /* Faz a barra de busca ocupar o espaço disponível */
+    max-width: 500px;
+}
+/* RESET GLOBAL */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex; /* Coloca sidebar e conteúdo lado a lado */
+    background-color: #f4f7f6;
+    min-height: 100vh;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* SIDEBAR FIXA */
+.admin-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #FE8697; /* Rosa da sua marca */
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.admin-sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.admin-sidebar .nav-link {
+    color: #adb5bd;
+    padding: 12px 15px;
+    display: block;
+    text-decoration: none;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    transition: 0.3s;
+}
+
+.admin-sidebar .nav-link:hover, .admin-sidebar .nav-link.active {
+    background-color: #FE8697;
+    color: white !important;
+}
+
+/* CONTEÚDO PRINCIPAL */
+.admin-main-content {
+    flex-grow: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+/* CARDS E LISTAS */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.list-group-item {
+    border-left: 4px solid #FE8697; /* Detalhe rosa na lista de bloqueios */
+    margin-bottom: 10px;
+    border-radius: 8px !important;
+    background-color: #fff;
+    transition: 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #fffafa;
+}
+

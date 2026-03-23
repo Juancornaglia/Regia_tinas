@@ -3,211 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nossas Lojas - Chateau du Pet</title>
-    <link rel="icon" type="image/png" href="../img/logo_peuqena4.png">
+    <title>Loja - Regia & Tinas Care</title>
+    <link rel="icon" type="image/png" href="img/logo_peuqena4.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        /* ==========================================================================
-           CSS COMBINADO (Home.css + Paginas-Institucionais.css)
-           ========================================================================== */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root { 
-            --chateau-purple: #FE8697; 
-            --chateau-light-purple: #f0e6f0; 
-        }
-        /* Fundo cinza claro */
-        body { background-color: #f8f9fa; color: #333; font-family: Arial, sans-serif; }
-        button, input, textarea, select { font-family: inherit; }
-        .main-purple-text { color: var(--chateau-purple) !important; }
-
-        /* --- Navbar --- */
-        .navbar { background-color: var(--chateau-purple) !important; padding: 0.5rem 1rem; }
-        .navbar .nav-link, .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
-        .navbar-brand { font-weight: bold !important; }
-        
-        /* --- Botão Customizado --- */
-        .btn-custom { background-color: var(--chateau-purple); color: #fff; border-radius: 20px; padding: 10px 25px; border: 1px solid var(--chateau-purple); transition: 0.3s; display: inline-block; text-decoration: none; text-align: center; font-weight: bold; }
-        .btn-custom:hover { background-color: #FE8697; border-color: #FE8697; color: #fff; }
-        
-        /* --- Footer (COMPLETO) --- */
-        .main-footer { background-color: #f8f8f8; border-top: 1px solid #ddd; color: #333; font-size: 0.95rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--chateau-purple); margin-bottom: 1rem; }
-        .main-footer a { color: #6c757d; text-decoration: none; line-height: 2; transition: color 0.2s; }
-        .main-footer a:hover { color: var(--chateau-purple); text-decoration: underline; }
-        .footer-cta { background-color: var(--chateau-purple); border-radius: 8px; }
-        .footer-hr { border-color: #eee; }
-
-        /* ==========================================================================
-           CSS Específico da Página (Nossas Lojas)
-           ========================================================================== */
-        .store-card {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-        }
-        .store-info {
-            flex-grow: 1;
-        }
-        .store-map-link {
-            flex-shrink: 0;
-            text-align: center;
-        }
-        .store-card h3 {
-            color: var(--chateau-purple, #FE8697);
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        /* Estilo para o link do título */
-        .store-card h3 a {
-            color: inherit; /* Herda a cor roxa do h3 */
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .store-card h3 a:hover {
-            opacity: 0.8;
-        }
-        .store-card .hours li {
-            font-size: 0.95rem;
-        }
-        .store-map-link .btn-custom {
-            padding: 5px 15px; /* Deixa o botão menor */
-            font-weight: bold;
-        }
+        :root { --rosa-principal: #FE8697; --cinza-fundo: #f8f9fa; }
+        body { background-color: var(--cinza-fundo); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: var(--rosa-principal) !important; }
+        .navbar-brand { font-weight: bold; letter-spacing: 1px; }
+        .btn-rosa-text { color: var(--rosa-principal) !important; }
+        .carousel-item { border-radius: 20px; overflow: hidden; }
+        .unidade-banner { background: white; border-radius: 12px; padding: 15px 25px; border-left: 6px solid var(--rosa-principal); display: flex; justify-content: space-between; align-items: center; }
+        .product-card { border: none; border-radius: 15px; transition: all 0.3s ease; height: 100%; background: white; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
+        .btn-comprar { background-color: var(--rosa-principal); color: white; border: none; border-radius: 25px; font-weight: 600; transition: 0.2s; }
+        .btn-comprar:hover { background-color: #ff6b81; color: white; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm">
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000">
+        <div id="liveToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-mensagem">
+                    </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="carrinhoLateral" aria-labelledby="carrinhoLabel">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold" id="carrinhoLabel"><i class="bi bi-cart3 me-2"></i>Seu Carrinho</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="itens-carrinho">
+                <p class="text-center text-muted mt-5">Seu carrinho está vazio.</p>
+            </div>
+        </div>
+        <div class="offcanvas-footer p-3 border-top bg-light text-center">
+            <div class="d-flex justify-content-between mb-3 px-2">
+                <span class="fw-bold">Total:</span>
+                <span id="carrinho-total" class="fw-bold text-primary">R$ 0,00</span>
+            </div>
+            <button class="btn btn-comprar w-100 py-2 fw-bold" onclick="finalizarCompra()">Finalizar Pedido</button>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
         <div class="container">
-             <a class="btn text-white d-flex align-items-center" href="../index.html" style="text-decoration: none;">
-                 <i class="bi bi-arrow-left me-2"></i>
-                 <span class="d-none d-sm-inline">Voltar</span>
-             </a>
-             <a class="navbar-brand fw-bold text-white mx-auto" href="../index.html">
-                 <span class="d-none d-md-inline">NOSSAS UNIDADES</span>
-                 <span class="d-md-none">Lojas</span>
-             </a>
-             <div style="width: 80px;"></div>
+            <a class="btn text-white" href="index.html"><i class="bi bi-house-door-fill fs-5"></i></a>
+            <span class="navbar-brand text-white mx-auto">REGIA & TINAS STORE</span>
+            <div class="d-flex align-items-center">
+                <button class="btn text-white position-relative" data-bs-toggle="offcanvas" data-bs-target="#carrinhoLateral">
+                    <i class="bi bi-cart3 fs-4"></i>
+                    <span id="carrinho-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">0</span>
+                </button>
+            </div>
         </div>
     </nav>
-    <main class="container my-5">
-        <div class="text-center mb-5">
-            <h1 class="main-purple-text fw-bold">Encontre a Chateau du Pet mais perto de você!</h1>
-            <p class="lead">Atualmente, atendemos nas unidades de Mooca, Tatuapé, Ipiranga e Santos.</p>
+
+    <main class="container my-4">
+        <div id="bannerLoja" class="carousel slide shadow-sm mb-5" data-bs-ride="carousel">
+            <div class="carousel-inner rounded-4">
+                <div class="carousel-item active">
+                    <div class="p-5 text-white d-flex align-items-center" style="background: linear-gradient(45deg, #FE8697, #ffb3ba); min-height: 250px;">
+                        <div class="col-md-7">
+                            <h2 class="fw-bold">Hospedagem com Amor 🐾</h2>
+                            <p>Vai viajar? Deixe seu pet no nosso Hotel com monitoramento 24h e recreação inclusa.</p>
+                            <a href="perfil.html" class="btn btn-light btn-rosa-text fw-bold rounded-pill px-4">Reservar Agora</a>
+                        </div>
+                        <div class="col-md-5 text-center d-none d-md-block">
+                            <i class="bi bi-house-heart display-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="p-5 text-white d-flex align-items-center" style="background: linear-gradient(45deg, #2c3e50, #4ca1af); min-height: 250px;">
+                        <div class="col-md-7">
+                            <h2 class="fw-bold">Mês da Nutrição! 🍖</h2>
+                            <p>Ganhe 10% de desconto em todas as rações premium na primeira compra online.</p>
+                            <button class="btn btn-warning fw-bold rounded-pill px-4">Ver Produtos</button>
+                        </div>
+                        <div class="col-md-5 text-center d-none d-md-block">
+                            <i class="bi bi-bag-heart display-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#bannerLoja" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+            <button class="carousel-control-next" type="button" data-bs-target="#bannerLoja" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
         </div>
 
-        <div id="stores-list-container" class="d-flex flex-column">
-            
-            <div class="store-card" data-loja="mooca">
-                <div class="store-info">
-                    <h3 class="d-flex align-items-center">
-                        <a href="https://www.google.com/maps/search/?api=1&query=R.+do+Orat%C3%B3rio,+426+-+Mooca,+S%C3%A3o+Paulo+-+SP,+03116-000" target="_blank">
-                            <i class="bi bi-shop me-2"></i> Unidade Mooca (Matriz)
-                        </a>
-                    </h3>
-                    <p>R. do Oratório, 426 - Mooca, São Paulo - SP, 03116-000</p>
-                    <p class="mb-1"><strong>Telefone:</strong> (11) 99177-0311</p>
-                    <h5 class="mt-3">Horário de Funcionamento:</h5>
-                    <ul class="list-unstyled hours">
-                        <li><i class="bi bi-clock me-2"></i>Segunda a Sábado: 08:00 – 18:00</li>
-                        <li><i class="bi bi-x-circle-fill text-danger me-2"></i>Domingo: Fechado</li>
-                    </ul>
-                </div>
-                <div class="store-map-link">
-                    <img src="../img/loja2.webp" alt="Foto da Unidade Mooca" class="img-fluid rounded shadow-sm" style="max-width: 150px;">
-                    <a href="https://www.google.com/maps/search/?api=1&query=R.+do+Orat%C3%B3rio,+426+-+Mooca,+S%C3%A3o+Paulo+-+SP,+03116-000" target="_blank" class="btn btn-sm btn-custom mt-2">Ver no Mapa</a>
-                </div>
+        <div class="unidade-banner shadow-sm mb-4">
+            <div>
+                <span class="text-muted small d-block">Estoque da Unidade:</span>
+                <strong id="unidade-proxima" class="text-dark"><i class="bi bi-geo-alt-fill text-danger"></i> Localizando...</strong>
             </div>
+        </div>
 
-            <div class="store-card" data-loja="tatuape">
-                <div class="store-info">
-                    <h3 class="d-flex align-items-center">
-                        <a href="https://www.google.com/maps/search/?api=1&query=R.+Coelho+Lisboa,+739+-+Tatuap%C3%A9,+S%C3%A3o+Paulo+-+SP,+03323-040" target="_blank">
-                            <i class="bi bi-shop me-2"></i> Unidade Tatuapé
-                        </a>
-                    </h3>
-                    <p>R. Coelho Lisboa, 739 - Tatuapé, São Paulo - SP, 03323-040</p>
-                    <p class="mb-1"><strong>Telefone:</strong> (11) 94527-7207</p>
-                    <h5 class="mt-3">Horário de Funcionamento:</h5>
-                    <ul class="list-unstyled hours">
-                        <li><i class="bi bi-clock me-2"></i>Terça a Sábado: 09:00 – 17:00</li>
-                        <li><i class="bi bi-x-circle-fill text-danger me-2"></i>Domingo e Segunda: Fechado</li>
-                    </ul>
-                </div>
-                <div class="store-map-link">
-                    <img src="../img/loja2.webp" alt="Foto da Unidade Tatuapé" class="img-fluid rounded shadow-sm" style="max-width: 150px;">
-                    <a href="https://www.google.com/maps/search/?api=1&query=R.+Coelho+Lisboa,+739+-+Tatuap%C3%A9,+S%C3%A3o+Paulo+-+SP,+03323-040" target="_blank" class="btn btn-sm btn-custom mt-2">Ver no Mapa</a>
+        <div class="row mb-5 justify-content-center">
+            <div class="col-md-6 text-center">
+                <div class="input-group input-group-lg shadow-sm">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="busca-loja" class="form-control border-start-0 ps-0" placeholder="O que seu pet precisa?">
                 </div>
             </div>
-            
-            <div class="store-card" data-loja="ipiranga">
-                <div class="store-info">
-                    <h3 class="d-flex align-items-center">
-                        <a href="https://www.google.com/maps/search/?api=1&query=R.+Srg.+Mor+Jo%C3%A3o+de+Souza,+39+-+Ipiranga,+S%C3%A3o+Paulo+-+SP,+04209-060" target="_blank">
-                            <i class="bi bi-shop me-2"></i> Unidade Ipiranga
-                        </a>
-                    </h3>
-                    <p>R. Srg. Mor João de Souza, 39 - Ipiranga, São Paulo - SP, 04209-060</p>
-                    <p class="mb-1"><strong>Telefone:</strong> (11) 2925-3884</p>
-                    <h5 class="mt-3">Horário de Funcionamento:</h5>
-                    <ul class="list-unstyled hours">
-                        <li><i class="bi bi-clock me-2"></i>Segunda a Sexta: 10:00 – 19:00</li>
-                        <li><i class="bi bi-clock me-2"></i>Sábado: 09:00 – 13:00</li>
-                        <li><i class="bi bi-x-circle-fill text-danger me-2"></i>Domingo: Fechado</li>
-                    </ul>
-                </div>
-                <div class="store-map-link">
-                    <img src="../img/loja2.webp" alt="Foto da Unidade Ipiranga" class="img-fluid rounded shadow-sm" style="max-width: 150px;">
-                    <a href="https://www.google.com/maps/search/?api=1&query=R.+Srg.+Mor+Jo%C3%A3o+de+Souza,+39+-+Ipiranga,+S%C3%A3o+Paulo+-+SP,+04209-060" target="_blank" class="btn btn-sm btn-custom mt-2">Ver no Mapa</a>
-                </div>
-            </div>
+        </div>
 
-            <div class="store-card" data-loja="santos">
-                <div class="store-info">
-                    <h3 class="d-flex align-items-center">
-                        <a href="httpsD://www.google.com/maps/search/?api=1&query=Av.+Pres.+Wilson,+180+-+Jos%C3%A9+Menino,+Santos+-+SP,+11065-201" target="_blank">
-                            <i class="bi bi-shop me-2"></i> Unidade Santos
-                        </a>
-                    </h3>
-                    <p>Av. Pres. Wilson, 180 - José Menino, Santos - SP, 11065-201</p>
-                    <p class="mb-1"><strong>Telefone:</strong> (13) 97424-2956</p>
-                    <h5 class="mt-3">Horário de Funcionamento:</h5>
-                    <ul class="list-unstyled hours">
-                        <li><i class="bi bi-clock me-2"></i>Todos os Dias: 07:00 – 21:00</li>
-                    </ul>
-                </div>
-                <div class="store-map-link">
-                    <img src="../img/loja2.webp" alt="Foto da Unidade Santos" class="img-fluid rounded shadow-sm" style="max-width: 150px;">
-                    <a href="https://www.google.com/maps/search/?api=1&query=Av.+Pres.+Wilson,+180+-+Jos%C3%A9+Menino,+Santos+-+SP,+11065-201" target="_blank" class="btn btn-sm btn-custom mt-2">Ver no Mapa</a>
-                </div>
+        <div id="vitrine-produtos" class="row g-4">
+            <div class="text-center p-5">
+                <div class="spinner-border text-danger" role="status"></div>
+                <p class="mt-3 text-muted">Buscando os melhores produtos para você...</p>
             </div>
-            
         </div>
     </main>
-    
-    <footer class="main-footer pt-5 pb-4 mt-5">
-        <div class="container">
-            <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4"><div class="footer-cta p-4"><h4 class="text-white">Como podemos ajudar?</h4><p class="text-white-50">Conheça mais sobre nós.</p><a href="../paginas_institucionais/contatos.html" class="btn btn-light btn-sm fw-bold">Fale Conosco</a></div></div>
-                <div class="col-lg-3 col-md-6 mb-4"><h5>Atendimento</h5><ul class="list-unstyled"><li><a href="../paginas_institucionais/contatos.html">Central de Ajuda/FAQ</a></li><li><a href="#">Trocas e Devoluções</a></li></ul></div>
-                <div class="col-lg-3 col-md-6 mb-4"><h5>Nossos Serviços</h5><ul class="list-unstyled"><li><a href="../servicos/veterinaria.html">Veterinária 🐾</a></li><li><a href="../servicos/servicos.html">Estética</a></li><li><a href="../servicos/hotel.html">Hotel Pet</a></li><li><a href="../servicos/day_care.html">Day Care</a></li></ul></div>
-                <div class="col-lg-3 col-md-6 mb-4"><h5>Informações Legais</h5><ul class="list-unstyled"><li><a href="#">Política de Privacidade</a></li><li><a href="../paginas_institucionais/lojas.html">Nossas Lojas</a></li></ul></div>
-            </div>
-            <hr class="footer-hr">
-            <div class="text-center mt-3 small text-muted">
-                <p class="mb-0">CHATUAL DU PET | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2025 CHATUAL DU PET - Todos os direitos reservados.</p>
-            </div>
-        </div>
+
+    <footer class="text-center py-5 mt-5 bg-white border-top">
+        <p class="text-muted mb-0 small">© 2026 Regia & Tinas Care - Qualidade em cada detalhe.</p>
     </footer>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    </body>
+    <script src="js/supabaseClient.js" type="module"></script>
+    <script src="js/geolocator.js" type="module"></script>
+    <script src="js/loja.js" type="module"></script>
+</body>
 </html>

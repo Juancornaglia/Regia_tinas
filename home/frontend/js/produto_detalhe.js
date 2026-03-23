@@ -1,9 +1,6 @@
-// js/produto_detalhe.js
-// Este script busca os detalhes de UM produto específico e exibe na página.
+const API_URL = 'http://localhost:5000/api';
 
-import { supabase } from './supabaseClient.js';
-
-// Função para formatar o preço
+// Função para formatar o preço (Mantida original)
 function formatPrice(price) {
     if (typeof price !== 'number' || isNaN(price)) { return 'R$ 0,00'; }
     return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -12,67 +9,75 @@ function formatPrice(price) {
 // Função principal para carregar os detalhes
 async function loadProductDetails() {
     
-    // --- 1. Pegar o ID da URL ---
+    // --- 1. Pegar o ID da URL (?id=123) ---
     const params = new URLSearchParams(window.location.search);
-    const productId = params.get('id'); // Pega o valor depois de "?id="
+    const productId = params.get('id');
 
-    // Seleciona os elementos da página
     const loading = document.getElementById('loading-product');
     const notFound = document.getElementById('product-not-found');
     const productDataEl = document.getElementById('product-data');
 
     if (!productId) {
-        // Se não tiver ID na URL, mostra erro
-        loading.style.display = 'none';
-        notFound.style.display = 'block';
+        if (loading) loading.style.display = 'none';
+        if (notFound) notFound.style.display = 'block';
         return;
     }
 
     try {
-        // --- 2. Buscar o produto no Supabase usando o ID ---
-        let { data: produto, error } = await supabase
-            .from('produtos')
-            .select('*') // Pega todas as colunas
-            .eq('id_produto', productId) // Onde o id_produto é igual ao da URL
-            .single(); // Esperamos apenas UM resultado
+        // --- 2. Buscar no Python/Neon ---
+        // Reutilizamos a rota de listagem e filtramos o ID (ou criamos uma específica no app.py)
+        const response = await fetch(`${API_URL}/admin/produtos`);
+        const produtos = await response.json();
+        
+        // Procura o produto específico pelo ID da URL
+        const produto = produtos.find(p => p.id_produto == productId);
 
-        if (error || !produto) {
-            throw new Error('Produto não encontrado.');
+        if (!produto) {
+            throw new Error('Produto não encontrado no banco Neon.');
         }
 
         // --- 3. Preencher a página com os dados ---
-        
-        // Esconde o "Carregando"
-        loading.style.display = 'none';
+        if (loading) loading.style.display = 'none';
 
-        // Imagem (com fallback)
-        const imageUrl = produto.url_imagem || 'img/produto_sem_imagem.png';
-        document.getElementById('product-image').src = imageUrl;
-        document.getElementById('product-image').alt = produto.nome_produto;
+        // Imagem
+        const imgElement = document.getElementById('product-image');
+        if (imgElement) {
+            imgElement.src = produto.url_imagem || 'img/produto_sem_imagem.png';
+            imgElement.alt = produto.nome_produto;
+        }
         
-        // Textos
+        // Nome, Preço e Marca
         document.getElementById('product-name').textContent = produto.nome_produto;
         document.getElementById('product-price').textContent = formatPrice(produto.preco);
+        document.getElementById('product-brand').textContent = produto.marca || 'Regia & Tinas Care';
         
-        // Descrição (usamos 'textContent' para segurança e 'white-space: pre-wrap' no CSS para quebras de linha)
-        document.getElementById('product-description').textContent = produto.descricao || 'Este produto não possui descrição detalhada.';
+        // Descrição
+        const descElement = document.getElementById('product-description');
+        if (descElement) {
+            descElement.textContent = produto.descricao || 'Este produto não possui descrição detalhada.';
+        }
         
-        // Marca (opcional)
-        document.getElementById('product-brand').textContent = produto.marca || 'Não informada';
-        
-        // Muda o título da aba do navegador
+        // Título da Aba
         document.title = `${produto.nome_produto} - Chateau du Pet`;
 
-        // Mostra o conteúdo do produto
-        productDataEl.style.display = 'flex'; // 'flex' por causa do 'row' do Bootstrap
+        // Botão de Adicionar (Dinâmico)
+        const btnContainer = document.getElementById('btn-container-detalhe');
+        if (btnContainer) {
+            btnContainer.innerHTML = `
+                <button class="btn btn-rosa btn-lg w-100 rounded-pill fw-bold" onclick="adicionarAoCarrinho(${produto.id_produto})">
+                    <i class="bi bi-cart-plus me-2"></i> Adicionar ao Carrinho
+                </button>
+            `;
+        }
+
+        // Mostra o conteúdo
+        if (productDataEl) productDataEl.style.display = 'flex';
 
     } catch (error) {
-        console.error('Erro ao carregar detalhes do produto:', error.message);
-        // Mostra a mensagem de "Não Encontrado"
-        loading.style.display = 'none';
-        notFound.style.display = 'block';
+        console.error('Erro:', error.message);
+        if (loading) loading.style.display = 'none';
+        if (notFound) notFound.style.display = 'block';
     }
 }
 
-// Inicia o carregamento quando a página estiver pronta
 document.addEventListener('DOMContentLoaded', loadProductDetails);

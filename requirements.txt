@@ -1,5 +1,0 @@
-flask
-flask-cors
-python-dotenv
-supabase
-psycopg2-binary

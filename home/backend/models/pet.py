@@ -1,12 +1,10 @@
-# backend/models/pet.py
-
 from typing import Optional
 from uuid import UUID
 
 class Pet:
     """
-    Representa um animal de estimação na tabela 'pets'.
-    Reflete as colunas que criamos: id_pet, id_tutor, nome_pet, raca, porte, etc.
+    Representa um animal de estimação na tabela 'pets' do Neon.
+    Reflete as colunas: id_pet, id_tutor, nome_pet, raca, porte, etc.
     """
     def __init__(self,
                  id_pet: Optional[int],
@@ -15,7 +13,7 @@ class Pet:
                  especie: str,
                  raca: str,
                  porte: Optional[str] = None,
-                 data_nascimento: Optional[str] = None, # Usando string para datas simples
+                 data_nascimento: Optional[str] = None, 
                  observacoes: Optional[str] = None):
         
         self.id_pet = id_pet
@@ -28,22 +26,29 @@ class Pet:
         self.observacoes = observacoes
 
     @classmethod
-    def from_supabase(cls, data: dict):
-        """Cria um objeto Pet a partir de um dicionário retornado pelo Supabase."""
+    def from_row(cls, row: dict):
+        """
+        Cria um objeto Pet a partir de um dicionário retornado pelo Neon (RealDictCursor).
+        """
         return cls(
-            id_pet=data.get('id_pet'),
-            id_tutor=UUID(data['id_tutor']),
-            nome_pet=data['nome_pet'],
-            especie=data['especie'],
-            raca=data['raca'],
-            porte=data.get('porte'),
-            data_nascimento=data.get('data_nascimento'),
-            observacoes=data.get('observacoes')
+            id_pet=row.get('id_pet'),
+            # Garante que o ID do tutor seja um objeto UUID válido
+            id_tutor=UUID(str(row['id_tutor'])),
+            nome_pet=row['nome_pet'],
+            especie=row.get('especie', 'Não informada'),
+            raca=row.get('raca', 'SRD'),
+            porte=row.get('porte'),
+            # No Neon, campos DATE vêm como objetos date; convertemos para string se necessário
+            data_nascimento=str(row['data_nascimento']) if row.get('data_nascimento') else None,
+            observacoes=row.get('observacoes')
         )
 
     def to_dict(self) -> dict:
-        """Converte o objeto para um dicionário para inserção/atualização no banco de dados."""
+        """
+        Converte o objeto para um dicionário, ideal para enviar como JSON para o Frontend.
+        """
         return {
+            'id_pet': self.id_pet,
             'id_tutor': str(self.id_tutor),
             'nome_pet': self.nome_pet,
             'especie': self.especie,
@@ -54,4 +59,4 @@ class Pet:
         }
 
     def __repr__(self):
-        return f"<Pet ID={self.id_pet} | Nome={self.nome_pet} | Raça={self.raca}>"
+        return f"<Pet ID={self.id_pet} | Nome={self.nome_pet} | Espécie={self.especie}>"
