@@ -13,7 +13,23 @@ export async function checkAdminAuth() {
 
     try {
         // 2. Pergunta ao Python se esse ID é de um Admin real no Neon
-        const response = await fetch(`http://localhost:5000/api/auth/verificar-admin/${userId}`);
+        // 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000" 
+    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+
+// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
+async function verificarAdmin(userId) {
+    try {
+        // Você apaga o link antigo e usa a variável nova:
+        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
+        
+        const data = await response.json();
+        return data.isAdmin;
+    } catch (error) {
+        console.error("Erro ao verificar admin:", error);
+    }
+}
         const data = await response.json();
 
         if (response.ok && data.status === 'autorizado') {

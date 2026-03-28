@@ -1,26 +1,43 @@
+// 1. CONFIGURAÇÃO DA URL (Sempre no topo do arquivo)
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000" 
+    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+
+// 2. FUNÇÃO PARA VERIFICAR ADMIN
+async function verificarAdmin(userId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
+        const data = await response.json();
+        return data.isAdmin;
+    } catch (error) {
+        console.error("Erro ao verificar admin:", error);
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const formPet = document.getElementById('formCadastroPet');
     const listaPets = document.getElementById('lista-pets');
     const tutorId = localStorage.getItem('usuario_id'); // ID que salvamos no Login
 
-    // 1. VERIFICAÇÃO DE LOGIN
+    // 3. VERIFICAÇÃO DE LOGIN
     if (!tutorId) {
         alert("Sessão expirada. Por favor, faça login novamente.");
         window.location.href = '../login.html';
         return;
     }
 
-    // --- 2. FUNÇÃO PARA LISTAR OS PETS NA TELA ---
+    // --- 4. FUNÇÃO PARA LISTAR OS PETS NA TELA ---
     async function carregarPets() {
         try {
-            // Chama a rota que criamos no seu app.py
-            const response = await fetch(`http://localhost:5000/api/meus-pets/${tutorId}`);
+            // Usando a API_BASE_URL dinâmica
+            const response = await fetch(`${API_BASE_URL}/api/meus-pets/${tutorId}`);
             const pets = await response.json();
 
             if (!response.ok) throw new Error("Erro ao buscar pets.");
 
             if (listaPets) {
-                if (pets.length === 0) {
+                if (!pets || pets.length === 0) {
                     listaPets.innerHTML = '<p class="text-muted">Nenhum pet cadastrado ainda.</p>';
                     return;
                 }
@@ -36,10 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error("Erro ao carregar lista:", error);
+            if (listaPets) listaPets.innerHTML = '<p class="text-danger">Erro ao carregar pets.</p>';
         }
     }
 
-    // --- 3. FUNÇÃO PARA CADASTRAR O PET ---
+    // --- 5. FUNÇÃO PARA CADASTRAR O PET ---
     if (formPet) {
         formPet.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -50,16 +68,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const petDados = {
                 id_tutor: tutorId,
-                nome_pet: document.getElementById('nome_pet').value,
+                nome_pet: document.getElementById('nome_pet').value.trim(),
                 especie: document.getElementById('especie').value,
-                raca: document.getElementById('raca').value,
+                raca: document.getElementById('raca').value.trim(),
                 porte: document.getElementById('porte').value,
-                observacoes: document.getElementById('observacoes').value
+                observacoes: document.getElementById('observacoes').value.trim()
             };
 
             try {
-                // Envia para uma nova rota no Python que salvará no Neon
-                const response = await fetch('http://localhost:5000/api/cadastrar-pet', {
+                // Usando a API_BASE_URL dinâmica
+                const response = await fetch(`${API_BASE_URL}/api/cadastrar-pet`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(petDados)
@@ -71,9 +89,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     carregarPets(); // Atualiza a lista na hora
                 } else {
                     const erro = await response.json();
-                    alert("Erro ao cadastrar: " + erro.error);
+                    alert("Erro ao cadastrar: " + (erro.error || erro.mensagem));
                 }
             } catch (error) {
+                console.error("Erro no cadastro de pet:", error);
                 alert("Erro de conexão com o servidor.");
             } finally {
                 btn.disabled = false;

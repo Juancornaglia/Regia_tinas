@@ -1,4 +1,7 @@
-import { supabase } from './supabaseClient.js';
+// 1. DEFINIÇÃO DA URL (Sempre no topo do arquivo)
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000" 
+    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE SEU LINK DO RENDER AQUI
 
 // --- CONFIGURAÇÃO DE CORES E BADGES ---
 function getStatusBadge(status) {
@@ -25,10 +28,10 @@ function formatDateTime(dateTimeString) {
 function createAppointmentRowHtml(ag) {
     return `
         <tr id="appointment-row-${ag.id_agendamento}">
-            <td><strong>${ag.perfis?.nome_completo || 'N/A'}</strong></td>
-            <td>${ag.pets?.nome_pet || 'N/A'} <br><small class="text-muted">${ag.pets?.raca || ''}</small></td>
-            <td>${ag.servicos?.nome_servico || 'Banho & Tosa'}</td>
-            <td>${ag.lojas?.nome_loja || 'Matriz'}</td>
+            <td><strong>${ag.nome_cliente || 'N/A'}</strong></td>
+            <td>${ag.nome_pet || 'N/A'} <br><small class="text-muted">${ag.raca_pet || ''}</small></td>
+            <td>${ag.nome_servico || 'Banho & Tosa'}</td>
+            <td>${ag.nome_loja || 'Matriz'}</td>
             <td>${formatDateTime(ag.data_hora_inicio)}</td>
             <td>${getStatusBadge(ag.status)}</td>
             <td>
@@ -48,7 +51,7 @@ function createAppointmentRowHtml(ag) {
         </tr>`;
 }
 
-// --- CARREGAMENTO INICIAL ---
+// --- CARREGAMENTO INICIAL VIA API ---
 async function loadAndDisplayAppointments() {
     const tableBody = document.getElementById('appointments-table-body');
     const loadingRow = document.getElementById('loading-row-appointments');
@@ -57,18 +60,13 @@ async function loadAndDisplayAppointments() {
     if (!tableBody) return;
 
     try {
-        const { data: agendamentos, error } = await supabase
-            .from('agendamentos')
-            .select(`
-                id_agendamento, data_hora_inicio, status, observacoes_cliente,
-                perfis(nome_completo, telefone, email), 
-                pets(nome_pet, raca, especie, observacoes), 
-                servicos(nome_servico), 
-                lojas(nome_loja)
-            `)
-            .order('data_hora_inicio', { ascending: false });
+        // CHAMADA PARA O SEU BACKEND NO RENDER
+        const response = await fetch(`${API_BASE_URL}/api/agendamentos`);
+        const result = await response.json();
 
-        if (error) throw error;
+        if (!response.ok) throw new Error(result.mensagem || "Erro ao buscar agendamentos");
+
+        const agendamentos = result.data; // Ajuste conforme o formato que seu Flask retorna
 
         loadingRow.style.display = 'none';
         
@@ -86,46 +84,56 @@ async function loadAndDisplayAppointments() {
         }
     } catch (error) {
         console.error('Erro:', error.message);
-        loadingRow.style.display = 'none';
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erro ao carregar dados.</td></tr>`;
+        if (loadingRow) loadingRow.style.display = 'none';
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erro ao carregar dados do servidor.</td></tr>`;
     }
 }
 
-// --- MODAL DE DETALHES ---
+// --- MODAL DE DETALHES VIA API ---
 async function showAppointmentDetails(appointmentId) {
     const modalBody = document.getElementById('appointmentDetailModalBody');
     modalBody.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
 
-    const { data: ag } = await supabase
-        .from('agendamentos')
-        .select('*, perfis(*), pets(*), servicos(*)')
-        .eq('id_agendamento', appointmentId)
-        .single();
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/agendamentos/${appointmentId}`);
+        const result = await response.json();
+        const ag = result.data;
 
-    if (ag) {
-        modalBody.innerHTML = `
-            <h6><strong>Dono:</strong> ${ag.perfis.nome_completo}</h6>
-            <p>📞 Tel: ${ag.perfis.telefone || 'Não informado'}</p>
-            <hr>
-            <h6><strong>Pet:</strong> ${ag.pets.nome_pet}</h6>
-            <p>🧬 Raça: ${ag.pets.raca} | Porte: ${ag.pets.porte || 'N/A'}</p>
-            <p>📝 Obs Pet: ${ag.pets.observacoes || 'Nenhuma'}</p>
-            <hr>
-            <p><strong>🕒 Horário:</strong> ${formatDateTime(ag.data_hora_inicio)}</p>
-            <p><strong>💬 Obs Cliente:</strong> ${ag.observacoes_cliente || 'Sem observações'}</p>
-        `;
+        if (ag) {
+            modalBody.innerHTML = `
+                <h6><strong>Dono:</strong> ${ag.nome_cliente}</h6>
+                <p>📞 Tel: ${ag.telefone_cliente || 'Não informado'}</p>
+                <hr>
+                <h6><strong>Pet:</strong> ${ag.nome_pet}</h6>
+                <p>🧬 Raça: ${ag.raca_pet} | Porte: ${ag.porte_pet || 'N/A'}</p>
+                <p>📝 Obs Pet: ${ag.observacoes_pet || 'Nenhuma'}</p>
+                <hr>
+                <p><strong>🕒 Horário:</strong> ${formatDateTime(ag.data_hora_inicio)}</p>
+                <p><strong>💬 Obs Cliente:</strong> ${ag.observacoes_cliente || 'Sem observações'}</p>
+            `;
+        }
+    } catch (error) {
+        modalBody.innerHTML = `<p class="text-danger text-center">Erro ao carregar detalhes.</p>`;
     }
 }
 
-// --- ATUALIZAÇÃO DE STATUS ---
+// --- ATUALIZAÇÃO DE STATUS VIA API ---
 async function changeStatus(id, novoStatus) {
-    const { error } = await supabase
-        .from('agendamentos')
-        .update({ status: novoStatus })
-        .eq('id_agendamento', id);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/agendamentos/status`, {
+            method: 'PUT', // Ou PATCH, dependendo da sua rota Flask
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_agendamento: id, status: novoStatus })
+        });
 
-    if (error) alert("Erro: " + error.message);
-    else loadAndDisplayAppointments();
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.mensagem);
+        
+        loadAndDisplayAppointments();
+    } catch (error) {
+        alert("Erro ao atualizar status: " + error.message);
+    }
 }
 
 // --- EVENT LISTENERS ---
@@ -138,11 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnCancel = e.target.closest('.btn-cancel');
 
         if (btnView) showAppointmentDetails(btnView.dataset.id);
+        
         if (btnEdit) {
             const s = prompt("Novo status (pendente, confirmado, finalizado, cancelado):");
             if (s) changeStatus(btnEdit.dataset.id, s.toLowerCase());
         }
-        if (btnCancel && confirm("Deseja cancelar?")) {
+        
+        if (btnCancel && confirm("Deseja realmente cancelar este agendamento?")) {
             changeStatus(btnCancel.dataset.id, 'cancelado');
         }
     });

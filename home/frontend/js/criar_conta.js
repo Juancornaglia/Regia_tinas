@@ -1,3 +1,8 @@
+// 1. DEFINIÇÃO DA URL (Sempre no topo do arquivo)
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000" 
+    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE SEU LINK DO RENDER AQUI
+
 document.addEventListener('DOMContentLoaded', () => {
     const criarContaForm = document.getElementById('criarContaForm');
     const submitButton = criarContaForm?.querySelector('button[type="submit"]');
@@ -20,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'CRIANDO CONTA...';
 
             try {
-                const response = await fetch('http://localhost:5000/api/usuario/cadastrar', {
+                // 2. USANDO A VARIÁVEL NO FETCH (Note o uso de ` e ${})
+                const response = await fetch(`${API_BASE_URL}/api/usuario/cadastrar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nome, email, senha })

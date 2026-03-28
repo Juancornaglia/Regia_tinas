@@ -10,15 +10,28 @@ from werkzeug.security import generate_password_hash
 
 # Importação da sua função de query simplificada
 from db.neon_db import executar_query 
-
 # 1. Configurações Iniciais
 load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, '../frontend'))
 # O static_folder aponta para a pasta onde estão seus HTMLs, CSS e Imagens
-app = Flask(__name__, static_folder='../frontend', static_url_path='')
-
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 # Configuração do CORS (Unificada e Segura)
-CORS(app, origins=["http://127.0.0.1:5000", "http://localhost:5000", "null"])
-
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://127.0.0.1:5501",           # Para você testar no seu PC (Live Server)
+            "http://localhost:5501",           # Para você testar no seu PC (Live Server)
+            "https://seu-frontend.onrender.com" # O LINK QUE O RENDER DEU PARA SEU FRONTEND
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+def get_db_connection():
+    # Ele pega o link que você colocou no arquivo .env ou no Render
+    conn = psycopg2.connect(os.environ.get('postgresql://neondb_owner:npg_BpzfNxMU5gu2@ep-fragrant-brook-a44jnssw-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'))
+    return conn
 # 2. Importação das Rotas (Blueprints)
 from routes.api_admin import api_admin
 from routes.api_agendamento import api_agendamento
@@ -72,10 +85,8 @@ def listar_produtos():
 def login():
     # 1. Pega os dados (4 espaços/1 TAB)
     dados = request.get_json() 
-    
     # 2. O try precisa de uma linha própria (4 espaços/1 TAB)
-    try:
-        # 3. Tudo dentro do try precisa de MAIS recuo (8 espaços/2 TABs)
+    try: # 3. Tudo dentro do try precisa de MAIS recuo (8 espaços/2 TABs)
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute('SELECT id, nome_completo, role FROM public.perfis WHERE email = %s', (dados.get('email'),))
