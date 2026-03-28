@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Importação da sua função de query simplificada
 from db.neon_db import executar_query 
@@ -30,7 +30,7 @@ CORS(app, resources={
 })
 def get_db_connection():
     # Ele pega o link que você colocou no arquivo .env ou no Render
-    conn = psycopg2.connect(os.environ.get('postgresql://neondb_owner:npg_BpzfNxMU5gu2@ep-fragrant-brook-a44jnssw-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'))
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
 # 2. Importação das Rotas (Blueprints)
 from routes.api_admin import api_admin
@@ -50,14 +50,6 @@ app.register_blueprint(api_agendamento, url_prefix='/api/agendamento')
 app.register_blueprint(api_ecommerce, url_prefix='/api/ecommerce')
 app.register_blueprint(api_usuario, url_prefix='/api/usuario')
 
-# 5. Funções de Banco de Dados (Opcional ter aqui, mas corrigido)
-def get_db_connection():
- return psycopg2.connect(os.getenv("DATABASE_URL"))
-
-# --- ROTAS PARA SERVIR O FRONTEND ---
-
-def index():
-  return send_from_directory(FRONTEND_DIR, 'index.html')
 
 @app.route('/img/<path:filename>')
 def imagens(filename):
@@ -81,57 +73,6 @@ def listar_produtos():
     produtos = executar_query("SELECT * FROM public.produtos WHERE status_produto = 'Ativo'")
     return jsonify(produtos)
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    # 1. Pega os dados (4 espaços/1 TAB)
-    dados = request.get_json() 
-    # 2. O try precisa de uma linha própria (4 espaços/1 TAB)
-    try: # 3. Tudo dentro do try precisa de MAIS recuo (8 espaços/2 TABs)
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT id, nome_completo, role FROM public.perfis WHERE email = %s', (dados.get('email'),))
-        usuario = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if usuario:
-            return jsonify({"status": "sucesso", "id": usuario['id'], "nome": usuario['nome_completo'], "role": usuario['role']}), 200
-        
-        return jsonify({"status": "erro", "mensagem": "Usuário não encontrado"}), 401
-
-    # 4. O except deve estar alinhado com o try (4 espaços/1 TAB)
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
-# --- ROTAS DE ADMIN (AGENDAMENTOS E PRODUTOS) ---
-
-@app.route('/api/admin/agendamentos', methods=['GET'])
-def buscar_todos_agendamentos():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # O SQL precisa estar bem alinhado dentro das aspas triplas
-        cur.execute('''
-            SELECT a.*, per.nome_completo as dono_nome, p.nome_pet, s.nome_servico, l.nome_loja
-            FROM public.agendamentos a
-            JOIN public.perfis per ON a.id_cliente = per.id
-            JOIN public.pets p ON a.id_pet = p.id_pet
-            JOIN public.servicos s ON a.id_servico = s.id_servico
-            JOIN public.lojas l ON a.id_loja = l.id_loja
-            ORDER BY a.data_hora_inicio ASC
-        ''')
-        
-        res = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        return jsonify(res), 200
-
-    except Exception as e:
-        # Importante: o except deve estar alinhado com o try
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
     try:
@@ -153,93 +94,12 @@ def get_admin_stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- ROTAS HTML (PÁGINAS) ---
-
-@app.route('/<path:path>')
-def serving_static(path):
-    # O return precisa de 1 TAB (4 espaços)
-    return send_from_directory(FRONTEND_DIR, path)
-
-# --- INICIALIZAÇÃO (SEMPRE POR ÚLTIMO) ---
-
-if __name__ == '__main__':
-    # Esta parte deve ser a ÚLTIMA coisa escrita no seu arquivo app.py
-    print("🚀 Servidor Regia & Tina's Care rodando em http://127.0.0.1:5000")
-    app.run(debug=True, port=5000)
-
-# 1. Rota para carregar o index.html na raiz (DEVE VIR ANTES DA INICIALIZAÇÃO)
 @app.route('/')
 def index():
-    # Usamos FRONTEND_DIR para garantir que o Python ache a pasta
     return send_from_directory(FRONTEND_DIR, 'index.html')
-
-# 2. Rota curinga para carregar CSS, JS e Imagens automaticamente
-@app.route('/<path:path>')
-def serving_static(path):
-    return send_from_directory(FRONTEND_DIR, path)
-
-# 3. --- INICIALIZAÇÃO (SEMPRE A ÚLTIMA COISA DO ARQUIVO) ---
-if __name__ == '__main__':
-    print("🚀 Servidor Regia & Tina's Care rodando em http://127.0.0.1:5000")
-    app.run(debug=True, port=5000)
-    
-# 1. Rota Principal (Sempre deixe o '/' explícito primeiro)
-@app.route('/')
-def index():
-    # Centralizando para buscar sempre na pasta correta
-    return send_from_directory(FRONTEND_DIR, 'index.html')
-
-# 2. Rota de API (Dados do Banco Neon)
-@app.route('/api/produtos')
-def listar_produtos():
-    # Busca todos os produtos para a vitrine
-    produtos = executar_query("SELECT * FROM public.produtos")
-    return jsonify(produtos)
-
-# 3. Rota para a pasta 'usuario' (Subpastas)
 @app.route('/usuario/<path:path>')
 def servir_usuario(path):
-    # Garante que arquivos dentro de frontend/usuario sejam achados
     return send_from_directory(os.path.join(FRONTEND_DIR, 'usuario'), path)
-
-# 4. Rota Curinga (DEVE SER A ÚLTIMA desta lista)
-@app.route('/<path:path>')
-def static_proxy(path):
-    # Serve CSS, JS e Imagens da pasta raiz do frontend
-    return send_from_directory(FRONTEND_DIR, path)
-
-# 1. Rota de Cadastro de Usuário (APIs sempre vêm ANTES das rotas de arquivos)
-@app.route('/api/usuario/cadastrar', methods=['POST'])
-def cadastrar_usuario():
-    dados = request.get_json()
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Inserindo no Neon e retornando o ID gerado
-        cur.execute('''
-            INSERT INTO public.perfis (nome_completo, email, cpf, telefone, role)
-            VALUES (%s, %s, %s, %s, 'cliente')
-            RETURNING id
-        ''', (dados['nome'], dados['email'], dados['cpf'], dados['telefone']))
-        
-        novo_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({"status": "sucesso", "id": novo_id}), 201
-        
-    except Exception as e:
-        # Retorna o erro real caso o banco Neon falhe (ex: email repetido)
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
-# 2. Rota para servir arquivos estáticos (DEVE SER A ÚLTIMA DO ARQUIVO)
-@app.route('/<path:path>')
-def static_proxy(path):
-    # Ajustado para usar FRONTEND_DIR e evitar erro de 'pasta não encontrada'
-    return send_from_directory(FRONTEND_DIR, path)
-
 # --- 4. ROTA ADMIN: TODOS OS AGENDAMENTOS ---
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
@@ -859,48 +719,6 @@ def cancelar_agendamento(id_agendamento):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/admin/stats', methods=['GET'])
-def get_admin_stats():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # 1. Faturamento Total
-        cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
-        faturamento = cur.fetchone()['faturamento'] or 0
-        
-        # 2. Total de Agendamentos
-        cur.execute('SELECT COUNT(*) as total FROM public.agendamentos')
-        total_agendamentos = cur.fetchone()['total']
-        
-        # 3. Total de Pets
-        cur.execute('SELECT COUNT(*) as total FROM public.pets')
-        total_pets = cur.fetchone()['total']
-        
-        # 4. Total de Clientes (Corrigido: agora dentro do try)
-        cur.execute("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
-        total_clientes = cur.fetchone()['total']
-        
-        # 5. Estoque Crítico (Produtos acabando)
-        cur.execute('SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5')
-        criticos = cur.fetchall()
-        
-        cur.close()
-        conn.close()
-        
-        # O return precisa de 8 espaços (dentro do try)
-        return jsonify({
-            "faturamento": float(faturamento),
-            "agendamentos": total_agendamentos,
-            "pets": total_pets,
-            "clientes": total_clientes,
-            "criticos": criticos 
-        }), 200
-
-    except Exception as e:
-        # O except fica alinhado com o try (4 espaços)
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/api/cadastrar-pet', methods=['POST'])
 def cadastrar_pet():
     dados = request.get_json()
@@ -1081,34 +899,36 @@ def create_appointment():
 def login():
     dados = request.get_json()
     email = dados.get('email')
-    # A senha está aqui caso você queira adicionar o check_password_hash depois
-    senha = dados.get('senha') 
+    senha_digitada = dados.get('senha') 
     
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Busca o usuário no Neon pelo e-mail
-        cur.execute('SELECT id, nome_completo, role FROM public.perfis WHERE email = %s', (email,))
+        # Agora buscamos também a senha (hash) guardada no banco
+        cur.execute('SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s', (email,))
         usuario = cur.fetchone()
         
         cur.close()
         conn.close()
         
         if usuario:
-            # Retorna os dados para o Frontend salvar no localStorage
-            return jsonify({
-                "status": "sucesso",
-                "id": usuario['id'],
-                "nome": usuario['nome_completo'],
-                "role": usuario['role']
-            }), 200
+            # COMPARAÇÃO DE SEGURANÇA:
+            # check_password_hash compara a senha digitada com o hash do banco
+            if check_password_hash(usuario['senha'], senha_digitada):
+                return jsonify({
+                    "status": "sucesso",
+                    "id": usuario['id'],
+                    "nome": usuario['nome_completo'],
+                    "role": usuario['role']
+                }), 200
+            else:
+                return jsonify({"status": "erro", "mensagem": "Senha incorreta"}), 401
         else:
-            return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401
+            return jsonify({"status": "erro", "mensagem": "E-mail não encontrado"}), 404
             
     except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500 
-
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
 # --- 8. EXECUÇÃO (SEMPRE A ÚLTIMA LINHA DO ARQUIVO) ---
 if __name__ == '__main__':
     print("🚀 Servidor Regia & Tina's Care ON em http://127.0.0.1:5000")
