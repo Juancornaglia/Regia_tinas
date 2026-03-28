@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Regia tinas</title>
+    <title>Login - Regia & Tinas Care</title>
     
     <link rel="shortcut icon" href="../img/logo_pequena4.png" type="image/x-icon">
     
@@ -26,7 +26,7 @@
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #666; /* Cor cinza para o ícone */
+            color: #fff; 
             z-index: 10;
             font-size: 1.2rem;
             display: flex;
@@ -34,10 +34,36 @@
         }
 
         #senha {
-            padding-right: 45px; /* Abre espaço para o olho não ficar em cima do texto */
+            padding-right: 45px;
         }
 
-        /* CORREÇÃO DO BOTÃO CADASTRAR */
+        /* AJUSTE DO DIVIDER (OU ACESSE COM) */
+        .divider span {
+            color: #ffffff !important; /* Cor branca para o texto */
+            background-color: transparent !important; /* Remove fundo se houver */
+        }
+
+        /* AJUSTE DO ESQUECI MINHA SENHA */
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .forgot-link {
+            color: #ffffff !important;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        /* CORREÇÃO DOS BOTÕES */
         .form-buttons {
             display: flex;
             justify-content: space-between;
@@ -47,42 +73,36 @@
         }
 
         .btn-outline {
-            color: #ffffff !important; /* Força a cor branca */
+            color: #ffffff !important;
             text-decoration: none;
             font-weight: bold;
-            opacity: 1 !important; /* Garante que não fique transparente */
             transition: 0.3s;
         }
 
-        .btn-outline:hover {
-            color: #f1f1f1 !important;
-            text-decoration: underline !important;
-            transform: scale(1.05);
-        }
-
-        /* Ajuste do botão Acessar para alinhar com o design */
         .btn-solid {
             background-color: #ffffff;
-            color: #FE8697; /* Substitua pela sua cor rosa principal */
+            color: #FE8697; 
             border: none;
             padding: 10px 25px;
             border-radius: 20px;
             font-weight: bold;
             transition: 0.3s;
+            cursor: pointer;
         }
 
-        .btn-solid:hover {
-            background-color: #f8f9fa;
-            transform: scale(1.05);
+        /* COR DA SETA */
+        .back-button i {
+            color: white;
+            font-size: 1.5rem;
         }
     </style>
 </head>
 <body>
-    <header class="auth-header">Chateau du Pet</header>
+    <header class="auth-header">Regia & Tinas Care</header>
     <div class="form-container">
         <div class="form-box">
             <div class="form-header">
-                <a href="../index.html" class="back-button"><i class="bi bi-arrow-left"></i></a>
+                <a href="../home.html" class="back-button"><i class="bi bi-arrow-left"></i></a>
                 <h1>Acessar sua conta</h1>
             </div>
             
@@ -97,12 +117,12 @@
                 
                 <div class="form-options">
                     <label><input type="checkbox" id="remember"> Lembrar</label>
-                    <a href="redefinir_senha.html">Esqueci minha senha</a>
+                    <a href="redefinir_senha.html" class="forgot-link">Esqueci minha senha</a>
                 </div>
                 
                 <div class="form-buttons">
-                    <a href="criar_conta.html" class="btn btn-outline">CADASTRAR</a>
-                    <button type="submit" class="btn btn-solid">ACESSAR</button>
+                    <a href="criar_conta.html" class="btn-outline">CADASTRAR</a>
+                    <button type="submit" class="btn-solid">ACESSAR</button>
                 </div>
             </form>
 

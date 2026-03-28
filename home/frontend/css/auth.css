@@ -44,6 +44,7 @@ body {
 }
 
 .form-header {
+    color: black;
     display: flex;
     align-items: center;
     margin-bottom: 25px;
@@ -51,7 +52,7 @@ body {
 }
 
 .form-header .back-button {
-    color: #FE8697;
+    color: #fff5f6;
     font-size: 1.5rem;
     margin-right: 15px;
     text-decoration: none;
@@ -137,7 +138,7 @@ body {
 }
 
 .form-options a {
-    color: #FE8697;
+    color: #fff;
     text-decoration: none;
 }
 

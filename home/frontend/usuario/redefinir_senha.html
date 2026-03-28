@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redefinir Senha - Chateau du Pet</title>
+    <title>Redefinir Senha - Regia & Tinas Care</title>
     
     <link rel="shortcut icon" href="../img/logo_pequena4.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Ribeye&display=swap" rel="stylesheet">
@@ -19,35 +19,36 @@
             margin-bottom: 15px;
         }
 
-        /* Estilo para os ícones de olho */
+        /* Estilo para os ícones de olho (Branco para combinar com o login) */
         .eye-icon {
             position: absolute;
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #666;
+            color: #fff;
             z-index: 10;
             font-size: 1.2rem;
             display: flex;
             align-items: center;
         }
 
-        input[type="password"] {
+        input[type="password"], input[type="email"] {
             padding-right: 45px;
         }
 
-        /* Botão Sólido (Acessar/Salvar) */
+        /* Botão Sólido Branco com Texto Rosa */
         .btn-solid {
             background-color: #ffffff;
-            color: #FE8697; /* Rosa da sua marca */
+            color: #FE8697; 
             border: none;
-            padding: 10px 25px;
-            border-radius: 20px;
+            padding: 12px 25px;
+            border-radius: 25px;
             font-weight: bold;
             transition: 0.3s;
             width: 100%;
             margin-top: 10px;
+            cursor: pointer;
         }
 
         .btn-solid:hover {
@@ -69,15 +70,20 @@
             font-size: 1.5rem;
             margin-bottom: 0;
         }
+
+        .back-button i {
+            color: #fff;
+            font-size: 1.5rem;
+        }
     </style>
 </head>
 <body>
-    <header class="auth-header">Chateau du Pet</header>
+    <header class="auth-header">Regia & Tinas Care</header>
 
     <div class="form-container">
         <div class="form-box">
 
-            <div id="reset-section-1" style="display: none;"> 
+            <div id="reset-section-1"> 
                 <div class="form-header">
                     <a href="login.html" class="back-button"><i class="bi bi-arrow-left"></i></a>
                     <h1>Esqueceu a senha?</h1>
@@ -116,6 +122,7 @@
     </div>
 
     <script>
+        // Lógica para mostrar/esconder senha
         document.querySelectorAll('.toggle-password').forEach(item => {
             item.addEventListener('click', function() {
                 const targetId = this.getAttribute('data-target');
@@ -133,7 +140,6 @@
             });
         });
     </script>
-
 
     <script src="../js/redefinir_senha.js" type="module"></script>
 </body>
