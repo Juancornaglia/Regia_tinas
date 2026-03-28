@@ -17,12 +17,12 @@ FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, '../frontend'))
 # O static_folder aponta para a pasta onde estão seus HTMLs, CSS e Imagens
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 # Configuração do CORS (Unificada e Segura)
+# Configuração do CORS
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "http://127.0.0.1:5501",           # Para você testar no seu PC (Live Server)
-            "http://localhost:5501",           # Para você testar no seu PC (Live Server)
-            "https://seu-frontend.onrender.com" # O LINK QUE O RENDER DEU PARA SEU FRONTEND
+            "http://127.0.0.1:5501",
+            "https://regia-tinas.onrender.com"  # <--- COLOQUE O SEU LINK REAL AQUI
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
