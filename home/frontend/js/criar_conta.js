@@ -1,7 +1,5 @@
 // 1. DEFINIÇÃO DA URL (Sempre no topo do arquivo)
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE SEU LINK DO RENDER AQUI
+const API_BASE_URL = window.location.origin;
 
 document.addEventListener('DOMContentLoaded', () => {
     const criarContaForm = document.getElementById('criarContaForm');

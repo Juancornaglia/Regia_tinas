@@ -22,7 +22,7 @@ CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://127.0.0.1:5501",
-            "https://regia-tinas.onrender.com"  # <--- COLOQUE O SEU LINK REAL AQUI
+            "https://regia-tinas.onrender.com" 
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
@@ -79,18 +79,29 @@ def get_admin_stats():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Busca faturamento
         cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
-        faturamento = cur.fetchone()['faturamento'] or 0
+        res_faturamento = cur.fetchone()['faturamento'] or 0
         
-        # Busca total de agendamentos
         cur.execute('SELECT COUNT(*) as total FROM public.agendamentos')
-        agendamentos = cur.fetchone()['total']
+        total_agendamentos = cur.fetchone()['total']
+
+        # Adicionei Clientes e Pets para completar seus KPIs
+        cur.execute("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = cur.fetchone()['total']
+
+        cur.execute("SELECT COUNT(*) as total FROM public.pets")
+        total_pets = cur.fetchone()['total']
         
         cur.close()
         conn.close()
         
-        return jsonify({"faturamento": float(faturamento), "agendamentos": agendamentos}), 200
+        # Retorne com os nomes que o seu JS espera
+        return jsonify({
+            "faturamento": float(res_faturamento), 
+            "total_agendamentos": total_agendamentos,
+            "total_clientes": total_clientes,
+            "total_pets": total_pets
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -397,13 +408,15 @@ def finalizar_checkout():
 
 # --- ROTAS DE AUTENTICAÇÃO E SEGURANÇA ---
 
-@app.route('/api/auth/verificar-role/<id_usuario>', methods=['GET'])
-def verificar_role(id_usuario):
+# --- ROTA DE VERIFICAÇÃO DE ADMIN (UNIFICADA COM O JS) ---
+
+@app.route('/api/auth/verificar-admin/<id_usuario>', methods=['GET'])
+def verificar_admin_api(id_usuario): 
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Busca apenas o cargo (role) do usuário no Neon
+        # Busca a role do usuário no Neon
         cur.execute('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
         usuario = cur.fetchone()
         
@@ -411,12 +424,20 @@ def verificar_role(id_usuario):
         conn.close()
         
         if usuario:
-            return jsonify({"role": usuario['role']}), 200
+            # O JavaScript do frontend espera "isAdmin" para permitir a entrada
+            # Verifica se a string no banco é exatamente 'admin'
+            is_admin = (usuario['role'] == 'admin')
+            
+            return jsonify({
+                "isAdmin": is_admin, 
+                "role": usuario['role']
+            }), 200
         else:
-            return jsonify({"role": None}), 404
+            return jsonify({"isAdmin": False, "message": "Usuário não encontrado"}), 404
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Erro na verificação de admin: {e}")
+        return jsonify({"error": str(e), "isAdmin": False}), 500
 
 @app.route('/api/usuario/cadastrar', methods=['POST'])
 def cadastrar_usuario():
