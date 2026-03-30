@@ -111,6 +111,65 @@ def index():
 @app.route('/usuario/<path:path>')
 def servir_usuario(path):
     return send_from_directory(os.path.join(FRONTEND_DIR, 'usuario'), path)
+# --- ROTA MESTRE DO DASHBOARD (KPIs, TABELA, ESTOQUE E GRÁFICOS) ---
+@app.route('/api/admin/dashboard-completo', methods=['GET'])
+def dashboard_completo():
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        # Usamos o RealDictCursor para o JS entender os nomes das colunas (ex: dados.stats)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # 1. Estatísticas Principais (KPIs)
+        cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
+        faturamento = cur.fetchone()['faturamento'] or 0
+        
+        cur.execute("SELECT COUNT(*) as total FROM public.agendamentos WHERE CAST(data_hora_inicio AS DATE) = CURRENT_DATE")
+        agendamentos_hoje = cur.fetchone()['total']
+        
+        cur.execute("SELECT COUNT(*) as total FROM public.pets")
+        total_pets = cur.fetchone()['total']
+        
+        cur.execute("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = cur.fetchone()['total']
+        
+        # 2. Lista de Agendamentos para a Tabela (Hoje em diante)
+        cur.execute('''
+            SELECT a.id_agendamento as id, a.data_hora_inicio, a.status, 
+                   p.nome_completo as cliente_nome, p.telefone as cliente_tel,
+                   pt.nome_pet, pt.raca as pet_raca, s.nome_servico
+            FROM public.agendamentos a
+            JOIN public.perfis p ON a.id_cliente = p.id
+            JOIN public.pets pt ON a.id_pet = pt.id_pet
+            JOIN public.servicos s ON a.id_servico = s.id_servico
+            WHERE CAST(a.data_hora_inicio AS DATE) >= CURRENT_DATE
+            ORDER BY a.data_hora_inicio ASC LIMIT 10
+        ''')
+        lista_agendamentos = cur.fetchall()
+        
+        # 3. Estoque Crítico (Produtos com menos de 5 unidades)
+        cur.execute("SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5 LIMIT 5")
+        estoque_critico = cur.fetchall()
+        
+        return jsonify({
+            "stats": {
+                "faturamento": float(faturamento),
+                "total_agendamentos": agendamentos_hoje,
+                "total_pets": total_pets,
+                "total_clientes": total_clientes
+            },
+            "agendamentos": lista_agendamentos,
+            "estoque_critico": estoque_critico,
+            "graficos": [1200, 950, 400, 600] # Exemplo: Banho, Tosa, Hotel, Vet
+        }), 200
+        
+    except Exception as e:
+        print(f"Erro no dashboard: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 # --- 4. ROTA ADMIN: TODOS OS AGENDAMENTOS ---
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
@@ -149,6 +208,20 @@ def buscar_todos_agendamentos():
         # O except fica na mesma linha do try
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/admin/lojas', methods=['GET', 'OPTIONS']) # Adicionei OPTIONS
+def listar_lojas_admin():
+    if request.method == 'OPTIONS': return jsonify({}), 200 # Adicionei esta linha
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
+        lojas = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(lojas), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500 
+    
 # --- ROTAS DE GESTÃO DE PEDIDOS ---
 
 @app.route('/api/admin/pedidos', methods=['GET'])
@@ -712,20 +785,6 @@ def listar_bloqueios():
         return jsonify({"error": str(e)}), 500
 
 # --- GESTÃO DE LOJAS E CANCELAMENTOS ---
-
-@app.route('/api/admin/lojas', methods=['GET'])
-def listar_lojas_admin():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
-        lojas = cur.fetchall()
-        cur.close()
-        conn.close()
-        return jsonify(lojas), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/api/admin/cancelar-agendamento/<int:id_agendamento>', methods=['POST'])
 def cancelar_agendamento(id_agendamento):
     try:
