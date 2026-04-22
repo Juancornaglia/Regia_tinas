@@ -4,10 +4,13 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     : "https://regia-tinas.onrender.com"; 
 
 // 2. SEGURANÇA: VERIFICAR SE É ADMIN
-async function verificarAdmin(token) {
+async function verificarAdmin(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${token}`);
+        // CORREÇÃO: Usando a rota que configuramos no app.py (espera o ID do usuário)
+        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
+        
         if (!response.ok) return false;
+        
         const data = await response.json();
         return data.isAdmin;
     } catch (error) {
@@ -27,10 +30,13 @@ const storesSelectBlockDay = document.getElementById('block-store');
 async function carregarLojas() {
     try {
         const token = localStorage.getItem('token');
-        // Rota corrigida para usar o API_BASE_URL
         const response = await fetch(`${API_BASE_URL}/api/admin/lojas`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        // BLINDAGEM: Verifica erro antes de ler o JSON
+        if (!response.ok) throw new Error("Erro ao buscar lojas");
+
         const lojas = await response.json();
 
         if (Array.isArray(lojas)) {
@@ -51,24 +57,28 @@ async function carregarLojas() {
 // --- 4. GESTÃO DE BLOQUEIOS (Feriados/Manutenção) ---
 async function carregarBloqueios() {
     if (!blockedDaysList) return;
-    loadingBlockedDays.style.display = 'block';
+    if (loadingBlockedDays) loadingBlockedDays.style.display = 'block';
 
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/api/admin/dias-bloqueados`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        // BLINDAGEM: Verifica erro antes de ler o JSON
+        if (!response.ok) throw new Error("Erro ao carregar bloqueios.");
+
         const bloqueios = await response.json();
 
-        loadingBlockedDays.style.display = 'none';
+        if (loadingBlockedDays) loadingBlockedDays.style.display = 'none';
 
         if (Array.isArray(bloqueios) && bloqueios.length > 0) {
             blockedDaysList.innerHTML = bloqueios.map(b => `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <li class="list-group-item d-flex justify-content-between align-items-center border-start border-4 border-danger mb-2 shadow-sm rounded">
                     <div>
-                        <strong>${new Date(b.data_bloqueada).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> 
+                        <strong class="text-dark">${new Date(b.data_bloqueada).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> 
                         <span class="badge bg-secondary ms-2">${b.nome_loja || 'Todas as Lojas'}</span>
-                        <br><small class="text-muted">${b.motivo || 'Sem motivo'}</small>
+                        <br><small class="text-muted">${b.motivo || 'Sem motivo informado'}</small>
                     </div>
                     <button class="btn btn-sm btn-outline-danger" onclick="window.removerBloqueio(${b.id_bloqueio || b.id})">
                         <i class="bi bi-trash"></i>
@@ -76,11 +86,11 @@ async function carregarBloqueios() {
                 </li>
             `).join('');
         } else {
-            blockedDaysList.innerHTML = '<li class="list-group-item text-muted text-center">Nenhum dia bloqueado.</li>';
+            blockedDaysList.innerHTML = '<li class="list-group-item text-muted text-center py-4">Nenhum dia bloqueado no momento.</li>';
         }
     } catch (error) {
-        loadingBlockedDays.style.display = 'none';
-        blockedDaysList.innerHTML = '<li class="list-group-item text-danger text-center">Erro ao carregar lista do banco.</li>';
+        if (loadingBlockedDays) loadingBlockedDays.style.display = 'none';
+        blockedDaysList.innerHTML = '<li class="list-group-item text-danger text-center">Erro ao conectar com o banco de dados.</li>';
     }
 }
 
@@ -90,6 +100,7 @@ if (blockDayForm) {
         e.preventDefault();
         const btn = blockDayForm.querySelector('button[type="submit"]');
         btn.disabled = true;
+        btn.innerText = "BLOQUEANDO...";
 
         const dados = {
             data: document.getElementById('block-date').value,
@@ -108,25 +119,34 @@ if (blockDayForm) {
                 body: JSON.stringify(dados)
             });
 
-            if (response.ok) {
-                alert("Dia bloqueado com sucesso!");
-                blockDayForm.reset();
-                carregarBloqueios();
-            } else {
-                const erro = await response.json();
-                alert(`Erro: ${erro.mensagem || 'Falha ao bloquear o dia.'}`);
+            // BLINDAGEM HÍBRIDA
+            if (!response.ok) {
+                let errorMsg = "Falha ao bloquear o dia.";
+                try {
+                    const erro = await response.json();
+                    errorMsg = erro.mensagem || erro.error || errorMsg;
+                } catch (jsonErr) {
+                    if (response.status === 403) errorMsg = "Sem permissão de administrador.";
+                }
+                throw new Error(errorMsg);
             }
+
+            alert("Dia bloqueado com sucesso!");
+            blockDayForm.reset();
+            carregarBloqueios();
+
         } catch (error) {
-            alert("Erro ao conectar com o servidor Python.");
+            alert("Erro: " + error.message);
         } finally {
             btn.disabled = false;
+            btn.innerText = "BLOQUEAR DIA";
         }
     });
 }
 
 // --- 6. FUNÇÃO GLOBAL PARA REMOVER BLOQUEIO ---
 window.removerBloqueio = async (id) => {
-    if (!confirm("Deseja desbloquear este dia?")) return;
+    if (!confirm("Deseja liberar este dia para novos agendamentos?")) return;
 
     try {
         const token = localStorage.getItem('token');
@@ -142,20 +162,19 @@ window.removerBloqueio = async (id) => {
             alert("Erro ao tentar desbloquear no servidor.");
         }
     } catch (error) {
-        alert("Erro de conexão.");
+        alert("Erro de conexão ao servidor.");
     }
 };
 
-   // --- 7. INICIALIZAÇÃO DA PÁGINA ---
-   document.addEventListener('DOMContentLoaded', async () => {
-    const userId = localStorage.getItem('usuario_id'); // Pegamos o ID, não o token
+// --- 7. INICIALIZAÇÃO DA PÁGINA ---
+document.addEventListener('DOMContentLoaded', async () => {
+    const userId = localStorage.getItem('usuario_id');
     
     if (!userId) {
         window.location.href = '../usuario/login.html';
         return;
     }
 
-    // Passamos o ID para a rota de verificação
     const isAdmin = await verificarAdmin(userId); 
     if (!isAdmin) {
         alert("Acesso restrito!");

@@ -6,9 +6,9 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 const favoritesListContainer = document.getElementById('favorites-list');
 const noFavoritesMessage = document.getElementById('no-favorites-message');
 
-// 2. FUNÇÕES DO LOCALSTORAGE
-function getFavorites() { return JSON.parse(localStorage.getItem('chateau_favorites')) || []; }
-function saveFavorites(favorites) { localStorage.setItem('chateau_favorites', JSON.stringify(favorites)); }
+// 2. FUNÇÕES DO LOCALSTORAGE (Atualizadas para a marca Regia & Tinas)
+function getFavorites() { return JSON.parse(localStorage.getItem('regia_tinas_favorites')) || []; }
+function saveFavorites(favorites) { localStorage.setItem('regia_tinas_favorites', JSON.stringify(favorites)); }
 
 function formatPrice(price) {
     if (typeof price !== 'number' || isNaN(price)) { return 'Consulte o valor'; }
@@ -69,11 +69,12 @@ async function renderFavoritesPage() {
     }
 
     try {
-        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA /api/produtos
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        
+        // CORREÇÃO: Verifica erro ANTES de tentar ler JSON
+        if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+        
         const allProducts = await response.json();
-
-        if (!response.ok) throw new Error("Erro na API");
 
         // Filtra apenas os produtos que têm o ID salvo no LocalStorage
         const favoriteProducts = allProducts.filter(p => favoriteIds.includes(parseInt(p.id_produto || p.id)));
@@ -97,7 +98,7 @@ async function renderFavoritesPage() {
             <div class="col-12 text-center py-5" style="grid-column: 1 / -1;">
                 <i class="bi bi-exclamation-triangle fs-1 text-warning mb-3"></i>
                 <h4 class="text-danger fw-bold">Não conseguimos carregar seus favoritos.</h4>
-                <p class="text-muted">Verifique se o servidor está rodando.</p>
+                <p class="text-muted">Verifique a conexão com o servidor.</p>
             </div>`;
     }
 }

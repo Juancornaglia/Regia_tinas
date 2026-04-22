@@ -8,44 +8,61 @@ const appointmentData = {
     loja_id: null, loja_nome: null,
     servico_id: null, servico_nome: null,
     data: null, horario: null,
-    selected_pet_id: "NEW",
     cliente_id: localStorage.getItem('usuario_id')
 };
 
 // --- CARREGAR SERVIÇOS ---
 async function loadServices() {
     const serviceSelect = document.getElementById('service-select');
+    if (!serviceSelect) return;
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/servicos_lista`);
-        const data = await response.json();
+        if (!response.ok) throw new Error("Erro ao buscar serviços");
         
+        const data = await response.json();
         serviceSelect.innerHTML = '<option value="" disabled selected>Selecione o serviço...</option>';
         data.forEach(s => {
             serviceSelect.innerHTML += `<option value="${s.id_servico}">${s.nome_servico}</option>`;
         });
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e);
+        serviceSelect.innerHTML = '<option value="">Erro ao carregar serviços</option>';
+    }
 }
 
 // --- CARREGAR LOJAS ---
 async function loadStores() {
     const storeSelect = document.getElementById('store-select');
+    if (!storeSelect) return;
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/lojas`);
+        if (!response.ok) throw new Error("Erro ao buscar lojas");
+
         const data = await response.json();
         storeSelect.innerHTML = '<option value="" disabled selected>Selecione a unidade...</option>';
         data.forEach(l => {
             storeSelect.innerHTML += `<option value="${l.id_loja}">${l.nome_loja}</option>`;
         });
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e);
+        storeSelect.innerHTML = '<option value="">Erro ao carregar unidades</option>';
+    }
 }
 
 // --- BUSCAR HORÁRIOS ---
 async function fetchAvailableSlots(lojaId, servicoId, dateStr) {
     const container = document.getElementById('time-slots-container');
+    if (!container) return;
+
     container.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-brand"></div></div>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/horarios-disponiveis?loja_id=${lojaId}&servico_id=${servicoId}&data=${dateStr}`);
+        
+        if (!response.ok) throw new Error("Erro ao buscar horários");
+        
         const slots = await response.json();
         
         container.innerHTML = '<h6 class="fw-bold mb-3 text-secondary">Horários livres:</h6>';
@@ -66,7 +83,9 @@ async function fetchAvailableSlots(lojaId, servicoId, dateStr) {
             };
             container.appendChild(btn);
         });
-    } catch (e) { container.innerHTML = 'Erro ao carregar.'; }
+    } catch (e) { 
+        container.innerHTML = '<p class="text-danger">Erro ao carregar horários.</p>'; 
+    }
 }
 
 // --- GESTÃO DO CALENDÁRIO ---
@@ -74,6 +93,8 @@ let calendarDate = new Date();
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYear = document.getElementById('calendar-month-year');
+    if (!grid || !monthYear) return;
+
     const month = calendarDate.getMonth();
     const year = calendarDate.getFullYear();
     
@@ -129,15 +150,26 @@ async function confirmAppointment() {
         if (response.ok) {
             alert("Sucesso! Agendamento realizado.");
             window.location.href = '../index.html';
-        } else { alert("Erro ao agendar."); btn.disabled = false; }
-    } catch (e) { alert("Erro de conexão."); btn.disabled = false; }
+        } else { 
+            const err = await response.json();
+            alert("Erro ao agendar: " + (err.error || "Tente novamente.")); 
+            btn.disabled = false; 
+            btn.innerText = "Confirmar Agendamento";
+        }
+    } catch (e) { 
+        alert("Erro de conexão."); 
+        btn.disabled = false; 
+        btn.innerText = "Confirmar Agendamento";
+    }
 }
 
 // --- NAVEGAÇÃO ---
 function showStep(n) {
     document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i+1 === n));
-    document.getElementById('step-progressbar').style.width = `${(n/5)*100}%`;
+    const progressBar = document.getElementById('step-progressbar');
+    if (progressBar) progressBar.style.width = `${(n/5)*100}%`;
     currentStep = n;
+    
     if (n === 5) {
         document.getElementById('confirmation-summary').innerHTML = `
             <p><strong>Serviço:</strong> ${appointmentData.servico_nome}</p>

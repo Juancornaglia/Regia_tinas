@@ -6,22 +6,28 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 // --- GERAÇÃO DE HTML PARA A TABELA ---
 function createAppointmentRowHtml(ag) {
     const dataFormatada = new Date(ag.data_hora_inicio).toLocaleString('pt-BR');
-    const statusClass = ag.status === 'confirmado' ? 'bg-success' : 'bg-warning';
+    const statusClass = ag.status === 'confirmado' ? 'bg-success' : (ag.status === 'cancelado' ? 'bg-danger' : 'bg-warning text-dark');
+
+    // Ajuste nos nomes das chaves para bater com o padrão do banco Neon
+    const nomeDono = ag.dono_nome || ag.cliente_nome || 'N/A';
+    const telDono = ag.dono_tel || ag.cliente_tel || '';
 
     return `
         <tr>
-            <td><strong>${ag.dono_nome || 'N/A'}</strong><br><small class="text-muted">${ag.dono_tel || ''}</small></td>
+            <td><strong>${nomeDono}</strong><br><small class="text-muted">${telDono}</small></td>
             <td>${ag.nome_pet || 'N/A'}</td>
             <td><span class="badge bg-info text-dark">${ag.nome_servico || 'Serviço'}</span></td>
             <td>${dataFormatada}</td>
-            <td><span class="badge ${statusClass}">${ag.status || 'pendente'}</span></td>
+            <td><span class="badge ${statusClass} text-capitalize">${ag.status || 'pendente'}</span></td>
             <td>
-                <button class="btn btn-sm btn-success mb-1" onclick="window.avisarWhatsapp('${ag.dono_tel}', '${ag.dono_nome}', '${ag.nome_pet}', '${ag.nome_servico}', '${ag.data_hora_inicio}')">
-                    <i class="bi bi-whatsapp"></i> Avisar
-                </button>
-                <button class="btn btn-sm btn-outline-danger mb-1" onclick="window.cancelarAgendamento(${ag.id_agendamento || ag.id})">
-                    <i class="bi bi-x-circle"></i>
-                </button>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-success" onclick="window.avisarWhatsapp('${telDono}', '${nomeDono}', '${ag.nome_pet}', '${ag.nome_servico}', '${ag.data_hora_inicio}')">
+                        <i class="bi bi-whatsapp"></i> Avisar
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="window.cancelarAgendamento(${ag.id_agendamento || ag.id})">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
             </td>
         </tr>`;
 }
@@ -32,44 +38,53 @@ async function loadAndDisplayAppointments() {
     const loadingRow = document.getElementById('loading-row-appointments');
     const noAppointmentsRow = document.getElementById('no-appointments-row');
 
+    if (!tableBody) return;
+
     try {
-        const token = localStorage.getItem('token'); // Pega o token do login
+        const token = localStorage.getItem('token'); 
         
-        // Bate na rota de admin do seu app.py
         const response = await fetch(`${API_BASE_URL}/api/admin/agendamentos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
+        // CORREÇÃO: Blindagem Híbrida contra erro HTML
+        if (!response.ok) {
+            let errorMsg = "Erro ao buscar agendamentos.";
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.mensagem || errorData.error || errorMsg;
+            } catch (err) {
+                if (response.status === 403) errorMsg = "Acesso negado: você não é um administrador.";
+            }
+            throw new Error(errorMsg);
+        }
+
         const agendamentos = await response.json();
 
-        loadingRow.style.display = 'none';
+        if (loadingRow) loadingRow.style.display = 'none';
         
-        // Se a resposta for um erro (ex: não autorizado)
-        if (!response.ok) throw new Error(agendamentos.mensagem || "Erro na API");
-
-        // Limpa a tabela
+        // Limpa a tabela (remove apenas as linhas de dados)
         const existingRows = tableBody.querySelectorAll("tr:not(#loading-row-appointments):not(#no-appointments-row)");
         existingRows.forEach(row => row.remove());
 
-        // Se o Python retornar uma lista válida
         if (Array.isArray(agendamentos) && agendamentos.length > 0) {
-            noAppointmentsRow.style.display = 'none';
+            if (noAppointmentsRow) noAppointmentsRow.style.display = 'none';
             agendamentos.forEach(ag => {
                 tableBody.insertAdjacentHTML('beforeend', createAppointmentRowHtml(ag));
             });
         } else {
-            noAppointmentsRow.style.display = 'table-row';
+            if (noAppointmentsRow) noAppointmentsRow.style.display = 'table-row';
         }
     } catch (error) {
         console.error('Erro:', error.message);
-        loadingRow.style.display = 'none';
-        tableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="6" class="text-center text-danger">Erro ao carregar dados do banco: ${error.message}</td></tr>`);
+        if (loadingRow) loadingRow.style.display = 'none';
+        tableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="6" class="text-center text-danger p-4">Erro: ${error.message}</td></tr>`);
     }
 }
 
 // --- FUNÇÕES GLOBAIS (Botões) ---
 window.avisarWhatsapp = (telefone, dono, pet, servico, dataHora) => {
-    if (!telefone || telefone === 'undefined') {
+    if (!telefone || telefone === 'undefined' || telefone === 'null' || telefone === '') {
         alert("Telefone do cliente não encontrado!");
         return;
     }
@@ -85,18 +100,19 @@ window.cancelarAgendamento = async (id) => {
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/api/admin/cancelar-agendamento/${id}`, { 
-            method: 'POST',
+            method: 'POST', // Certifique-se que no app.py esta rota aceita POST ou DELETE
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if(response.ok) {
             alert('Agendamento cancelado!');
-            loadAndDisplayAppointments(); // Recarrega a tabela
+            loadAndDisplayAppointments();
         } else {
             alert("Erro ao cancelar no servidor.");
         }
     } catch (error) {
         console.error(error);
+        alert("Erro de conexão.");
     }
 };
 

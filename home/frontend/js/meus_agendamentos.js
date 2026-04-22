@@ -15,11 +15,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // 2. BUSCA AGENDAMENTOS DO CLIENTE LOGADO
         const response = await fetch(`${API_BASE_URL}/api/usuario/agendamentos/${idUsuario}`);
-        const agendamentos = await response.json();
-
+        
         if (!container) return;
 
+        // CORREÇÃO: Verifica se a rota respondeu certo ANTES de ler o JSON
         if (!response.ok) throw new Error("Erro ao buscar dados");
+        
+        const agendamentos = await response.json();
 
         if (agendamentos.length === 0) {
             container.innerHTML = `

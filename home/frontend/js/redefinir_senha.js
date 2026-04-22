@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
             button.textContent = 'SALVANDO...';
 
             try {
-                // Rota da sua API Python que deve fazer o UPDATE da senha
-                const response = await fetch(`${API_BASE_URL}/api/auth/redefinir-senha`, {
+                // CORREÇÃO 1: Rota ajustada para bater exatamente com o app.py
+                const response = await fetch(`${API_BASE_URL}/api/usuario/redefinir-senha`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -65,13 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     })
                 });
 
-                const result = await response.json();
-
+                // CORREÇÃO 2: Verificamos o "ok" ANTES de tentar ler o JSON.
+                // Isso mata o erro do "<" de uma vez por todas.
                 if (response.ok) {
+                    const result = await response.json();
                     alert("Senha redefinida com sucesso! Use sua nova senha para entrar.");
                     window.location.href = 'login.html';
                 } else {
-                    alert("Erro: " + (result.mensagem || result.error || "Não foi possível redefinir."));
+                    // Se der erro, tentamos ler como texto para não quebrar o JS
+                    const erroTexto = await response.text();
+                    console.error("Erro do servidor:", erroTexto);
+                    alert("Erro ao redefinir. O e-mail informado não foi encontrado ou houve falha no servidor.");
                 }
             } catch (error) {
                 console.error(error);

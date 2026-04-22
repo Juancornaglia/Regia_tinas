@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function carregarPets() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/meus-pets/${tutorId}`);
+            
+            // CORREÇÃO: Verifica se a resposta está OK ANTES de ler o JSON
+            if (!response.ok) throw new Error("Erro na API ao buscar pets");
+            
             const pets = await response.json();
 
             if (!listaPets) return;
@@ -111,8 +115,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(confirm("Deseja remover este pet da sua lista?")) {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/pet/excluir/${id}`, { method: 'DELETE' });
-                if(response.ok) carregarPets();
-            } catch (e) { alert("Erro ao excluir."); }
+                if(response.ok) {
+                    carregarPets();
+                } else {
+                    alert("Erro ao excluir. Este pet pode estar atrelado a um agendamento.");
+                }
+            } catch (e) { alert("Erro de conexão ao excluir."); }
         }
     }
 

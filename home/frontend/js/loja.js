@@ -1,4 +1,4 @@
-// 1. CONFIGURAÇÕES GERAIS
+// 1. CONFIGURAÇÃO GERAL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
@@ -12,16 +12,17 @@ async function carregarProdutos() {
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        
+        // CORREÇÃO: Verifica o erro antes de converter para JSON!
+        if (!response.ok) throw new Error("Erro ao buscar dados na API");
+
         const data = await response.json();
-
-        if (!response.ok) throw new Error("Erro ao buscar dados");
-
         todosProdutos = data;
         renderizarVitrine(todosProdutos);
 
     } catch (error) {
         console.error(error);
-        container.innerHTML = `<div class="text-center p-5"><h5 class="text-danger">Erro ao conectar com o banco de dados.</h5></div>`;
+        container.innerHTML = `<div class="text-center p-5"><h5 class="text-danger">Erro ao conectar com o banco de dados. Tente atualizar a página.</h5></div>`;
     }
 }
 

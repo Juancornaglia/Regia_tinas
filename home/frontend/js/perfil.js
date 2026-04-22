@@ -35,13 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
 async function carregarDadosUsuario(id) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/usuario/dados/${id}`);
+        
+        // CORREÇÃO: Verifica se a resposta está OK antes de ler o JSON
+        if (!response.ok) throw new Error("Erro ao buscar dados do usuário");
+        
         const data = await response.json();
         
-        if (response.ok) {
-            document.getElementById('nome_completo').value = data.nome_completo || '';
-            document.getElementById('telefone').value = data.telefone || '';
-            document.getElementById('email_display').value = data.email || '';
-        }
+        document.getElementById('nome_completo').value = data.nome_completo || '';
+        document.getElementById('telefone').value = data.telefone || '';
+        document.getElementById('email_display').value = data.email || '';
+        
     } catch (e) { console.error("Erro perfil:", e); }
 }
 
@@ -55,7 +58,8 @@ async function salvarPerfil(id) {
     };
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/usuario/atualizar/${id}`, {
+        // CORREÇÃO: Rota ajustada para bater com o app.py (atualizar-perfil)
+        const response = await fetch(`${API_BASE_URL}/api/usuario/atualizar-perfil/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -64,6 +68,8 @@ async function salvarPerfil(id) {
         if (response.ok) {
             alert("Perfil atualizado!");
             localStorage.setItem('usuario_nome', payload.nome_completo);
+        } else {
+            alert("Erro ao atualizar o perfil. Tente novamente.");
         }
     } catch (e) { alert("Erro ao conectar."); }
     finally { btn.disabled = false; btn.innerText = "Salvar Alterações"; }
@@ -74,6 +80,10 @@ async function carregarPets(id) {
     const container = document.getElementById('lista-pets');
     try {
         const response = await fetch(`${API_BASE_URL}/api/meus-pets/${id}`);
+        
+        // CORREÇÃO: Verifica erro antes do JSON
+        if (!response.ok) throw new Error("Erro ao carregar pets");
+        
         const pets = await response.json();
 
         if (pets.length === 0) {
@@ -121,6 +131,8 @@ async function cadastrarPet(e, id) {
             e.target.reset();
             document.getElementById('sessao-cadastro-pet').style.display = 'none';
             carregarPets(id);
+        } else {
+            alert("Erro ao cadastrar pet.");
         }
     } catch (e) { alert("Erro de conexão."); }
     finally { btn.disabled = false; }
@@ -131,6 +143,10 @@ async function carregarAgendamentos(id) {
     const tbody = document.getElementById('tabela-meus-agendamentos');
     try {
         const response = await fetch(`${API_BASE_URL}/api/usuario/agendamentos/${id}`);
+        
+        // CORREÇÃO: Verifica erro antes do JSON
+        if (!response.ok) throw new Error("Erro ao carregar agendamentos");
+
         const agendamentos = await response.json();
 
         if (agendamentos.length === 0) {

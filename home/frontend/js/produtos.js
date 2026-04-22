@@ -17,13 +17,15 @@ async function loadPublicProducts() {
     if (!container || !loading || !noProducts) return;
 
     try {
-        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA /api/produtos
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        
+        // CORREÇÃO: Verificar se a resposta está OK ANTES de tentar ler o JSON!
+        if (!response.ok) {
+            throw new Error(`Erro na API: Status ${response.status}`);
+        }
+
         const produtos = await response.json();
-
         loading.style.display = 'none';
-
-        if (!response.ok) throw new Error("Erro na API");
 
         if (produtos && produtos.length > 0) {
             

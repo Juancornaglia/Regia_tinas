@@ -3,11 +3,11 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; // <-- SEU LINK REAL
 
-const CHATEAU_SELECTED_STORE_KEY = 'chateau_selected_store';
+const REGIA_TINAS_SELECTED_STORE_KEY = 'regia_tinas_selected_store';
 
-// 2. SISTEMA DE FAVORITOS
-export function getFavorites() { return JSON.parse(localStorage.getItem('chateau_favorites')) || []; }
-function saveFavorites(favorites) { localStorage.setItem('chateau_favorites', JSON.stringify(favorites)); }
+// 2. SISTEMA DE FAVORITOS (Atualizado para a nova marca)
+export function getFavorites() { return JSON.parse(localStorage.getItem('regia_tinas_favorites')) || []; }
+function saveFavorites(favorites) { localStorage.setItem('regia_tinas_favorites', JSON.stringify(favorites)); }
 
 export function toggleFavorite(productId) { 
     let favorites = getFavorites();
@@ -94,7 +94,7 @@ export function createProductCard(produto) {
 
 // 4. CARREGAMENTO DOS PRODUTOS DA API PÚBLICA
 function getSelectedStoreId() {
-    const savedStore = localStorage.getItem(CHATEAU_SELECTED_STORE_KEY);
+    const savedStore = localStorage.getItem(REGIA_TINAS_SELECTED_STORE_KEY);
     return savedStore ? parseInt(JSON.parse(savedStore).id, 10) : 1; 
 }
 
@@ -105,12 +105,12 @@ async function loadProducts(containerId, filterType) {
     container.innerHTML = '<div class="spinner-border text-primary mx-auto my-4" role="status"></div>';
 
     try {
-        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA (/api/produtos) sem pedir senha
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        
+        // CORREÇÃO: Verificação de erro ANTES de tentar ler o JSON
+        if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+        
         const allProducts = await response.json();
-
-        if (!response.ok) throw new Error("Erro na API");
-
         let produtos = allProducts; 
 
         if (filterType === 'ofertas') {
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts('novidades-track', 'novidades');
     loadProducts('mais-vendidos-track', 'vendidos');
 
-    window.addEventListener('chateauStoreChanged', () => location.reload());
+    window.addEventListener('regiaTinasStoreChanged', () => location.reload());
 });
 
 document.body.addEventListener('click', (e) => {

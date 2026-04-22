@@ -1,7 +1,5 @@
 // js/admin_dashboard.js - Painel Gerencial Regia & Tinas Care
 
-// ATENÇÃO: O arquivo utils.js e o Chart.js devem estar importados no HTML antes deste script!
-
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Iniciando carregamento do Dashboard Admin...");
     
@@ -27,58 +25,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     carregarDashboardDados();
 });
 
-// --- 2. CARREGAR DADOS DO DASHBOARD (KPIs, Tabela, Gráficos, Estoque) ---
+// --- 2. CARREGAR DADOS DO DASHBOARD ---
 async function carregarDashboardDados() {
     try {
-        // Chamada única para a rota que traz todas as informações da tela
         const response = await fetch(`${window.API_BASE_URL}/api/admin/dashboard-completo`);
         
+        // BLINDAGEM: Verifica erro de servidor antes do JSON
         if (!response.ok) throw new Error("Falha ao buscar dados do servidor");
         
         const dados = await response.json();
 
-        // A. Preencher KPIs (As caixinhas do topo)
+        // A. Preencher KPIs com proteção contra valores nulos
+        const stats = dados.stats || {};
         if (document.getElementById('kpi-vendas')) {
-            document.getElementById('kpi-vendas').innerText = dados.stats.faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const faturamento = parseFloat(stats.faturamento || 0);
+            document.getElementById('kpi-vendas').innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
         if (document.getElementById('kpi-agendamentos')) {
-            document.getElementById('kpi-agendamentos').innerText = dados.stats.total_agendamentos;
+            document.getElementById('kpi-agendamentos').innerText = stats.total_agendamentos || 0;
         }
         if (document.getElementById('kpi-pets')) {
-            document.getElementById('kpi-pets').innerText = dados.stats.total_pets;
+            document.getElementById('kpi-pets').innerText = stats.total_pets || 0;
         }
         if (document.getElementById('kpi-clientes')) {
-            document.getElementById('kpi-clientes').innerText = dados.stats.total_clientes;
+            document.getElementById('kpi-clientes').innerText = stats.total_clientes || 0;
         }
 
-        // B. Renderizar Tabela de Agendamentos
-        renderizarTabelaAgendamentos(dados.agendamentos);
-
-        // C. Renderizar Estoque Crítico
-        renderizarEstoque(dados.estoque_critico);
-
-        // D. Renderizar Gráficos (Chart.js)
-        renderizarGraficos(dados.graficos);
+        // B. Renderizar componentes
+        renderizarTabelaAgendamentos(dados.agendamentos || []);
+        renderizarEstoque(dados.estoque_critico || []);
+        renderizarGraficos(dados.graficos || [0, 0, 0, 0]);
 
     } catch (err) {
         console.error("Erro ao carregar dashboard:", err);
+        window.notificar ? window.notificar("Erro ao carregar dados do painel", "erro") : alert("Erro no servidor");
     }
 }
 
-// --- 3. FUNÇÕES DE RENDERIZAÇÃO (DOM) ---
+// --- 3. FUNÇÕES DE RENDERIZAÇÃO ---
 
 function renderizarTabelaAgendamentos(lista) {
     const tabela = document.getElementById('tabela-agendamentos-admin');
     if (!tabela) return;
 
-    if (!lista || lista.length === 0) {
-        tabela.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Nenhum agendamento para hoje.</td></tr>';
+    if (lista.length === 0) {
+        tabela.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Nenhum agendamento pendente.</td></tr>';
         return;
     }
 
     tabela.innerHTML = lista.map(ag => `
         <tr>
-            <td class="align-middle">${new Date(ag.data_hora_inicio).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})}</td>
+            <td class="align-middle small">${new Date(ag.data_hora_inicio).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})}</td>
             <td class="align-middle">
                 <strong>${ag.cliente_nome}</strong><br>
                 <small class="text-muted">${ag.cliente_tel || 'Sem telefone'}</small>
@@ -87,14 +84,16 @@ function renderizarTabelaAgendamentos(lista) {
                 <strong>${ag.pet_nome}</strong><br>
                 <small class="text-muted">${ag.pet_raca || 'SRD'}</small>
             </td>
-            <td class="align-middle">${ag.servico_nome}</td>
+            <td class="align-middle small">${ag.servico_nome}</td>
             <td class="align-middle"><span class="badge ${ag.status === 'confirmado' ? 'bg-success' : (ag.status === 'cancelado' ? 'bg-danger' : 'bg-warning text-dark')} text-capitalize">${ag.status}</span></td>
             <td class="align-middle">
-                <button class="btn btn-sm btn-outline-success border-0" title="Confirmar" onclick="window.alterarStatus(${ag.id_agendamento || ag.id}, 'confirmado')"><i class="bi bi-check-circle-fill fs-5"></i></button>
-                <button class="btn btn-sm btn-outline-danger border-0" title="Cancelar" onclick="window.alterarStatus(${ag.id_agendamento || ag.id}, 'cancelado')"><i class="bi bi-x-circle-fill fs-5"></i></button>
-                <button class="btn btn-sm btn-success rounded-circle ms-2" title="Avisar no WhatsApp" onclick="window.avisarWhatsapp('${ag.cliente_tel}', '${ag.cliente_nome}', '${ag.pet_nome}', '${ag.servico_nome}', '${ag.data_hora_inicio}')">
-                    <i class="bi bi-whatsapp"></i>
-                </button>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-success border-0" title="Confirmar" onclick="window.alterarStatus(${ag.id_agendamento || ag.id}, 'confirmado')"><i class="bi bi-check-circle-fill"></i></button>
+                    <button class="btn btn-sm btn-outline-danger border-0" title="Cancelar" onclick="window.alterarStatus(${ag.id_agendamento || ag.id}, 'cancelado')"><i class="bi bi-x-circle-fill"></i></button>
+                    <button class="btn btn-sm btn-success rounded-circle" title="Avisar no WhatsApp" onclick="window.avisarWhatsapp('${ag.cliente_tel}', '${ag.cliente_nome}', '${ag.pet_nome}', '${ag.servico_nome}', '${ag.data_hora_inicio}')">
+                        <i class="bi bi-whatsapp"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -104,7 +103,7 @@ function renderizarEstoque(produtos) {
     const container = document.getElementById('lista-estoque-critico');
     if (!container) return;
 
-    if (produtos && produtos.length > 0) {
+    if (produtos.length > 0) {
         container.innerHTML = produtos.map(p => `
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded shadow-sm border-start border-danger border-4">
                 <span class="small fw-bold text-dark">${p.nome_produto}</span>
@@ -112,7 +111,7 @@ function renderizarEstoque(produtos) {
             </div>
         `).join('');
     } else {
-        container.innerHTML = '<div class="alert alert-success small mt-2 border-0"><i class="bi bi-check-circle-fill me-2"></i>Estoque em dia!</div>';
+        container.innerHTML = '<div class="alert alert-success small mt-2 border-0 py-2"><i class="bi bi-check-circle-fill me-2"></i>Estoque saudável!</div>';
     }
 }
 
@@ -120,7 +119,6 @@ function renderizarGraficos(dadosGrafico) {
     const ctx = document.getElementById('graficoFaturamento');
     if (!ctx) return;
 
-    // Destrói o gráfico anterior se ele existir (evita bug ao recarregar a tela)
     if (window.meuGrafico) window.meuGrafico.destroy();
 
     window.meuGrafico = new Chart(ctx, {
@@ -129,23 +127,24 @@ function renderizarGraficos(dadosGrafico) {
             labels: ['Banho', 'Tosa', 'Hotel', 'Veterinária'],
             datasets: [{
                 label: 'Receita (R$)',
-                data: dadosGrafico || [0, 0, 0, 0],
+                data: dadosGrafico,
                 backgroundColor: '#FE8697',
                 borderRadius: 8
             }]
         },
         options: { 
             responsive: true, 
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true } }
         }
     });
 }
 
-// --- 4. AÇÕES GLOBAIS (Ativadas por botões no HTML) ---
+// --- 4. AÇÕES GLOBAIS ---
 
 window.avisarWhatsapp = (telefone, dono, pet, servico, dataHora) => {
-    if (!telefone || telefone === 'undefined') {
+    if (!telefone || telefone === 'undefined' || telefone === 'null') {
         alert("Cliente não possui telefone cadastrado.");
         return;
     }
@@ -166,13 +165,13 @@ window.alterarStatus = async (id, novoStatus) => {
         });
         
         if (response.ok) {
-            window.notificar(`Status alterado para ${novoStatus}!`, 'sucesso');
-            carregarDashboardDados(); // Recarrega a tabela sem piscar a página inteira
+            window.notificar && window.notificar(`Status alterado para ${novoStatus}!`, 'sucesso');
+            carregarDashboardDados(); 
         } else {
-            window.notificar("Erro ao atualizar status", 'erro');
+            alert("Erro ao atualizar status.");
         }
     } catch (err) {
         console.error(err);
-        window.notificar("Erro de conexão.", 'erro');
+        alert("Erro de conexão.");
     }
 };

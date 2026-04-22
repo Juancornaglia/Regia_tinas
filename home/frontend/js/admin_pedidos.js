@@ -7,7 +7,10 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 async function verificarAdmin(token) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${token}`);
+        
+        // CORREÇÃO: Verifica se o servidor está OK antes de ler o JSON
         if (!response.ok) return false;
+        
         const data = await response.json();
         return data.isAdmin;
     } catch (error) {
@@ -23,14 +26,16 @@ async function carregarPedidos() {
     try {
         const token = localStorage.getItem('token');
         
-        // Rota corrigida com API_BASE_URL e cabeçalho de segurança
         const response = await fetch(`${API_BASE_URL}/api/admin/pedidos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        const pedidos = await response.json();
+        // BLINDAGEM: Verifica erro de servidor/rota antes de processar
+        if (!response.ok) {
+            throw new Error("Não foi possível carregar a lista de pedidos.");
+        }
 
-        if (!response.ok) throw new Error(pedidos.mensagem || "Erro ao buscar pedidos");
+        const pedidos = await response.json();
 
         if (pedidos.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-muted">Nenhum pedido encontrado.</td></tr>`;
@@ -85,25 +90,40 @@ window.atualizarStatus = async (id, novoStatus) => {
             body: JSON.stringify({ status: novoStatus })
         });
 
-        if (response.ok) {
-            alert("Status do pedido atualizado com sucesso!");
-            carregarPedidos(); // Recarrega para atualizar a cor do texto
-        } else {
-            alert("Erro ao atualizar status no servidor.");
+        // BLINDAGEM HÍBRIDA: Lê a mensagem de erro do JSON ou trata erro HTML
+        if (!response.ok) {
+            let errorMsg = "Erro ao atualizar status.";
+            try {
+                const result = await response.json();
+                errorMsg = result.mensagem || result.error || errorMsg;
+            } catch (err) {
+                if (response.status === 403) errorMsg = "Acesso negado.";
+            }
+            throw new Error(errorMsg);
         }
+
+        alert("Status do pedido atualizado com sucesso!");
+        carregarPedidos(); 
+
     } catch (error) {
-        console.error("Erro na requisição:", error);
+        console.error("Erro na requisição:", error.message);
+        alert("Erro: " + error.message);
     }
 };
 
 // 5. VER DETALHES NO MODAL
 window.verDetalhes = (id) => {
-    document.getElementById('detalhe-id').innerText = id;
-    document.getElementById('detalhes-corpo').innerHTML = `
-        <div class="spinner-border text-brand my-3" role="status"></div>
-        <p>Buscando itens do pedido...</p>
-        <p class="small text-muted">(Para o TCC, você pode retornar uma lista de produtos comprados aqui através de uma nova rota no app.py)</p>
-    `;
+    const detalheId = document.getElementById('detalhe-id');
+    const detalhesCorpo = document.getElementById('detalhes-corpo');
+    
+    if (detalheId) detalheId.innerText = id;
+    if (detalhesCorpo) {
+        detalhesCorpo.innerHTML = `
+            <div class="spinner-border text-brand my-3" role="status"></div>
+            <p>Buscando itens do pedido...</p>
+            <p class="small text-muted">(Para o TCC, você pode retornar uma lista de produtos comprados aqui através de uma nova rota no app.py)</p>
+        `;
+    }
 };
 
 // 6. INICIALIZAÇÃO E LOGOUT

@@ -5,7 +5,7 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
 
-export const CHATEAU_SELECTED_STORE_KEY = 'regia_tinas_selected_store';
+export const REGIA_TINAS_SELECTED_STORE_KEY = 'regia_tinas_selected_store';
 
 // 2. FUNÇÃO HAVERSINE (Cálculo matemático de distância no globo terrestre)
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -34,7 +34,7 @@ async function getUnidadesDoBanco() {
 function setSelectedStore(storeId, storeName, distance = null) {
     const locationSpan = document.getElementById('unidade-proxima');
     
-    localStorage.setItem(CHATEAU_SELECTED_STORE_KEY, JSON.stringify({ id: storeId, name: storeName }));
+    localStorage.setItem(REGIA_TINAS_SELECTED_STORE_KEY, JSON.stringify({ id: storeId, name: storeName }));
     
     let display = `<i class="bi bi-geo-alt-fill text-danger me-1"></i> Você está vendo o estoque da unidade: <strong>${storeName}</strong>`;
     if (distance !== null) {
@@ -43,8 +43,8 @@ function setSelectedStore(storeId, storeName, distance = null) {
 
     if (locationSpan) locationSpan.innerHTML = display;
     
-    // Dispara um evento para avisar a página da loja que a unidade mudou (útil para recarregar produtos filtrados no futuro)
-    window.dispatchEvent(new Event('storeChanged'));
+    // CORREÇÃO: Nome do evento exato que o home.js está escutando
+    window.dispatchEvent(new Event('regiaTinasStoreChanged'));
 }
 
 // 5. ENCONTRAR A LOJA MAIS PRÓXIMA DO USUÁRIO
@@ -77,7 +77,7 @@ export function initGeolocation() {
     const locationSpan = document.getElementById('unidade-proxima');
 
     // Se já calculou antes e salvou no navegador, não precisa pedir o GPS de novo
-    const saved = localStorage.getItem(CHATEAU_SELECTED_STORE_KEY);
+    const saved = localStorage.getItem(REGIA_TINAS_SELECTED_STORE_KEY);
     if (saved) {
         const { id, name } = JSON.parse(saved);
         setSelectedStore(id, name);

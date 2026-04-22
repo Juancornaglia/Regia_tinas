@@ -24,11 +24,12 @@ async function loadProductDetails() {
     }
 
     try {
-        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA /api/produtos
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        const produtos = await response.json();
         
-        if (!response.ok) throw new Error("Erro na API");
+        // CORREÇÃO MESTRA: Verifica erro ANTES do JSON
+        if (!response.ok) throw new Error("Erro na API de Produtos");
+        
+        const produtos = await response.json();
 
         const produto = produtos.find(p => (p.id_produto || p.id) == productId);
         
@@ -129,12 +130,15 @@ async function loadProductDetails() {
 // 3. CARREGAR LOJAS
 async function carregarLojasDisponiveis() {
     try {
-        // CORREÇÃO: Rota PÚBLICA para consultar lojas
         const response = await fetch(`${API_BASE_URL}/api/lojas`);
+        
+        // CORREÇÃO: Tratando erro na API de lojas
+        if (!response.ok) throw new Error("Erro na API de Lojas");
+        
         const lojas = await response.json();
         const storeList = document.getElementById('store-list');
         
-        if (response.ok && lojas.length > 0) {
+        if (lojas && lojas.length > 0) {
             storeList.innerHTML = lojas.map(l => `
                 <li class="small mb-1"><i class="bi bi-check2-circle text-success me-2"></i><strong>${l.nome_loja}</strong></li>
             `).join('');
@@ -151,8 +155,11 @@ async function carregarRelacionados(categoria, idAtual) {
     const container = document.getElementById('related-products-container');
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        const todos = await response.json();
         
+        // CORREÇÃO: Tratando erro na API de relacionados
+        if (!response.ok) throw new Error("Erro na API");
+
+        const todos = await response.json();
         const relacionados = todos.filter(p => p.tipo_produto === categoria && (p.id_produto || p.id) != idAtual).slice(0, 4);
 
         if (relacionados.length === 0) {
@@ -172,7 +179,7 @@ async function carregarRelacionados(categoria, idAtual) {
                         <img src="${imgRel}" class="card-img-top" style="height:120px; object-fit:contain" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
                     </div>
                     <div class="card-body p-3 bg-light d-flex flex-column">
-                        <a href="produto.html?id=${p.id_produto || p.id}" class="stretched-link text-decoration-none text-dark small fw-bold mb-2 flex-grow-1">${p.nome_produto}</a>
+                        <a href="produto_detalhe.html?id=${p.id_produto || p.id}" class="stretched-link text-decoration-none text-dark small fw-bold mb-2 flex-grow-1">${p.nome_produto}</a>
                         <p class="text-brand fw-bold mb-0">${formatPrice(parseFloat(p.preco))}</p>
                     </div>
                 </div>

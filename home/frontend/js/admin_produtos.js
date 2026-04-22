@@ -7,7 +7,10 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 async function verificarAdmin(token) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${token}`);
+        
+        // CORREÇÃO: Verifica se o servidor está OK antes do JSON
         if (!response.ok) return false;
+        
         const data = await response.json();
         return data.isAdmin;
     } catch (error) {
@@ -62,27 +65,33 @@ async function loadProducts() {
     const tableBody = document.getElementById('product-table-body');
     const loadingRow = document.getElementById('loading-row');
     
+    if (!tableBody) return;
+
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/api/produtos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        // BLINDAGEM: Verifica erro de rota antes de processar
+        if (!response.ok) throw new Error("Não foi possível carregar a lista de produtos.");
+
         const produtos = await response.json();
 
-        loadingRow.style.display = 'none';
+        if (loadingRow) loadingRow.style.display = 'none';
         
         // Limpa linhas antigas
         const oldRows = tableBody.querySelectorAll('tr:not(#loading-row):not(#no-products-row)');
         oldRows.forEach(row => row.remove());
 
-        if (!response.ok) throw new Error(produtos.mensagem || "Erro na API");
-
         if (!Array.isArray(produtos) || produtos.length === 0) {
-            document.getElementById('no-products-row').style.display = 'table-row';
+            const noProdRow = document.getElementById('no-products-row');
+            if (noProdRow) noProdRow.style.display = 'table-row';
             return;
         }
 
-        document.getElementById('no-products-row').style.display = 'none';
+        const noProdRow = document.getElementById('no-products-row');
+        if (noProdRow) noProdRow.style.display = 'none';
 
         produtos.forEach(p => {
             const tr = document.createElement('tr');
@@ -90,7 +99,10 @@ async function loadProducts() {
                 <td class="ps-4 fw-bold text-secondary">#${p.id_produto || p.id}</td>
                 <td>
                     <div class="d-flex align-items-center">
-                        <img src="${p.url_imagem || '../img/placeholder.png'}" class="rounded me-3 shadow-sm" style="width:45px;height:45px;object-fit:cover">
+                        <img src="${p.url_imagem || '../img/placeholder.png'}" 
+                             class="rounded me-3 shadow-sm" 
+                             style="width:45px;height:45px;object-fit:cover"
+                             onerror="this.onerror=null; this.src='../img/logo_pequena4.png'">
                         <div><strong class="text-dark">${p.nome_produto}</strong><br><small class="text-muted">${p.marca || 'Sem marca'}</small></div>
                     </div>
                 </td>
@@ -110,7 +122,7 @@ async function loadProducts() {
         });
     } catch (error) {
         console.error("Erro ao carregar produtos:", error);
-        loadingRow.style.display = 'none';
+        if (loadingRow) loadingRow.style.display = 'none';
         tableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="5" class="text-center text-danger p-4">Erro ao conectar com o banco de dados.</td></tr>`);
     }
 }
@@ -124,8 +136,6 @@ async function handleProductSubmit(e) {
 
     const id = document.getElementById('editProductId').value;
     const method = id ? 'PUT' : 'POST';
-    
-    // Assumindo que a sua rota de administração de produtos é /api/admin/produtos
     const url = id ? `${API_BASE_URL}/api/admin/produtos/${id}` : `${API_BASE_URL}/api/admin/produtos`;
 
     const data = {
@@ -149,17 +159,25 @@ async function handleProductSubmit(e) {
             body: JSON.stringify(data)
         });
 
-        if (response.ok) {
-            alert(id ? "Produto atualizado!" : "Produto criado com sucesso!");
-            productModal.hide();
-            loadProducts();
-            document.getElementById('productForm').reset();
-        } else {
-            const result = await response.json();
-            alert("Erro: " + (result.mensagem || "Falha ao salvar produto."));
+        // BLINDAGEM HÍBRIDA para Salvar/Editar
+        if (!response.ok) {
+            let errorMsg = "Falha ao salvar produto.";
+            try {
+                const result = await response.json();
+                errorMsg = result.mensagem || result.error || errorMsg;
+            } catch (jsonErr) {
+                if (response.status === 403) errorMsg = "Acesso negado: você não tem permissão.";
+            }
+            throw new Error(errorMsg);
         }
+
+        alert(id ? "Produto atualizado!" : "Produto criado com sucesso!");
+        productModal.hide();
+        loadProducts();
+        document.getElementById('productForm').reset();
+
     } catch (error) {
-        alert("Erro ao conectar com o servidor.");
+        alert("Erro: " + error.message);
     } finally {
         btn.disabled = false;
         btn.innerText = "Salvar Produto";
@@ -185,7 +203,6 @@ window.deleteProduct = async (id) => {
     if (confirm("Deseja realmente excluir este produto?")) {
         try {
             const token = localStorage.getItem('token');
-            // Assumindo rota de admin para deletar
             const response = await fetch(`${API_BASE_URL}/api/admin/produtos/${id}`, { 
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -194,10 +211,10 @@ window.deleteProduct = async (id) => {
             if (response.ok) {
                 loadProducts();
             } else {
-                alert("Erro ao excluir produto no servidor.");
+                alert("Erro ao excluir produto. Ele pode estar atrelado a pedidos existentes.");
             }
         } catch(error) {
-            alert("Erro de conexão.");
+            alert("Erro de conexão ao excluir.");
         }
     }
 };

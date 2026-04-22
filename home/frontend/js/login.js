@@ -38,21 +38,32 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'ACESSANDO...';
 
             try {
-                // Rota da sua API Python de Autenticação
+                // ATENÇÃO: Confirme se a sua rota no app.py é /api/login ou /api/auth/login
                 const response = await fetch(`${API_BASE_URL}/api/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email, senha: password })
                 });
 
-                const data = await response.json();
-
+                // CORREÇÃO: Tratamento duplo para não quebrar com erro de HTML (o token '<')
                 if (!response.ok) {
-                    throw new Error(data.mensagem || data.error || "E-mail ou senha incorretos.");
+                    let errorMessage = "E-mail ou senha incorretos.";
+                    try {
+                        const errorData = await response.json(); // Tenta ler se o Python mandou JSON
+                        errorMessage = errorData.mensagem || errorData.error || errorMessage;
+                    } catch (err) {
+                        // Se caiu aqui, é porque o servidor mandou HTML (Erro 404 ou 500)
+                        if (response.status === 404) errorMessage = "Rota de login não encontrada no servidor.";
+                        if (response.status === 500) errorMessage = "Erro interno no servidor. Tente novamente mais tarde.";
+                    }
+                    throw new Error(errorMessage);
                 }
 
+                // Se passou do !response.ok, é porque foi SUCESSO (Status 200)
+                const data = await response.json();
+
                 // SALVAR SESSÃO (Cookies locais)
-                localStorage.setItem('token', data.token || data.id); // O ideal é o backend retornar um JWT
+                localStorage.setItem('token', data.token || data.id); 
                 localStorage.setItem('usuario_id', data.id);
                 localStorage.setItem('usuario_nome', data.nome_completo || data.nome);
                 localStorage.setItem('usuario_role', data.role);

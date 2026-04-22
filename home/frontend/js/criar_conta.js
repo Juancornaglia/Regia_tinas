@@ -39,21 +39,32 @@ document.getElementById('criarContaForm')?.addEventListener('submit', async (e) 
             })
         });
 
-        const data = await response.json();
+        // CORREÇÃO: Blindagem contra o erro de JSON/HTML
+        if (!response.ok) {
+            let errorMessage = "Falha ao criar conta.";
+            try {
+                const data = await response.json();
+                errorMessage = data.mensagem || data.error || errorMessage;
+            } catch (err) {
+                if (response.status === 404) errorMessage = "Rota de cadastro não encontrada.";
+                if (response.status === 500) errorMessage = "Erro interno no servidor.";
+            }
+            throw new Error(errorMessage);
+        }
 
-        if (response.ok) {
-            alert("Conta criada com sucesso! Agora você pode fazer login.");
-            window.location.href = 'login.html';
-        } else {
-            alert("Erro: " + (data.mensagem || "Falha ao criar conta."));
+        // Se passou direto pelo if acima, deu tudo certo!
+        const data = await response.json();
+        alert("Conta criada com sucesso! Agora você pode fazer login.");
+        window.location.href = 'login.html';
+
+    } catch (error) {
+        console.error("Erro na requisição:", error.message);
+        alert(`Erro: ${error.message}`);
+    } finally {
+        // Garante que o botão sempre volte a funcionar
+        if (btn) {
             btn.disabled = false;
             btn.innerText = "CRIAR CONTA";
         }
-
-    } catch (error) {
-        console.error("Erro na requisição:", error);
-        alert("Erro ao conectar com o servidor. Tente novamente.");
-        btn.disabled = false;
-        btn.innerText = "CRIAR CONTA";
     }
 });

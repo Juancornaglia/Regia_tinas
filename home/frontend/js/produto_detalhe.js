@@ -26,9 +26,13 @@ async function carregarDetalhesProduto() {
     try {
         // 3. Busca a lista de produtos na sua rota pública do Python
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        const produtos = await response.json();
+        
+        // CORREÇÃO: Verifica se a resposta foi um sucesso ANTES de transformar em JSON
+        if (!response.ok) {
+            throw new Error(`Erro na API: ${response.status}`);
+        }
 
-        if (!response.ok) throw new Error("Erro na API");
+        const produtos = await response.json();
 
         // 4. Procura o produto específico dentro da lista
         const produto = produtos.find(p => (p.id_produto || p.id) == productId);

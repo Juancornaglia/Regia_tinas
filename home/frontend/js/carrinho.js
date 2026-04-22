@@ -163,18 +163,27 @@ window.finalizarCompraServidor = async () => {
             body: JSON.stringify(payload)
         });
 
+        // CORREÇÃO: Blindagem de erro (se der problema de estoque, saldo, etc)
+        if (!response.ok) {
+            let errorMsg = "Erro ao processar o pedido.";
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.mensagem || errorData.error || errorMsg;
+            } catch (err) {
+                 if(response.status === 404) errorMsg = "Rota de finalização não encontrada no servidor.";
+            }
+            throw new Error(errorMsg);
+        }
+
         const result = await response.json();
 
-        if (response.ok) {
-            window.notificar(`Pedido #${result.id_pedido || 'realizado'} com sucesso! 🎉`, "sucesso");
-            localStorage.removeItem('cart_regia_tinas');
-            
-            setTimeout(() => {
-                window.location.href = '../usuario/meus_pedidos.html';
-            }, 2000);
-        } else {
-            throw new Error(result.mensagem || result.error || "Erro ao processar o pedido.");
-        }
+        window.notificar(`Pedido #${result.id_pedido || 'realizado'} com sucesso! 🎉`, "sucesso");
+        localStorage.removeItem('cart_regia_tinas');
+        
+        setTimeout(() => {
+            window.location.href = '../usuario/meus_pedidos.html';
+        }, 2000);
+
     } catch (error) {
         console.error(error);
         window.notificar("Erro no pagamento: " + error.message, "erro");

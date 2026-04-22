@@ -64,6 +64,33 @@ def servir_paginas(path):
     return send_from_directory(FRONTEND_DIR, path)
 
 # --- ROTAS DE API (CONTEÚDO GERAL E USUÁRIO) ---
+@app.route('/api/usuario/agendamentos/<int:id_usuario>', methods=['GET'])
+def get_agendamentos_usuario(id_usuario):
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Junta as tabelas para entregar o nome do pet, serviço e loja
+        cur.execute('''
+            SELECT a.id_agendamento, a.data_hora_inicio, a.status,
+                   pt.nome_pet, s.nome_servico, l.nome_loja
+            FROM public.agendamentos a
+            JOIN public.pets pt ON a.id_pet = pt.id_pet
+            JOIN public.servicos s ON a.id_servico = s.id_servico
+            LEFT JOIN public.lojas l ON a.id_loja = l.id_loja
+            WHERE a.id_cliente = %s
+            ORDER BY a.data_hora_inicio DESC
+        ''', (id_usuario,))
+        
+        agendamentos = cur.fetchall()
+        return jsonify(agendamentos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 @app.route('/api/usuario/dados/<int:id_usuario>', methods=['GET'])
 def get_usuario_dados(id_usuario):
@@ -92,6 +119,41 @@ def get_meus_pets(id_tutor):
         return jsonify(pets), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+# --- ADICIONE ESTAS DUAS NO SEU APP.PY ---
+
+@app.route('/api/lojas', methods=['GET'])
+def listar_lojas_publico():
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # O agendamento.js espera 'id_loja' e 'nome_loja'
+        cur.execute('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
+        lojas = cur.fetchall()
+        return jsonify(lojas), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+@app.route('/api/servicos_lista', methods=['GET'])
+def listar_servicos_publico():
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # O agendamento.js espera 'id_servico' e 'nome_servico'
+        cur.execute('SELECT id_servico, nome_servico FROM public.servicos ORDER BY nome_servico')
+        servicos = cur.fetchall()
+        return jsonify(servicos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 @app.route('/api/produtos')
 def listar_produtos():
@@ -866,6 +928,23 @@ def cadastrar_pet():
         if cur: cur.close()
         if conn: conn.close()
     
+    @app.route('/api/pet/excluir/<int:id_pet>', methods=['DELETE'])
+    def excluir_pet(id_pet):
+        conn = None
+        cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Deleta o pet do banco de dados Neon
+        cur.execute('DELETE FROM public.pets WHERE id_pet = %s', (id_pet,))
+        conn.commit()
+        return jsonify({"message": "Pet excluído com sucesso!"}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        return jsonify({"error": "Não foi possível excluir o pet. Verifique se ele não possui agendamentos ativos."}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 # --- 8. CÁLCULO DE HORÁRIOS DISPONÍVEIS (LÓGICA CORE) ---
 
 @app.route('/api/horarios-disponiveis', methods=['GET'])
@@ -1047,6 +1126,24 @@ def login():
         if cur: cur.close()
         if conn: conn.close()
 
+@app.route('/api/auth/verificar-role/<int:id_usuario>', methods=['GET'])
+def verificar_role(id_usuario):
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('SELECT role FROM public.usuarios WHERE id = %s', (id_usuario,))
+        user = cur.fetchone()
+        
+        if user:
+            return jsonify({"role": user['role']}), 200
+        return jsonify({"error": "Usuário não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 # --- 12. EXECUÇÃO ---
 
 if __name__ == '__main__':

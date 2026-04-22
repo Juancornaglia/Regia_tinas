@@ -5,10 +5,15 @@
  * @param {string} roleNecessaria - 'admin' para painel gerencial, 'cliente' para área do usuário.
  */
 export async function verificarAcesso(roleNecessaria) {
-    // 1. Pega o ID salvo no navegador
+    // 1. Garante que o API_BASE_URL exista (mesmo que utils.js não carregue a tempo)
+    const baseUrl = window.API_BASE_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "http://localhost:5000" 
+        : "https://regia-tinas.onrender.com");
+
+    // 2. Pega o ID salvo no navegador
     const userId = localStorage.getItem('usuario_id');
 
-    // 2. Se não houver ID, expulsa direto para o login
+    // 3. Se não houver ID, expulsa direto para o login
     if (!userId) {
         console.warn("Acesso negado: Usuário não autenticado.");
         window.location.href = '../usuario/login.html';
@@ -16,16 +21,22 @@ export async function verificarAcesso(roleNecessaria) {
     }
 
     try {
-        // 3. Pergunta ao servidor Python qual é o cargo real desse usuário (evita fraudes no localStorage)
-        const response = await fetch(`${window.API_BASE_URL}/api/auth/verificar-role/${userId}`);
+        // 4. Pergunta ao servidor Python qual é o cargo real desse usuário
+        const response = await fetch(`${baseUrl}/api/auth/verificar-role/${userId}`);
         
         if (!response.ok) {
             throw new Error("Sessão inválida ou expirada.");
         }
 
-        const data = await response.json(); // Ex: { "role": "admin" } ou { "role": "cliente" }
+        // Blindagem contra erro de JSON/HTML
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            throw new Error("Erro ao processar resposta do servidor.");
+        }
 
-        // 4. Validação rigorosa de permissão
+        // 5. Validação rigorosa de permissão
         if (roleNecessaria === 'admin' && data.role !== 'admin') {
             alert("Acesso Negado: Esta área é exclusiva para administradores da Regia & Tinas Care.");
             window.location.href = '../index.html'; // Chuta para a home
@@ -38,7 +49,7 @@ export async function verificarAcesso(roleNecessaria) {
     } catch (error) {
         console.error("Erro crítico de segurança:", error);
         
-        // Em caso de erro na API ou tentativa de invasão, limpa os dados falsos e manda pro login
+        // Em caso de erro crítico, limpa a sessão suspeita e manda pro login
         localStorage.removeItem('usuario_id');
         localStorage.removeItem('usuario_role');
         localStorage.removeItem('token');

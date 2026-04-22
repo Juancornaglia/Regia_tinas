@@ -29,23 +29,32 @@ export async function processarCompraFinal() {
             })
         });
 
+        // CORREÇÃO: Blindagem Híbrida contra erro HTML (Token '<')
+        if (!response.ok) {
+            let errorMessage = "Erro ao processar a compra.";
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.mensagem || errorData.error || errorMessage;
+            } catch (err) {
+                if (response.status === 404) errorMessage = "Rota de checkout não encontrada no servidor.";
+                if (response.status === 500) errorMessage = "Erro interno no servidor ao processar o pedido.";
+            }
+            throw new Error(errorMessage);
+        }
+
+        // Se passou da verificação acima, deu tudo certo!
         const result = await response.json();
 
-        if (response.ok) {
-            // Notificação de sucesso usando a função global do utils.js
-            window.notificar(`Pedido #${result.id_pedido || 'concluído'}! Você ganhou ${result.pontos || 0} pontos! 🎉`, "sucesso");
-            
-            // Limpa o carrinho após a compra
-            localStorage.removeItem('cart_regia_tinas');
-            
-            // Redireciona para a página de pedidos do cliente
-            setTimeout(() => {
-                window.location.href = '../usuario/meus_pedidos.html';
-            }, 2500);
-            
-        } else {
-            throw new Error(result.mensagem || result.error || "Erro ao processar a compra.");
-        }
+        // Notificação de sucesso usando a função global do utils.js
+        window.notificar(`Pedido #${result.id_pedido || 'concluído'}! Você ganhou ${result.pontos || 0} pontos! 🎉`, "sucesso");
+        
+        // Limpa o carrinho após a compra
+        localStorage.removeItem('cart_regia_tinas');
+        
+        // Redireciona para a página de pedidos do cliente
+        setTimeout(() => {
+            window.location.href = '../usuario/meus_pedidos.html';
+        }, 2500);
 
     } catch (error) {
         console.error("Erro no checkout:", error);

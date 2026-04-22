@@ -12,16 +12,27 @@ export async function checkAdminAuth() {
         return null;
     }
 
+    // Garante que a URL base exista
+    const baseUrl = window.API_BASE_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "http://localhost:5000" 
+        : "https://regia-tinas.onrender.com");
+
     try {
         // 2. Pergunta ao Python se esse ID é de um Admin real
-        // Usando a variável global que definimos no utils.js
-        const response = await fetch(`${window.API_BASE_URL}/api/auth/verificar-admin/${userId}`);
+        const response = await fetch(`${baseUrl}/api/auth/verificar-admin/${userId}`);
         
+        // CORREÇÃO: Verifica se o servidor respondeu OK antes de tentar ler o JSON
         if (!response.ok) {
             throw new Error("Falha ao validar permissões com o servidor.");
         }
 
-        const data = await response.json();
+        // Blindagem contra erro de JSON/HTML
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonErr) {
+            throw new Error("Resposta inválida do servidor.");
+        }
 
         // 3. Valida se a API confirmou que é admin (aceita isAdmin ou role)
         if (data.isAdmin === true || data.role === 'admin') {
@@ -33,7 +44,7 @@ export async function checkAdminAuth() {
                 nome: localStorage.getItem('usuario_nome') || 'Administrador' 
             };
         } else {
-            // 4. Se for apenas um cliente curioso, não apaga o login dele, apenas expulsa para a home
+            // 4. Se for apenas um cliente curioso, apenas expulsa para a home
             console.error("Acesso negado: Usuário não possui privilégios de admin.");
             alert("Área restrita! Apenas administradores podem acessar o painel.");
             window.location.href = '../index.html'; 
@@ -42,7 +53,7 @@ export async function checkAdminAuth() {
         
     } catch (error) {
         console.error("Erro na verificação de segurança:", error);
-        // Em caso de erro grave (servidor fora do ar), redireciona para o login
+        // Em caso de erro grave (servidor fora do ar), redireciona para o login por segurança
         window.location.href = '../usuario/login.html';
         return null;
     }

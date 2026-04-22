@@ -13,22 +13,23 @@ async function inicializarBusca() {
     const urlParams = new URLSearchParams(window.location.search);
     const termoBusca = urlParams.get('q') || '';
     
-    // Atualiza o texto na tela
     const displayTermo = document.getElementById('search-term-display');
     if (displayTermo) displayTermo.textContent = termoBusca ? `"${termoBusca}"` : 'Todos os Produtos';
     
-    // Se o usuário apertar Enter na barra de busca superior da própria página
     const searchInputBar = document.getElementById('search-input-bar');
     if(searchInputBar) searchInputBar.value = termoBusca;
 
     const container = document.getElementById('search-results-container');
 
     try {
-        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA /api/produtos
         const response = await fetch(`${API_BASE_URL}/api/produtos`); 
-        const produtos = await response.json();
+        
+        // CORREÇÃO: Verifica se o servidor respondeu OK antes de tentar ler o JSON
+        if (!response.ok) {
+            throw new Error(`Erro na API: ${response.status}`);
+        }
 
-        if (!response.ok) throw new Error('Falha ao buscar produtos');
+        const produtos = await response.json();
 
         // Lógica de Filtragem (Busca pelo termo no nome, marca ou descrição)
         let resultadosFiltrados = produtos;
@@ -48,23 +49,29 @@ async function inicializarBusca() {
         gerarFiltrosLaterais(resultadosFiltrados);
 
         // Atualiza o contador
-        document.getElementById('results-count').textContent = 
-            `${resultadosFiltrados.length} ${resultadosFiltrados.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`;
+        const countEl = document.getElementById('results-count');
+        if (countEl) {
+            countEl.textContent = `${resultadosFiltrados.length} ${resultadosFiltrados.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`;
+        }
 
     } catch (error) {
         console.error('Erro na busca:', error);
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
-                <h4 class="mt-3 fw-bold">Não conseguimos carregar os produtos.</h4>
-                <p class="text-muted">Verifique se o servidor está rodando ou tente atualizar a página.</p>
-            </div>
-        `;
+        if (container) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                    <h4 class="mt-3 fw-bold">Não conseguimos carregar os produtos.</h4>
+                    <p class="text-muted">Verifique a conexão com o servidor ou tente atualizar a página.</p>
+                </div>
+            `;
+        }
     }
 }
 
 // 3. RENDERIZAR OS CARDS DOS RESULTADOS
 function renderizarProdutos(lista, container) {
+    if (!container) return;
+
     if (lista.length === 0) {
         container.innerHTML = `
             <div class="col-12 text-center py-5">
@@ -77,30 +84,31 @@ function renderizarProdutos(lista, container) {
     }
 
     container.innerHTML = lista.map(p => {
-        // Tratamento da imagem (Trava do onerror adicionada)
         let imageUrl = p.url_imagem;
         if (imageUrl && !imageUrl.startsWith('http')) { imageUrl = `img/${p.url_imagem}`; }
         if (!imageUrl || imageUrl.trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
 
-        // Tratamento de Preço
-        const precoAtual = p.preco_promocional && p.preco_promocional < p.preco ? parseFloat(p.preco_promocional) : parseFloat(p.preco);
+        const precoAtual = p.preco_promocional && parseFloat(p.preco_promocional) < parseFloat(p.preco) 
+            ? parseFloat(p.preco_promocional) 
+            : parseFloat(p.preco);
 
         return `
         <div class="col">
             <div class="card h-100 product-card border-0 shadow-sm overflow-hidden">
-                <div class="card-img-container bg-white">
+                <div class="card-img-container bg-white position-relative">
                     <img src="${imageUrl}" 
                          class="card-img-top p-3" 
                          alt="${p.nome_produto}"
+                         style="height: 180px; object-fit: contain;"
                          onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
-                    ${p.quantidade_estoque === 0 ? '<span class="badge bg-secondary position-absolute top-0 end-0 m-2">Esgotado</span>' : ''}
+                    ${p.quantidade_estoque == 0 ? '<span class="badge bg-secondary position-absolute top-0 end-0 m-2">Esgotado</span>' : ''}
                 </div>
                 <div class="card-body d-flex flex-column bg-light text-center border-top">
-                    <h5 class="card-title text-dark mb-2">${p.nome_produto}</h5>
+                    <h5 class="card-title text-dark mb-2 fw-bold" style="font-size: 1rem;">${p.nome_produto}</h5>
                     <p class="text-muted small mb-3 flex-grow-1">${p.marca || 'Sem marca'}</p>
                     <div class="mt-auto">
                         <p class="card-text fs-5 fw-bold mb-3" style="color: #FE8697">${formatPrice(precoAtual)}</p>
-                        <a href="produto_detalhe.html?id=${p.id_produto || p.id}" class="btn btn-custom w-100 py-2">
+                        <a href="produto_detalhe.html?id=${p.id_produto || p.id}" class="btn btn-brand w-100 py-2 rounded-pill text-white fw-bold" style="background-color: #FE8697;">
                             Ver Detalhes
                         </a>
                     </div>
@@ -110,7 +118,7 @@ function renderizarProdutos(lista, container) {
     `}).join('');
 }
 
-// 4. GERAR FILTROS LATERAIS (MANTIDO E SIMPLIFICADO)
+// 4. GERAR FILTROS LATERAIS
 function gerarFiltrosLaterais(produtos) {
     const categorias = [...new Set(produtos.map(p => p.tipo_produto))].filter(Boolean);
     const marcas = [...new Set(produtos.map(p => p.marca))].filter(Boolean);
@@ -136,5 +144,4 @@ function gerarFiltrosLaterais(produtos) {
     }
 }
 
-// Inicializa quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', inicializarBusca);
