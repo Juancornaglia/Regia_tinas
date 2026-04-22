@@ -32,24 +32,12 @@ def get_db_connection():
     # Ele pega o link que você colocou no arquivo .env ou no Render
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
-# 2. Importação das Rotas (Blueprints)
-from routes.api_admin import api_admin
-from routes.api_agendamento import api_agendamento
-from routes.api_ecommerce import api_ecommerce
-from routes.api_usuario import api_usuario
 
 # 3. Constantes Globais
 HORA_INICIO_PADRAO = time(9, 0)
 HORA_FIM_PADRAO = time(18, 0)
 INTERVALO_SLOT_MINUTOS = 30 
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend'))
-
-# 4. Registro dos Blueprints
-app.register_blueprint(api_admin, url_prefix='/api/admin')
-app.register_blueprint(api_agendamento, url_prefix='/api/agendamento')
-app.register_blueprint(api_ecommerce, url_prefix='/api/ecommerce')
-app.register_blueprint(api_usuario, url_prefix='/api/usuario')
-
 
 @app.route('/img/<path:filename>')
 def imagens(filename):
