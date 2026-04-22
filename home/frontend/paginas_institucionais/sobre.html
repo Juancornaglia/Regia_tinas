@@ -10,51 +10,46 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-        /* ==========================================================================
-           ESTILOS GERAIS E CORES
-           ========================================================================== */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         :root { 
             --cor-principal: #FE8697; 
+            --cor-principal-hover: #e57585;
             --cor-suave: #fff5f6; 
         }
-        body { background-color: #f8f9fa; color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        body { background-color: #f8f9fa; color: #333; font-family: 'Poppins', sans-serif; }
         
         .main-rosa-text { color: var(--cor-principal) !important; }
 
         /* --- Navbar --- */
         .navbar { background-color: var(--cor-principal) !important; padding: 0.8rem 1rem; }
-        .navbar .nav-link { color: #fff !important; }
+        .navbar .nav-link, .navbar .navbar-brand { color: #fff !important; }
         .navbar-brand { font-weight: bold !important; font-size: 1.4rem; }
         
         /* --- Botão Customizado --- */
-        .btn-custom { 
+        .btn-brand { 
             background-color: var(--cor-principal); 
             color: #fff; 
             border-radius: 25px; 
-            padding: 10px 25px; 
+            padding: 10px 30px; 
             border: none; 
             transition: 0.3s; 
-            display: inline-block; 
-            text-decoration: none; 
-            text-align: center; 
             font-weight: bold;
+            display: inline-block;
+            text-decoration: none;
         }
-        .btn-custom:hover { background-color: #ff6b81; color: #fff; transform: translateY(-2px); }
+        .btn-brand:hover { background-color: var(--cor-principal-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(254, 134, 151, 0.3); }
 
         /* --- Footer --- */
-        .main-footer { background-color: #ffffff; border-top: 1px solid #eee; color: #555; font-size: 0.95rem; }
+        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
         .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--cor-principal); margin-bottom: 1.2rem; }
-        .main-footer a { color: #6c757d; text-decoration: none; line-height: 2.2; transition: color 0.2s; }
-        .main-footer a:hover { color: var(--cor-principal); text-decoration: underline; }
+        .main-footer a { color: #ccc; text-decoration: none; line-height: 2.2; transition: 0.3s; }
+        .main-footer a:hover { color: #fff; text-decoration: underline; }
         .footer-cta { background-color: var(--cor-principal); border-radius: 12px; }
         
         /* --- Cards e Imagens --- */
         .info-card {
             background-color: #fff;
             padding: 2.5rem;
-            border-radius: 15px;
-            border: none;
+            border-radius: 20px;
             height: 100%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
@@ -62,40 +57,41 @@
         .value-card {
             background-color: #fff;
             border: none;
-            border-radius: 15px;
-            padding: 2rem;
+            border-radius: 20px;
+            padding: 2.5rem;
             text-align: center;
             height: 100%;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
             transition: 0.3s;
         }
-        .value-card:hover { transform: translateY(-5px); }
-        .value-card i { font-size: 2.8rem; margin-bottom: 1rem; color: var(--cor-principal); }
+        .value-card:hover { transform: translateY(-10px); box-shadow: 0 15px 35px rgba(254, 134, 151, 0.1); }
+        .value-card i { font-size: 3rem; margin-bottom: 1rem; color: var(--cor-principal); }
 
         .service-gallery-img {
             width: 100%;
-            height: 200px;
+            height: 220px;
             object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
         
         .friend-gallery-img {
             width: 100%;
-            height: 250px;
+            height: 280px;
             object-fit: cover;
-            border-radius: 12px;
+            border-radius: 15px;
             transition: transform 0.4s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
-        .friend-gallery-img:hover { transform: scale(1.04); }
+        .friend-gallery-img:hover { transform: scale(1.05); }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
         <div class="container">
-            <a class="btn text-white d-flex align-items-center p-0" href="javascript:history.back()">
-                <i class="bi bi-arrow-left-short display-6"></i>
-                <span class="ms-1 fw-bold">Voltar</span>
+            <a class="btn text-white d-flex align-items-center p-0 fw-bold" href="../index.html">
+                <i class="bi bi-arrow-left me-2"></i>
+                <span>Início</span>
             </a>
             <span class="navbar-brand text-white mx-auto">Regia & Tinas Care</span>
             <div style="width: 80px;"></div> 
@@ -104,59 +100,61 @@
 
     <main>
         <div class="container my-5">
-            <div class="row g-4 align-items-stretch">
+            <div class="row g-4 align-items-center">
                 <div class="col-lg-6">
-                    <div class="info-card d-flex flex-column justify-content-center">
-                        <h1 class="main-rosa-text fw-bold">Nossa História</h1>
-                        <p class="lead">A <strong>Regia & Tinas Care</strong> nasceu da paixão genuína por animais e do compromisso de oferecer um cuidado que vai além do básico.</p>
-                        <p>Iniciamos nossa jornada com o objetivo de ser o porto seguro para os tutores que buscam excelência. Aqui, cada pet é tratado com a individualidade e o carinho que merece, integrando saúde, estética e lazer em um só lugar.</p>
+                    <div class="info-card">
+                        <h1 class="main-rosa-text fw-bold mb-4">Nossa História</h1>
+                        <p class="lead text-muted">A <strong>Regia & Tinas Care</strong> nasceu da paixão genuína por animais e do compromisso de oferecer um cuidado que vai além do básico.</p>
+                        <p class="text-secondary">Iniciamos nossa jornada com o objetivo de ser o porto seguro para os tutores que buscam excelência. Aqui, cada pet é tratado com a individualidade e o carinho que merece, integrando saúde, estética e lazer em um só lugar.</p>
                         
-                        <h4 class="mt-4 main-rosa-text fw-bold">Nossa Missão</h4>
-                        <p class="mb-0">Transformar a vida dos animais através de um cuidado humanizado e técnico, garantindo que cada banho, consulta ou estadia seja uma experiência positiva e cheia de amor.</p>
+                        <div class="p-3 rounded-4 mt-4" style="background-color: var(--cor-suave); border-left: 5px solid var(--cor-principal);">
+                            <h4 class="main-rosa-text fw-bold mb-2">Nossa Missão</h4>
+                            <p class="mb-0 text-muted">Transformar a vida dos animais através de um cuidado humanizado e técnico, garantindo que cada momento conosco seja cheio de amor e respeito.</p>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="col-lg-6">
-                    <img src="../img/loja2.webp" class="img-fluid rounded-4 shadow-lg" alt="Fachada Regia & Tinas Care" style="width: 100%; height: 100%; object-fit: cover; min-height: 400px;">
+                    <img src="../img/loja2.webp" class="img-fluid rounded-4 shadow-lg" alt="Fachada Regia & Tinas Care" style="width: 100%; height: 450px; object-fit: cover;">
                 </div>
             </div>
         </div>
 
-        <div class="container my-5">
+        <div class="container my-5 py-5">
             <h2 class="text-center main-rosa-text fw-bold mb-5">Nossos Valores</h2>
             <div class="row g-4">
                 <div class="col-md-4">
                     <div class="value-card">
                         <i class="bi bi-heart-fill"></i>
                         <h5 class="fw-bold">Amor Incondicional</h5>
-                        <p class="text-muted mb-0">Os animais são nossa prioridade. Cada batida do nosso coração é dedicada ao bem-estar deles.</p>
+                        <p class="text-muted mb-0">Os animais são nossa prioridade absoluta. Cada detalhe do nosso trabalho foca no bem-estar deles.</p>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="value-card">
                         <i class="bi bi-shield-check"></i>
-                        <h5 class="fw-bold">Ética e Segurança</h5>
-                        <p class="text-muted mb-0">Ambientes monitorados e protocolos rígidos para garantir a tranquilidade dos tutores.</p>
+                        <h5 class="fw-bold">Segurança e Ética</h5>
+                        <p class="text-muted mb-0">Ambientes monitorados e protocolos rígidos para que você viaje ou trabalhe com total tranquilidade.</p>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="value-card">
                         <i class="bi bi-stars"></i>
-                        <h5 class="fw-bold">Excelência no Cuidado</h5>
-                        <p class="text-muted mb-0">Buscamos constantemente as melhores técnicas e produtos para o seu melhor amigo.</p>
+                        <h5 class="fw-bold">Excelência Técnica</h5>
+                        <p class="text-muted mb-0">Usamos os melhores produtos do mercado e técnicas atualizadas de estética e saúde animal.</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="container my-5 py-4">
-            <h2 class="text-center main-rosa-text fw-bold mb-5">Tudo o que seu Pet precisa</h2>
+            <h2 class="text-center main-rosa-text fw-bold mb-5">O que fazemos por eles</h2>
             
             <div class="row g-5 align-items-center mb-5">
                 <div class="col-lg-6">
-                    <h3 class="main-rosa-text fw-bold">Saúde e Vitalidade</h3>
-                    <p class="text-secondary">Nossa estrutura conta com veterinários apaixonados, prontos para atuar desde a prevenção com vacinas até consultas especializadas, sempre priorizando o conforto do animal.</p>
-                    <a href="../servicos/veterinaria.html" class="btn btn-custom mt-3">Ver Serviços de Saúde</a>
+                    <h3 class="main-rosa-text fw-bold mb-3">Saúde e Vitalidade</h3>
+                    <p class="text-muted lead">Nossa estrutura conta com veterinários apaixonados, prontos para atuar na prevenção e no cuidado especializado.</p>
+                    <a href="../servicos/veterinaria.html" class="btn btn-brand mt-2">Ver Serviços Médicos</a>
                 </div>
                 <div class="col-lg-6">
                     <div class="row g-2">
@@ -169,9 +167,9 @@
 
             <div class="row g-5 align-items-center">
                 <div class="col-lg-6 order-lg-2">
-                    <h3 class="main-rosa-text fw-bold">Diversão e Socialização</h3>
-                    <p class="text-secondary">Nosso Day Care e Hotel são projetados para gastar energia de forma saudável. Com atividades recreativas e descanso monitorado, seu pet volta para casa feliz e relaxado.</p>
-                    <a href="../servicos/day_care.html" class="btn btn-custom mt-3">Conhecer o Day Care</a>
+                    <h3 class="main-rosa-text fw-bold mb-3">Diversão e Socialização</h3>
+                    <p class="text-muted lead">Nosso Day Care e Hotel são projetados para gastar energia de forma saudável e socializar com segurança.</p>
+                    <a href="../servicos/day_care.html" class="btn btn-brand mt-2">Conhecer a Creche</a>
                 </div>
                 <div class="col-lg-6 order-lg-1">
                     <div class="row g-2">
@@ -183,24 +181,24 @@
             </div>
         </div>
 
-        <div class="container my-5">
-            <h2 class="text-center main-rosa-text fw-bold mb-4">Nossos Clientes Felizes</h2>
-            <div class="row g-3">
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal1.webp" alt="Pet 1" class="friend-gallery-img shadow-sm"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal2.webp" alt="Pet 2" class="friend-gallery-img shadow-sm"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal3.webp" alt="Pet 3" class="friend-gallery-img shadow-sm"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal4.webp" alt="Pet 4" class="friend-gallery-img shadow-sm"></div>
+        <div class="container my-5 pb-5">
+            <h2 class="text-center main-rosa-text fw-bold mb-4">Nossa Família</h2>
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6"><img src="../img/animal1.webp" alt="Pet 1" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-6"><img src="../img/animal2.webp" alt="Pet 2" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-6"><img src="../img/animal3.webp" alt="Pet 3" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-6"><img src="../img/animal4.webp" alt="Pet 4" class="friend-gallery-img"></div>
             </div>
         </div>
     </main>
 
-    <footer class="main-footer pt-5 pb-4">
+    <footer class="main-footer">
         <div class="container">
             <div class="row mb-4">
                 <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="footer-cta p-4 shadow-sm text-center">
-                        <h4 class="text-white fw-bold">Dúvidas?</h4>
-                        <p class="text-white-50">Estamos aqui para ajudar você e seu pet.</p>
+                    <div class="footer-cta p-4 text-center">
+                        <h5 class="text-white fw-bold mb-2">Dúvidas?</h5>
+                        <p class="text-white-50 small mb-3">Estamos aqui para ajudar você e seu pet.</p>
                         <a href="contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
                     </div>
                 </div>
@@ -208,13 +206,13 @@
                     <h5>Atendimento</h5>
                     <ul class="list-unstyled">
                         <li><a href="contatos.html">Ajuda e FAQ</a></li>
-                        <li><a href="#">Agendamentos</a></li>
+                        <li><a href="../usuario/login.html">Minha Conta</a></li>
                     </ul>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <h5>Serviços</h5>
                     <ul class="list-unstyled">
-                        <li><a href="../servicos/veterinaria.html">Saúde Animal 🐾</a></li>
+                        <li><a href="../servicos/veterinaria.html">Clínica 🐾</a></li>
                         <li><a href="../servicos/servicos.html">Banho e Tosa</a></li>
                         <li><a href="../servicos/hotel.html">Hospedagem</a></li>
                     </ul>
@@ -222,15 +220,15 @@
                 <div class="col-lg-3 col-md-6 mb-4">
                     <h5>Unidades</h5>
                     <ul class="list-unstyled">
-                        <li><a href="#">Política de Privacidade</a></li>
+                        <li><a href="#">Privacidade</a></li>
                         <li><a href="lojas.html">Nossas Lojas</a></li>
                     </ul>
                 </div>
             </div>
-            <hr>
-            <div class="text-center mt-3 small text-muted">
-                <p class="mb-0 fw-bold">REGIA & TINAS CARE | CNPJ: 12.345.678/0001-90</p>
-                <p class="mb-0">© Copyright 202 Regia & Tinas Care - Todos os direitos reservados.</p>
+            <hr style="border-color: #555;">
+            <div class="text-center mt-3 small text-white-50">
+                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
+                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
             </div>
         </div>
     </footer>

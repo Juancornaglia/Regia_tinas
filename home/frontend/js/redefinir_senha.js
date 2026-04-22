@@ -1,24 +1,11 @@
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. CONFIGURAÇÃO GERAL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
-
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
-}
+    : "https://regia-tinas.onrender.com"; 
 
 document.addEventListener('DOMContentLoaded', () => {
-    const section1 = document.getElementById('reset-section-1'); // Parte de pedir email
-    const section2 = document.getElementById('reset-section-2'); // Parte de nova senha
+    const section1 = document.getElementById('reset-section-1');
+    const section2 = document.getElementById('reset-section-2');
     const sendCodeForm = document.getElementById('sendCodeForm');
     const resetPasswordForm = document.getElementById('resetPasswordForm');
 
@@ -27,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ETAPA 1: Solicitar Recuperação
     if (sendCodeForm) {
-        sendCodeForm.addEventListener('submit', async (e) => {
+        sendCodeForm.addEventListener('submit', (e) => {
             e.preventDefault();
             emailSolicitado = document.getElementById('email').value.trim();
             
@@ -35,13 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
             button.disabled = true;
             button.textContent = 'VERIFICANDO...';
 
-            // Simulação de envio para o TCC
+            // Simulação de envio para o TCC (1 segundo e meio de espera)
             setTimeout(() => {
-                alert("Link de recuperação enviado para " + emailSolicitado + " (Simulação). Redirecionando para definir nova senha...");
+                alert(`Link de recuperação enviado para ${emailSolicitado} (Simulação TCC). Redirecionando para definir nova senha...`);
                 section1.style.display = 'none';
                 section2.style.display = 'block';
                 button.disabled = false;
-                button.textContent = 'ENVIAR CÓDIGO';
+                button.textContent = 'ENVIAR LINK';
             }, 1500);
         });
     }
@@ -58,12 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (nova_senha.length < 6) {
+                alert("A senha deve ter pelo menos 6 caracteres.");
+                return;
+            }
+
             const button = e.target.querySelector('button[type="submit"]');
             button.disabled = true;
             button.textContent = 'SALVANDO...';
 
             try {
-                const response = await fetch(`${API_URL}/usuario/redefinir-senha`, {
+                // Rota da sua API Python que deve fazer o UPDATE da senha
+                const response = await fetch(`${API_BASE_URL}/api/auth/redefinir-senha`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -78,9 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert("Senha redefinida com sucesso! Use sua nova senha para entrar.");
                     window.location.href = 'login.html';
                 } else {
-                    alert("Erro: " + result.mensagem);
+                    alert("Erro: " + (result.mensagem || result.error || "Não foi possível redefinir."));
                 }
             } catch (error) {
+                console.error(error);
                 alert("Erro ao conectar com o servidor.");
             } finally {
                 button.disabled = false;
@@ -89,10 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Botão de Voltar
+    // Botão de Voltar da Etapa 2 para a Etapa 1
     document.getElementById('back-to-step1')?.addEventListener('click', (e) => {
         e.preventDefault();
         section1.style.display = 'block';
         section2.style.display = 'none';
+        document.getElementById('new_password').value = '';
+        document.getElementById('confirm_new_password').value = '';
     });
 });

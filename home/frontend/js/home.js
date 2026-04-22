@@ -1,26 +1,11 @@
-// CONFIGURAÇÕES GERAIS
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. CONFIGURAÇÕES GERAIS
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; // <-- SEU LINK REAL
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
-}
 const CHATEAU_SELECTED_STORE_KEY = 'chateau_selected_store';
 
-// ==========================================================================
-// 1. SISTEMA DE FAVORITOS (LOCALSTORAGE)
-// ==========================================================================
+// 2. SISTEMA DE FAVORITOS
 export function getFavorites() { return JSON.parse(localStorage.getItem('chateau_favorites')) || []; }
 function saveFavorites(favorites) { localStorage.setItem('chateau_favorites', JSON.stringify(favorites)); }
 
@@ -45,70 +30,69 @@ export function updateFavoriteButtons() {
             button.classList.toggle('active', favorites.includes(productId));
             const icon = button.querySelector('i');
             if (icon) {
-                icon.classList.toggle('bi-heart', !favorites.includes(productId));
-                icon.classList.toggle('bi-heart-fill', favorites.includes(productId));
+                icon.className = favorites.includes(productId) ? 'bi bi-heart-fill text-danger' : 'bi bi-heart text-danger';
             }
         }
     });
 }
 
-// ==========================================================================
-// 2. FORMATAÇÃO E CRIAÇÃO DE CARDS
-// ==========================================================================
+// 3. CRIAÇÃO DOS CARDS DOS PRODUTOS
 export function formatPrice(price) { 
     if (typeof price !== 'number') return 'Consulte';
     return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); 
 }
 
 export function createProductCard(produto) { 
-    if (!produto || typeof produto.id_produto === 'undefined') { return ''; }
+    // Garante compatibilidade se o backend enviar 'id' em vez de 'id_produto'
+    const idProduto = produto.id_produto || produto.id;
+    if (!produto || !idProduto) return ''; 
     
-    const originalPrice = produto.preco;
-    const promoPrice = produto.preco_promocional;
+    const originalPrice = parseFloat(produto.preco) || 0;
+    const promoPrice = parseFloat(produto.preco_promocional);
     const isPromo = promoPrice && promoPrice < originalPrice;
     const displayPrice = isPromo ? promoPrice : originalPrice;
     
     const favorites = getFavorites();
-    const isFavorite = favorites.includes(parseInt(produto.id_produto, 10));
-    const heartIconClass = isFavorite ? 'bi-heart-fill' : 'bi-heart';
+    const isFavorite = favorites.includes(parseInt(idProduto, 10));
+    const heartIconClass = isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart text-danger';
     
-    const productLink = `produto_detalhe.html?id=${produto.id_produto}`; 
+    const productLink = `produto_detalhe.html?id=${idProduto}`; 
     
     let imageUrl = produto.url_imagem;
     if (imageUrl && !imageUrl.startsWith('http')) {
-        imageUrl = `img/${produto.url_imagem || 'placeholder.png'}`; 
+        imageUrl = `img/${produto.url_imagem}`; 
     }
-    if (!imageUrl || imageUrl.trim() === "") { imageUrl = 'img/placeholder.png'; }
+    // Usando a sua logo como imagem padrão caso o produto não tenha foto
+    if (!imageUrl || imageUrl.trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
     
+    // A MÁGICA ESTÁ AQUI: this.onerror=null impede o loop infinito de piscadas!
     return `
-        <div class="card h-100 product-card shadow-sm position-relative">
-            <button class="btn btn-outline-danger btn-favorite position-absolute top-0 end-0 m-2 ${isFavorite ? 'active' : ''}" data-product-id="${produto.id_produto}" style="z-index: 10;">
-                <i class="bi ${heartIconClass}"></i>
+        <div class="card h-100 product-card shadow-sm position-relative mx-2" style="min-width: 220px; max-width: 250px; border: none; border-radius: 12px;">
+            <button class="btn btn-light rounded-circle shadow-sm btn-favorite position-absolute top-0 end-0 m-2 ${isFavorite ? 'active' : ''}" data-product-id="${idProduto}" style="z-index: 10;">
+                <i class="${heartIconClass}"></i>
             </button>
             <a href="${productLink}" class="d-block text-center pt-3">
-                <img src="${imageUrl}" class="card-img-top" alt="${produto.nome_produto || 'Produto sem nome'}" onerror="this.src='img/placeholder.png'">
+                <img src="${imageUrl}" class="card-img-top p-2" alt="${produto.nome_produto}" style="height: 180px; object-fit: contain;" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
             </a>
-            <div class="card-body d-flex flex-column text-center p-2">
-                <h6 class="card-title flex-grow-1 card-title-limit fs-6 mb-1 text-truncate">
-                    <a href="${productLink}" class="text-decoration-none text-dark">
+            <div class="card-body d-flex flex-column text-center p-3">
+                <h6 class="card-title flex-grow-1 text-truncate" style="font-size: 0.95rem;">
+                    <a href="${productLink}" class="text-decoration-none text-dark fw-bold">
                         ${produto.nome_produto || '(Sem Nome)'}
                     </a>
                 </h6>
-                <div class="price-container mt-auto mb-2">
-                    ${isPromo ? `<p class="text-muted text-decoration-line-through small mb-0">${formatPrice(originalPrice)}</p>` : ''}
-                    <p class="card-text price fs-5 fw-bold main-purple-text mb-0">${formatPrice(displayPrice)}</p>
+                <div class="price-container mt-auto mb-3">
+                    ${isPromo ? `<small class="text-muted text-decoration-line-through">${formatPrice(originalPrice)}</small>` : '<small class="text-muted">&nbsp;</small>'}
+                    <p class="card-text price fs-5 fw-bold mb-0" style="color: #FE8697;">${formatPrice(displayPrice)}</p>
                 </div>
-                <a href="${productLink}" class="btn btn-sm btn-custom mt-auto rounded-pill">
-                   <i class="bi bi-search me-1"></i> Consultar
+                <a href="${productLink}" class="btn w-100 text-white fw-bold rounded-pill" style="background-color: #FE8697;">
+                    <i class="bi bi-cart-plus me-1"></i> Comprar
                 </a>
             </div>
         </div>
     `;
 }
 
-// ==========================================================================
-// 3. CARREGAMENTO VIA PYTHON (NEON)
-// ==========================================================================
+// 4. CARREGAMENTO DOS PRODUTOS DA API PÚBLICA
 function getSelectedStoreId() {
     const savedStore = localStorage.getItem(CHATEAU_SELECTED_STORE_KEY);
     return savedStore ? parseInt(JSON.parse(savedStore).id, 10) : 1; 
@@ -118,40 +102,39 @@ async function loadProducts(containerId, filterType) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    container.innerHTML = '<div class="spinner-border text-primary mx-auto" role="status"></div>';
-
-    const storeId = getSelectedStoreId();
+    container.innerHTML = '<div class="spinner-border text-primary mx-auto my-4" role="status"></div>';
 
     try {
-        // Busca TODOS os produtos do servidor Python
-        const response = await fetch(`${API_URL}/admin/produtos`);
+        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA (/api/produtos) sem pedir senha
+        const response = await fetch(`${API_BASE_URL}/api/produtos`);
         const allProducts = await response.json();
 
-        // FILTRAGEM MANUAL (Substitui o que o Supabase fazia)
-        let produtos = allProducts.filter(p => p.id_loja == storeId);
+        if (!response.ok) throw new Error("Erro na API");
+
+        let produtos = allProducts; 
 
         if (filterType === 'ofertas') {
             produtos = produtos.filter(p => p.preco_promocional && p.preco_promocional < p.preco);
         } else if (filterType === 'vendidos') {
-            produtos.sort((a, b) => b.quantidade_estoque - a.quantidade_estoque);
+            produtos.sort((a, b) => (b.quantidade_estoque || 0) - (a.quantidade_estoque || 0));
         } else if (filterType === 'novidades') {
-            produtos.reverse(); // Assume que os últimos cadastrados estão no fim
+            produtos.reverse(); 
         }
 
         if (produtos.length > 0) {
+            container.classList.add('d-flex', 'flex-nowrap'); // Para o carrossel funcionar
             container.innerHTML = produtos.slice(0, 8).map(createProductCard).join('');
             updateFavoriteButtons();
         } else {
-            container.innerHTML = '<p class="text-center text-muted w-100">Nenhum produto nesta unidade.</p>';
+            container.innerHTML = '<p class="text-center text-muted w-100 my-4">Nenhum produto cadastrado nesta seção.</p>';
         }
     } catch (error) {
-        container.innerHTML = '<p class="text-center text-danger">Erro ao carregar vitrine.</p>';
+        console.error("Erro na busca de produtos:", error);
+        container.innerHTML = '<p class="text-center text-danger w-100 my-4">Erro ao carregar a vitrine.</p>';
     }
 }
 
-// ==========================================================================
-// 4. INTERFACE (SIDEBAR, SLIDERS, VÍDEOS) - MANTIDO ORIGINAL
-// ==========================================================================
+// 5. INTERFACE (SIDEBAR, SLIDERS, VÍDEOS)
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
@@ -188,9 +171,7 @@ function setupMediaSliders() {
     setupSlider('novidades-track', 'novidades-prev', 'novidades-next');
 }
 
-// ==========================================================================
-// 5. INICIALIZAÇÃO
-// ==========================================================================
+// 6. INICIALIZAÇÃO GERAL
 document.addEventListener('DOMContentLoaded', () => {
     setupSidebar();
     setupMediaSliders();
@@ -201,17 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts('novidades-track', 'novidades');
     loadProducts('mais-vendidos-track', 'vendidos');
 
-    // Listener para geolocalização
     window.addEventListener('chateauStoreChanged', () => location.reload());
 });
 
-// Listener Global para Favoritos
 document.body.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-favorite');
     if (btn) toggleFavorite(btn.dataset.productId);
 });
 
-// Slider Antes/Depois (Grooming)
 const slider = document.getElementById('slider-range');
 if (slider) {
     slider.oninput = (e) => {

@@ -1,99 +1,72 @@
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. CONFIGURAÇÕES GERAIS
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; // <-- SEU LINK REAL AQUI
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
-}
+document.addEventListener('DOMContentLoaded', () => {
+    carregarDetalhesProduto();
+});
 
-// Função para formatar o preço (Mantida original)
-function formatPrice(price) {
-    if (typeof price !== 'number' || isNaN(price)) { return 'R$ 0,00'; }
-    return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+async function carregarDetalhesProduto() {
+    // 2. Pega o ID do produto que está na URL (ex: produto_detalhe.html?id=5)
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
 
-// Função principal para carregar os detalhes
-async function loadProductDetails() {
-    
-    // --- 1. Pegar o ID da URL (?id=123) ---
-    const params = new URLSearchParams(window.location.search);
-    const productId = params.get('id');
+    const loadingSection = document.getElementById('loading-product');
+    const notFoundSection = document.getElementById('product-not-found');
+    const dataSection = document.getElementById('product-data');
 
-    const loading = document.getElementById('loading-product');
-    const notFound = document.getElementById('product-not-found');
-    const productDataEl = document.getElementById('product-data');
-
+    // Se não tiver ID na URL, mostra erro
     if (!productId) {
-        if (loading) loading.style.display = 'none';
-        if (notFound) notFound.style.display = 'block';
+        loadingSection.style.display = 'none';
+        notFoundSection.style.display = 'block';
         return;
     }
 
     try {
-        // --- 2. Buscar no Python/Neon ---
-        // Reutilizamos a rota de listagem e filtramos o ID (ou criamos uma específica no app.py)
-        const response = await fetch(`${API_URL}/admin/produtos`);
+        // 3. Busca a lista de produtos na sua rota pública do Python
+        const response = await fetch(`${API_BASE_URL}/api/produtos`);
         const produtos = await response.json();
-        
-        // Procura o produto específico pelo ID da URL
-        const produto = produtos.find(p => p.id_produto == productId);
 
-        if (!produto) {
-            throw new Error('Produto não encontrado no banco Neon.');
+        if (!response.ok) throw new Error("Erro na API");
+
+        // 4. Procura o produto específico dentro da lista
+        const produto = produtos.find(p => (p.id_produto || p.id) == productId);
+
+        loadingSection.style.display = 'none';
+
+        if (produto) {
+            // Se achou, preenche os dados na tela
+            document.getElementById('product-id-badge').textContent = produto.id_produto || produto.id;
+            document.getElementById('product-name').textContent = produto.nome_produto || 'Produto sem nome';
+            document.getElementById('product-brand').textContent = produto.marca || 'Sem marca';
+            
+            // Tratamento do preço
+            const preco = parseFloat(produto.preco_promocional || produto.preco || 0);
+            document.getElementById('product-price').textContent = preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            document.getElementById('product-description').textContent = produto.descricao || 'Nenhuma descrição disponível para este produto.';
+
+            // Tratamento da imagem
+            const imageEl = document.getElementById('product-image');
+            let imageUrl = produto.url_imagem;
+            if (imageUrl && !imageUrl.startsWith('http')) {
+                imageUrl = `img/${produto.url_imagem}`; 
+            }
+            if (!imageUrl || imageUrl.trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
+            imageEl.src = imageUrl;
+
+            // Mostra a seção de dados
+            dataSection.style.display = 'flex';
+        } else {
+            // Se o ID não existir no banco
+            notFoundSection.style.display = 'block';
         }
-
-        // --- 3. Preencher a página com os dados ---
-        if (loading) loading.style.display = 'none';
-
-        // Imagem
-        const imgElement = document.getElementById('product-image');
-        if (imgElement) {
-            imgElement.src = produto.url_imagem || 'img/produto_sem_imagem.png';
-            imgElement.alt = produto.nome_produto;
-        }
-        
-        // Nome, Preço e Marca
-        document.getElementById('product-name').textContent = produto.nome_produto;
-        document.getElementById('product-price').textContent = formatPrice(produto.preco);
-        document.getElementById('product-brand').textContent = produto.marca || 'Regia & Tinas Care';
-        
-        // Descrição
-        const descElement = document.getElementById('product-description');
-        if (descElement) {
-            descElement.textContent = produto.descricao || 'Este produto não possui descrição detalhada.';
-        }
-        
-        // Título da Aba
-        document.title = `${produto.nome_produto} - Chateau du Pet`;
-
-        // Botão de Adicionar (Dinâmico)
-        const btnContainer = document.getElementById('btn-container-detalhe');
-        if (btnContainer) {
-            btnContainer.innerHTML = `
-                <button class="btn btn-rosa btn-lg w-100 rounded-pill fw-bold" onclick="adicionarAoCarrinho(${produto.id_produto})">
-                    <i class="bi bi-cart-plus me-2"></i> Adicionar ao Carrinho
-                </button>
-            `;
-        }
-
-        // Mostra o conteúdo
-        if (productDataEl) productDataEl.style.display = 'flex';
 
     } catch (error) {
-        console.error('Erro:', error.message);
-        if (loading) loading.style.display = 'none';
-        if (notFound) notFound.style.display = 'block';
+        console.error("Erro ao carregar o produto:", error);
+        loadingSection.style.display = 'none';
+        notFoundSection.style.display = 'block';
+        notFoundSection.querySelector('p').textContent = "Ocorreu um erro ao conectar com o banco de dados. Tente novamente mais tarde.";
     }
 }
-
-document.addEventListener('DOMContentLoaded', loadProductDetails);

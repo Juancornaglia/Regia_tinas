@@ -1,68 +1,78 @@
 /* ==========================================================================
-   ESTILOS DE PRODUTO - REGIA & TINAS CARE
+   CSS DE DETALHES DO PRODUTO - REGIA & TINAS CARE
    ========================================================================== */
 
 :root {
-    --rosa-principal: #FE8697;
-    --rosa-hover: #ff6b81;
-    --verde-sucesso: #198754;
-    --vermelho-erro: #dc3545;
-    --cinza-fundo: #f8f9fa;
+    --brand-pink: #FE8697;
+    --brand-pink-hover: #e57585;
+    --success-green: #198754;
+    --error-red: #dc3545;
+    --bg-light: #f8f9fa;
 }
 
-/* Títulos e Preços */
+/* --- Títulos e Preços --- */
 .product-title {
     font-weight: 700;
     color: #333;
     font-size: 1.8rem;
+    margin-bottom: 0.5rem;
 }
 
 .price-original {
     text-decoration: line-through;
     color: #adb5bd;
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     margin-right: 10px;
 }
 
 .price-current {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: bold;
-    color: var(--rosa-principal);
+    color: var(--brand-pink);
 }
 
-/* Accordion Customizado (Detalhes e Ficha) */
+/* --- Accordion Customizado (Detalhes e Ficha Técnica) --- */
 .accordion-button:not(.collapsed) {
     color: #fff;
-    background-color: var(--rosa-principal);
+    background-color: var(--brand-pink);
     box-shadow: none;
+    font-weight: bold;
 }
 
 .accordion-button:focus {
     box-shadow: 0 0 0 0.25rem rgba(254, 134, 151, 0.25);
-    border-color: var(--rosa-principal);
+    border-color: var(--brand-pink);
+}
+
+.accordion-item {
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 1px solid #eee;
+    margin-bottom: 10px;
 }
 
 /* ======================================================
-   SEÇÃO: DISPONIBILIDADE EM LOJA
+   SEÇÃO: DISPONIBILIDADE EM LOJA E ESTOQUE
    ====================================================== */
 #store-availability-container {
     margin-top: 2rem;
     padding: 1.5rem;
-    background-color: var(--cinza-fundo);
-    border-radius: 12px;
+    background-color: var(--bg-light);
+    border-radius: 16px;
     border: 1px solid #eee;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
 }
 
 #store-availability-container h4 {
-    font-weight: 600;
-    color: var(--rosa-principal);
+    font-weight: 700;
+    color: var(--brand-pink);
     margin-bottom: 1.2rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--rosa-principal);
+    padding-bottom: 0.8rem;
+    border-bottom: 2px dashed rgba(254, 134, 151, 0.3);
     display: flex;
     align-items: center;
     gap: 10px;
+    font-size: 1.2rem;
 }
 
 .store-availability-list {
@@ -72,40 +82,44 @@
 }
 
 .store-availability-list li {
-    font-size: 1rem;
-    padding: 0.8rem;
+    font-size: 0.95rem;
+    padding: 1rem;
     background: white;
-    margin-bottom: 8px;
-    border-radius: 8px;
+    margin-bottom: 10px;
+    border-radius: 12px;
     display: flex;
-    justify-content: space-between; /* Deixa o nome de um lado e o ícone do outro */
+    justify-content: space-between; 
     align-items: center;
     border: 1px solid transparent;
-    transition: 0.2s;
+    transition: all 0.3s ease;
+    color: #555;
 }
 
 .store-availability-list li:hover {
-    border-color: var(--rosa-principal);
+    border-color: var(--brand-pink);
     transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(254, 134, 151, 0.1);
 }
 
-/* Ícones de Status */
+/* Ícones de Status de Estoque */
 .store-availability-list i.bi-check-circle-fill {
-    color: var(--verde-sucesso);
-    font-size: 1.2rem;
+    color: var(--success-green);
+    font-size: 1.4rem;
 }
 
 .store-availability-list i.bi-x-circle-fill {
-    color: var(--vermelho-erro);
-    font-size: 1.2rem;
+    color: var(--error-red);
+    font-size: 1.4rem;
 }
 
-/* Badge de Estoque Baixo */
+/* Badge de Estoque Baixo (Ex: "Restam 2") */
 .low-stock-warning {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #856404;
     background-color: #fff3cd;
-    padding: 2px 8px;
-    border-radius: 10px;
+    padding: 4px 10px;
+    border-radius: 12px;
     margin-left: 10px;
+    font-weight: bold;
+    border: 1px solid #ffeeba;
 }

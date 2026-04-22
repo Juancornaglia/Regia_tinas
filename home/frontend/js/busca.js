@@ -1,98 +1,106 @@
-// Configuração da URL do seu servidor Flask
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. CONFIGURAÇÕES GERAIS
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; 
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
+function formatPrice(price) {
+    if (typeof price !== 'number' || isNaN(price)) { return 'Consulte'; }
+    return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-/**
- * Função principal que inicia ao carregar a página
- */
+// 2. FUNÇÃO PRINCIPAL DA BUSCA
 async function inicializarBusca() {
     const urlParams = new URLSearchParams(window.location.search);
     const termoBusca = urlParams.get('q') || '';
     
     // Atualiza o texto na tela
     const displayTermo = document.getElementById('search-term-display');
-    if (displayTermo) displayTermo.textContent = termoBusca;
+    if (displayTermo) displayTermo.textContent = termoBusca ? `"${termoBusca}"` : 'Todos os Produtos';
+    
+    // Se o usuário apertar Enter na barra de busca superior da própria página
+    const searchInputBar = document.getElementById('search-input-bar');
+    if(searchInputBar) searchInputBar.value = termoBusca;
+
+    const container = document.getElementById('search-results-container');
 
     try {
-        // 1. Busca todos os produtos do Neon via API Python
-        // Usamos a rota de produtos que você já tem no admin ou ecommerce
-        const response = await fetch(`${API_URL}/produtos`); 
+        // CORREÇÃO: Usando API_BASE_URL e a rota PÚBLICA /api/produtos
+        const response = await fetch(`${API_BASE_URL}/api/produtos`); 
         const produtos = await response.json();
 
         if (!response.ok) throw new Error('Falha ao buscar produtos');
 
-        // 2. Filtra os produtos com base no termo digitado
-        const resultadosFiltrados = produtos.filter(p => 
-            p.nome_produto.toLowerCase().includes(termoBusca.toLowerCase()) ||
-            (p.descricao && p.descricao.toLowerCase().includes(termoBusca.toLowerCase())) ||
-            (p.marca && p.marca.toLowerCase().includes(termoBusca.toLowerCase()))
-        );
+        // Lógica de Filtragem (Busca pelo termo no nome, marca ou descrição)
+        let resultadosFiltrados = produtos;
+        
+        if (termoBusca.trim() !== '') {
+            const termoLower = termoBusca.toLowerCase();
+            resultadosFiltrados = produtos.filter(p => 
+                (p.nome_produto && p.nome_produto.toLowerCase().includes(termoLower)) ||
+                (p.descricao && p.descricao.toLowerCase().includes(termoLower)) ||
+                (p.marca && p.marca.toLowerCase().includes(termoLower)) ||
+                (p.tipo_produto && p.tipo_produto.toLowerCase().includes(termoLower))
+            );
+        }
 
-        // 3. Renderiza os cards na tela
-        renderizarProdutos(resultadosFiltrados);
-
-        // 4. Gera os filtros laterais dinamicamente
+        // Renderiza na tela
+        renderizarProdutos(resultadosFiltrados, container);
         gerarFiltrosLaterais(resultadosFiltrados);
 
-        // 5. Atualiza o contador
+        // Atualiza o contador
         document.getElementById('results-count').textContent = 
             `${resultadosFiltrados.length} ${resultadosFiltrados.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`;
 
     } catch (error) {
         console.error('Erro na busca:', error);
-        document.getElementById('search-results-container').innerHTML = `
+        container.innerHTML = `
             <div class="col-12 text-center py-5">
                 <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
-                <p class="mt-3">Não conseguimos carregar os produtos. Verifique se o servidor está rodando.</p>
+                <h4 class="mt-3 fw-bold">Não conseguimos carregar os produtos.</h4>
+                <p class="text-muted">Verifique se o servidor está rodando ou tente atualizar a página.</p>
             </div>
         `;
     }
 }
 
-/**
- * Cria o HTML dos cards de produto
- */
-function renderizarProdutos(lista) {
-    const container = document.getElementById('search-results-container');
-    
+// 3. RENDERIZAR OS CARDS DOS RESULTADOS
+function renderizarProdutos(lista, container) {
     if (lista.length === 0) {
-        container.innerHTML = `<div class="col-12 text-center py-5"><h3>Nenhum resultado para sua pesquisa.</h3></div>`;
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-search mb-3" style="font-size: 3rem; color: #ccc;"></i>
+                <h3 class="text-muted fw-bold">Nenhum resultado encontrado.</h3>
+                <p>Tente buscar por palavras mais genéricas como "Ração", "Brinquedo", etc.</p>
+                <a href="produtos.html" class="btn btn-outline-secondary rounded-pill mt-2">Ver todo o catálogo</a>
+            </div>`;
         return;
     }
 
     container.innerHTML = lista.map(p => {
-        // Formatação de preço
-        const precoOriginal = Number(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        
+        // Tratamento da imagem (Trava do onerror adicionada)
+        let imageUrl = p.url_imagem;
+        if (imageUrl && !imageUrl.startsWith('http')) { imageUrl = `img/${p.url_imagem}`; }
+        if (!imageUrl || imageUrl.trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
+
+        // Tratamento de Preço
+        const precoAtual = p.preco_promocional && p.preco_promocional < p.preco ? parseFloat(p.preco_promocional) : parseFloat(p.preco);
+
         return `
         <div class="col">
-            <div class="card h-100 product-card border-0 shadow-sm">
-                <div class="card-img-container">
-                    <img src="${p.url_imagem || 'img/placeholder.png'}" 
-                         class="card-img-top" 
+            <div class="card h-100 product-card border-0 shadow-sm overflow-hidden">
+                <div class="card-img-container bg-white">
+                    <img src="${imageUrl}" 
+                         class="card-img-top p-3" 
                          alt="${p.nome_produto}"
-                         onerror="this.src='img/placeholder.png'">
+                         onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
+                    ${p.quantidade_estoque === 0 ? '<span class="badge bg-secondary position-absolute top-0 end-0 m-2">Esgotado</span>' : ''}
                 </div>
-                <div class="card-body d-flex flex-direction-column">
-                    <h5 class="card-title text-dark">${p.nome_produto}</h5>
+                <div class="card-body d-flex flex-column bg-light text-center border-top">
+                    <h5 class="card-title text-dark mb-2">${p.nome_produto}</h5>
+                    <p class="text-muted small mb-3 flex-grow-1">${p.marca || 'Sem marca'}</p>
                     <div class="mt-auto">
-                        <p class="card-text fs-5 fw-bold text-pink" style="color: #FE8697">${precoOriginal}</p>
-                        <a href="produto_detalhe.html?id=${p.id_produto}" class="btn btn-custom w-100">
+                        <p class="card-text fs-5 fw-bold mb-3" style="color: #FE8697">${formatPrice(precoAtual)}</p>
+                        <a href="produto_detalhe.html?id=${p.id_produto || p.id}" class="btn btn-custom w-100 py-2">
                             Ver Detalhes
                         </a>
                     </div>
@@ -102,33 +110,30 @@ function renderizarProdutos(lista) {
     `}).join('');
 }
 
-/**
- * Extrai categorias e marcas dos produtos para criar os checkboxes de filtro
- */
+// 4. GERAR FILTROS LATERAIS (MANTIDO E SIMPLIFICADO)
 function gerarFiltrosLaterais(produtos) {
     const categorias = [...new Set(produtos.map(p => p.tipo_produto))].filter(Boolean);
     const marcas = [...new Set(produtos.map(p => p.marca))].filter(Boolean);
 
-    // Preenche Categorias
     const catContainer = document.getElementById('category-filters');
-    catContainer.innerHTML = categorias.map(c => `
-        <div class="form-check">
-            <input class="form-check-input filter-check" type="checkbox" value="${c}" id="cat-${c}">
-            <label class="form-check-label small" for="cat-${c}">${c}</label>
-        </div>
-    `).join('') || '<p class="small text-muted">Sem categorias</p>';
+    if(catContainer) {
+        catContainer.innerHTML = categorias.map(c => `
+            <div class="form-check mb-2">
+                <input class="form-check-input filter-check" type="checkbox" value="${c}" id="cat-${c.replace(/\s+/g, '')}">
+                <label class="form-check-label small text-muted fw-bold" for="cat-${c.replace(/\s+/g, '')}">${c}</label>
+            </div>
+        `).join('') || '<p class="small text-muted">Sem categorias</p>';
+    }
 
-    // Preenche Marcas
     const brandContainer = document.getElementById('brand-filters');
-    brandContainer.innerHTML = marcas.map(m => `
-        <div class="form-check">
-            <input class="form-check-input filter-check" type="checkbox" value="${m}" id="brand-${m}">
-            <label class="form-check-label small" for="brand-${m}">${m}</label>
-        </div>
-    `).join('') || '<p class="small text-muted">Sem marcas</p>';
-    
-    // Limpa o spinner do Tamanho
-    document.getElementById('tamanho-filters').innerHTML = '<p class="small text-muted">Filtros automáticos ativados.</p>';
+    if(brandContainer) {
+        brandContainer.innerHTML = marcas.map(m => `
+            <div class="form-check mb-2">
+                <input class="form-check-input filter-check" type="checkbox" value="${m}" id="brand-${m.replace(/\s+/g, '')}">
+                <label class="form-check-label small text-muted fw-bold" for="brand-${m.replace(/\s+/g, '')}">${m}</label>
+            </div>
+        `).join('') || '<p class="small text-muted">Sem marcas</p>';
+    }
 }
 
 // Inicializa quando o DOM estiver pronto

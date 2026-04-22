@@ -1,65 +1,55 @@
-// --- 1. CONFIGURAÇÃO DE ROTAS E SEGURANÇA ---
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com";
+// js/admin_dashboard.js - Painel Gerencial Regia & Tinas Care
 
-// Função para verificar se o usuário é Admin via Backend (Neon)
-async function verificarAdmin(token) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) return false;
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro na verificação Neon/Python:", error);
-        return false;
-    }
-}
+// ATENÇÃO: O arquivo utils.js e o Chart.js devem estar importados no HTML antes deste script!
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Iniciando verificação de segurança (Neon)...");
+    console.log("Iniciando carregamento do Dashboard Admin...");
     
-    // No Neon, o token deve ser recuperado do localStorage após o login
-    const token = localStorage.getItem('token'); 
+    const userId = localStorage.getItem('usuario_id'); 
 
-    if (!token) {
-        console.warn("Sem token de acesso. Redirecionando...");
-        window.location.href = '../login.html';
+    // 1. VERIFICAÇÃO DE SEGURANÇA BÁSICA
+    if (!userId) {
+        console.warn("Sem usuário logado. Redirecionando...");
+        window.location.href = '../usuario/login.html';
         return;
     }
 
-    const isAdmin = await verificarAdmin(token);
+    // Usando a função global do utils.js para verificar se é admin
+    const isAdmin = await window.verificarAdmin(userId);
     
     if (!isAdmin) {
         alert("Acesso restrito: Você não tem permissões de administrador.");
-        window.location.href = '../login.html';
+        window.location.href = '../usuario/login.html';
         return; 
     }
 
-    console.log("Acesso Admin confirmado!");
-    // Carrega os dados centralizados via API Python + Neon
+    console.log("Acesso Admin confirmado! Carregando dados...");
     carregarDashboardDados();
 });
 
-// --- 2. CARREGAR DADOS DO DASHBOARD (KPIs, Tabela, Gráficos) ---
+// --- 2. CARREGAR DADOS DO DASHBOARD (KPIs, Tabela, Gráficos, Estoque) ---
 async function carregarDashboardDados() {
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/admin/dashboard-completo`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Chamada única para a rota que traz todas as informações da tela
+        const response = await fetch(`${window.API_BASE_URL}/api/admin/dashboard-completo`);
         
         if (!response.ok) throw new Error("Falha ao buscar dados do servidor");
         
         const dados = await response.json();
 
-        // A. Preencher KPIs
-        document.getElementById('kpi-vendas').innerText = dados.stats.faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        document.getElementById('kpi-agendamentos').innerText = dados.stats.total_agendamentos;
-        document.getElementById('kpi-pets').innerText = dados.stats.total_pets;
-        document.getElementById('kpi-clientes').innerText = dados.stats.total_clientes;
+        // A. Preencher KPIs (As caixinhas do topo)
+        if (document.getElementById('kpi-vendas')) {
+            document.getElementById('kpi-vendas').innerText = dados.stats.faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        if (document.getElementById('kpi-agendamentos')) {
+            document.getElementById('kpi-agendamentos').innerText = dados.stats.total_agendamentos;
+        }
+        if (document.getElementById('kpi-pets')) {
+            document.getElementById('kpi-pets').innerText = dados.stats.total_pets;
+        }
+        if (document.getElementById('kpi-clientes')) {
+            document.getElementById('kpi-clientes').innerText = dados.stats.total_clientes;
+        }
 
         // B. Renderizar Tabela de Agendamentos
         renderizarTabelaAgendamentos(dados.agendamentos);
@@ -67,7 +57,7 @@ async function carregarDashboardDados() {
         // C. Renderizar Estoque Crítico
         renderizarEstoque(dados.estoque_critico);
 
-        // D. Renderizar Gráficos
+        // D. Renderizar Gráficos (Chart.js)
         renderizarGraficos(dados.graficos);
 
     } catch (err) {
@@ -81,23 +71,28 @@ function renderizarTabelaAgendamentos(lista) {
     const tabela = document.getElementById('tabela-agendamentos-admin');
     if (!tabela) return;
 
+    if (!lista || lista.length === 0) {
+        tabela.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Nenhum agendamento para hoje.</td></tr>';
+        return;
+    }
+
     tabela.innerHTML = lista.map(ag => `
         <tr>
-            <td>${new Date(ag.data_hora_inicio).toLocaleString('pt-BR')}</td>
-            <td>
+            <td class="align-middle">${new Date(ag.data_hora_inicio).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})}</td>
+            <td class="align-middle">
                 <strong>${ag.cliente_nome}</strong><br>
-                <small class="text-muted">${ag.cliente_tel}</small>
+                <small class="text-muted">${ag.cliente_tel || 'Sem telefone'}</small>
             </td>
-            <td>
+            <td class="align-middle">
                 <strong>${ag.pet_nome}</strong><br>
-                <small class="text-muted">${ag.pet_raca}</small>
+                <small class="text-muted">${ag.pet_raca || 'SRD'}</small>
             </td>
-            <td>${ag.servico_nome}</td>
-            <td><span class="badge ${ag.status === 'confirmado' ? 'bg-success' : 'bg-warning'}">${ag.status}</span></td>
-            <td>
-                <button class="btn btn-sm btn-outline-success" onclick="alterarStatus(${ag.id}, 'confirmado')">✅</button>
-                <button class="btn btn-sm btn-outline-danger" onclick="alterarStatus(${ag.id}, 'cancelado')">❌</button>
-                <button class="btn btn-sm btn-success" onclick="avisarWhatsapp('${ag.cliente_tel}', '${ag.cliente_nome}', '${ag.pet_nome}', '${ag.servico_nome}', '${ag.data_hora_inicio}')">
+            <td class="align-middle">${ag.servico_nome}</td>
+            <td class="align-middle"><span class="badge ${ag.status === 'confirmado' ? 'bg-success' : (ag.status === 'cancelado' ? 'bg-danger' : 'bg-warning text-dark')} text-capitalize">${ag.status}</span></td>
+            <td class="align-middle">
+                <button class="btn btn-sm btn-outline-success border-0" title="Confirmar" onclick="window.alterarStatus(${ag.id_agendamento || ag.id}, 'confirmado')"><i class="bi bi-check-circle-fill fs-5"></i></button>
+                <button class="btn btn-sm btn-outline-danger border-0" title="Cancelar" onclick="window.alterarStatus(${ag.id_agendamento || ag.id}, 'cancelado')"><i class="bi bi-x-circle-fill fs-5"></i></button>
+                <button class="btn btn-sm btn-success rounded-circle ms-2" title="Avisar no WhatsApp" onclick="window.avisarWhatsapp('${ag.cliente_tel}', '${ag.cliente_nome}', '${ag.pet_nome}', '${ag.servico_nome}', '${ag.data_hora_inicio}')">
                     <i class="bi bi-whatsapp"></i>
                 </button>
             </td>
@@ -111,13 +106,13 @@ function renderizarEstoque(produtos) {
 
     if (produtos && produtos.length > 0) {
         container.innerHTML = produtos.map(p => `
-            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded border-start border-danger border-4">
-                <span class="small fw-bold">${p.nome_produto}</span>
-                <span class="badge bg-danger">${p.quantidade_estoque} un</span>
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded shadow-sm border-start border-danger border-4">
+                <span class="small fw-bold text-dark">${p.nome_produto}</span>
+                <span class="badge bg-danger rounded-pill">${p.quantidade_estoque} un</span>
             </div>
         `).join('');
     } else {
-        container.innerHTML = '<p class="text-success small mt-2">✅ Estoque em dia!</p>';
+        container.innerHTML = '<div class="alert alert-success small mt-2 border-0"><i class="bi bi-check-circle-fill me-2"></i>Estoque em dia!</div>';
     }
 }
 
@@ -125,10 +120,13 @@ function renderizarGraficos(dadosGrafico) {
     const ctx = document.getElementById('graficoFaturamento');
     if (!ctx) return;
 
-    new Chart(ctx, {
+    // Destrói o gráfico anterior se ele existir (evita bug ao recarregar a tela)
+    if (window.meuGrafico) window.meuGrafico.destroy();
+
+    window.meuGrafico = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Banho', 'Tosa', 'Hotel', 'Veterinário'],
+            labels: ['Banho', 'Tosa', 'Hotel', 'Veterinária'],
             datasets: [{
                 label: 'Receita (R$)',
                 data: dadosGrafico || [0, 0, 0, 0],
@@ -136,33 +134,45 @@ function renderizarGraficos(dadosGrafico) {
                 borderRadius: 8
             }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        options: { 
+            responsive: true, 
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
     });
 }
 
-// --- 4. AÇÕES GLOBAIS ---
+// --- 4. AÇÕES GLOBAIS (Ativadas por botões no HTML) ---
 
 window.avisarWhatsapp = (telefone, dono, pet, servico, dataHora) => {
+    if (!telefone || telefone === 'undefined') {
+        alert("Cliente não possui telefone cadastrado.");
+        return;
+    }
     const data = new Date(dataHora).toLocaleDateString('pt-BR');
     const hora = new Date(dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const msg = `Olá ${dono}! 🐾 Passando para confirmar o horário do(a) ${pet} para ${servico} no dia ${data} às ${hora}. Podemos confirmar?`;
+    const msg = `Olá ${dono}! 🐾 Passando da Regia & Tinas Care para confirmar o horário do(a) ${pet} para o serviço de ${servico} no dia ${data} às ${hora}. Podemos confirmar?`;
     window.open(`https://api.whatsapp.com/send?phone=55${telefone.replace(/\D/g, '')}&text=${encodeURIComponent(msg)}`, '_blank');
 };
 
 window.alterarStatus = async (id, novoStatus) => {
-    const token = localStorage.getItem('token');
+    if(!confirm(`Deseja mudar o status deste agendamento para ${novoStatus.toUpperCase()}?`)) return;
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/agendamento/${id}`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/admin/agendamento/${id}`, {
             method: 'PATCH',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: novoStatus })
         });
-        if (response.ok) location.reload();
-        else alert("Erro ao atualizar status");
+        
+        if (response.ok) {
+            window.notificar(`Status alterado para ${novoStatus}!`, 'sucesso');
+            carregarDashboardDados(); // Recarrega a tabela sem piscar a página inteira
+        } else {
+            window.notificar("Erro ao atualizar status", 'erro');
+        }
     } catch (err) {
         console.error(err);
+        window.notificar("Erro de conexão.", 'erro');
     }
 };

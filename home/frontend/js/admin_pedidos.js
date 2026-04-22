@@ -1,77 +1,133 @@
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. DEFINIÇÃO DA URL DO BACKEND
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; 
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
+// 2. SEGURANÇA: VERIFICAR ADMIN
+async function verificarAdmin(token) {
     try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
+        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${token}`);
+        if (!response.ok) return false;
         const data = await response.json();
         return data.isAdmin;
     } catch (error) {
-        console.error("Erro ao verificar admin:", error);
+        return false;
     }
 }
 
+// 3. CARREGAR PEDIDOS
 async function carregarPedidos() {
     const tbody = document.getElementById('pedidos-table-body');
     if (!tbody) return;
 
     try {
-        const response = await fetch(`${API_URL}/pedidos`);
+        const token = localStorage.getItem('token');
+        
+        // Rota corrigida com API_BASE_URL e cabeçalho de segurança
+        const response = await fetch(`${API_BASE_URL}/api/admin/pedidos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
         const pedidos = await response.json();
 
-        tbody.innerHTML = pedidos.map(p => `
+        if (!response.ok) throw new Error(pedidos.mensagem || "Erro ao buscar pedidos");
+
+        if (pedidos.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-muted">Nenhum pedido encontrado.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = pedidos.map(p => {
+            // Estilos para o status
+            let corStatus = '';
+            if(p.status_pedido === 'processando') corStatus = 'text-warning';
+            if(p.status_pedido === 'pago') corStatus = 'text-success';
+            if(p.status_pedido === 'cancelado') corStatus = 'text-danger';
+            if(p.status_pedido === 'finalizado') corStatus = 'text-primary';
+
+            return `
             <tr>
-                <td>#${p.id_pedido}</td>
+                <td class="ps-4 fw-bold text-secondary">#${p.id_pedido}</td>
                 <td>${p.nome_completo || 'Cliente'}</td>
-                <td><strong>R$ ${Number(p.total_pedido).toFixed(2)}</strong></td>
+                <td><strong>R$ ${Number(p.total_pedido).toFixed(2).replace('.', ',')}</strong></td>
                 <td>${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
                 <td>
-                    <select class="form-select form-select-sm" onchange="atualizarStatus(${p.id_pedido}, this.value)">
+                    <select class="form-select form-select-sm fw-bold ${corStatus}" style="width: 130px;" onchange="window.atualizarStatus(${p.id_pedido}, this.value)">
                         <option value="processando" ${p.status_pedido === 'processando' ? 'selected' : ''}>Processando</option>
                         <option value="pago" ${p.status_pedido === 'pago' ? 'selected' : ''}>Pago</option>
                         <option value="finalizado" ${p.status_pedido === 'finalizado' ? 'selected' : ''}>Finalizado</option>
                         <option value="cancelado" ${p.status_pedido === 'cancelado' ? 'selected' : ''}>Cancelado</option>
                     </select>
                 </td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="verDetalhes(${p.id_pedido})">
-                        <i class="bi bi-eye"></i>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-brand" onclick="window.verDetalhes(${p.id_pedido})" data-bs-toggle="modal" data-bs-target="#pedidoModal">
+                        <i class="bi bi-eye"></i> Ver
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
     } catch (error) {
         console.error("Erro ao buscar pedidos:", error);
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-danger">Erro ao carregar dados do banco.</td></tr>`;
     }
 }
 
+// 4. ATUALIZAR STATUS
 window.atualizarStatus = async (id, novoStatus) => {
     try {
-        const response = await fetch(`${API_URL}/atualizar-status-pedido/${id}`, {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/atualizar-status-pedido/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ status: novoStatus })
         });
 
         if (response.ok) {
-            alert("Status do pedido atualizado!");
+            alert("Status do pedido atualizado com sucesso!");
+            carregarPedidos(); // Recarrega para atualizar a cor do texto
         } else {
-            alert("Erro ao atualizar status.");
+            alert("Erro ao atualizar status no servidor.");
         }
     } catch (error) {
         console.error("Erro na requisição:", error);
     }
 };
 
-// Detalhes do pedido (Simulado para o TCC)
+// 5. VER DETALHES NO MODAL
 window.verDetalhes = (id) => {
-    alert("Funcionalidade de detalhes do pedido #" + id + " carregando...");
-    // Aqui você poderia abrir um modal com os itens do pedido
+    document.getElementById('detalhe-id').innerText = id;
+    document.getElementById('detalhes-corpo').innerHTML = `
+        <div class="spinner-border text-brand my-3" role="status"></div>
+        <p>Buscando itens do pedido...</p>
+        <p class="small text-muted">(Para o TCC, você pode retornar uma lista de produtos comprados aqui através de uma nova rota no app.py)</p>
+    `;
 };
 
-document.addEventListener('DOMContentLoaded', carregarPedidos);
+// 6. INICIALIZAÇÃO E LOGOUT
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token'); 
+    
+    if (!token) {
+        window.location.href = '../usuario/login.html';
+        return;
+    }
+
+    const isAdmin = await verificarAdmin(token);
+    if (!isAdmin) {
+        alert("Acesso restrito!");
+        window.location.href = '../usuario/login.html';
+        return; 
+    }
+
+    carregarPedidos();
+
+    document.getElementById('logout-button')?.addEventListener('click', () => {
+        if(confirm('Deseja sair?')) {
+            localStorage.clear();
+            window.location.href = '../usuario/login.html';
+        }
+    });
+});

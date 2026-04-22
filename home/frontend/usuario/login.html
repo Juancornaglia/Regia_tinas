@@ -1,49 +1,83 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Regia & Tinas Care</title>
-    
+
     <link rel="shortcut icon" href="../img/logo_pequena4.png" type="image/x-icon">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Ribeye&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua&family=Poppins&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="../css/auth.css">
 
     <style>
-        /* CORREÇÃO DO OLHINHO */
-        .input-group {
-            position: relative;
-            margin-bottom: 15px;
+        :root {
+            --brand-pink: #FE8697;
+            --brand-pink-hover: #e57585;
         }
 
+        .form-box {
+            background-color: var(--brand-pink) !important; 
+            padding: 40px;
+            border-radius: 15px; 
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .form-header h1 {
+            color: #ffffff;
+            font-family: 'Inknut Antiqua', serif;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 0;
+            color: white;
+            font-size: 1.5rem;
+            transition: 0.3s;
+        }
+        .back-button:hover { color: #f8f9fa; transform: translateX(-3px); }
+
+        .input-group { position: relative; margin-bottom: 20px; }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        #senha { padding-right: 45px; }
+
+        /* O OLHINHO MÁGICO */
         .eye-icon {
             position: absolute;
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #fff; 
+            color: #888; 
             z-index: 10;
             font-size: 1.2rem;
-            display: flex;
-            align-items: center;
+            transition: 0.2s;
         }
+        .eye-icon:hover { color: var(--brand-pink); }
 
-        #senha {
-            padding-right: 45px;
-        }
-
-        /* AJUSTE DO DIVIDER (OU ACESSE COM) */
-        .divider span {
-            color: #ffffff !important; /* Cor branca para o texto */
-            background-color: transparent !important; /* Remove fundo se houver */
-        }
-
-        /* AJUSTE DO ESQUECI MINHA SENHA */
         .form-options {
             display: flex;
             justify-content: space-between;
@@ -53,23 +87,15 @@
             font-size: 0.9rem;
         }
 
-        .forgot-link {
-            color: #ffffff !important;
-            text-decoration: none;
-            font-weight: 500;
-        }
+        .forgot-link { color: #ffffff !important; text-decoration: none; font-weight: 500; }
+        .forgot-link:hover { text-decoration: underline; }
 
-        .forgot-link:hover {
-            text-decoration: underline;
-        }
-
-        /* CORREÇÃO DOS BOTÕES */
         .form-buttons {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 15px;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         .btn-outline {
@@ -77,32 +103,74 @@
             text-decoration: none;
             font-weight: bold;
             transition: 0.3s;
+            padding: 10px 15px;
         }
+        .btn-outline:hover { color: #f8f9fa !important; transform: scale(1.05); }
 
         .btn-solid {
             background-color: #ffffff;
-            color: #FE8697; 
+            color: var(--brand-pink); 
             border: none;
-            padding: 10px 25px;
-            border-radius: 20px;
+            padding: 12px 35px;
+            border-radius: 25px;
             font-weight: bold;
             transition: 0.3s;
             cursor: pointer;
         }
+        .btn-solid:hover { background-color: #f8f9fa; transform: scale(1.05); }
 
-        /* COR DA SETA */
-        .back-button i {
-            color: white;
-            font-size: 1.5rem;
+        /* Redes Sociais */
+        .divider {
+            text-align: center;
+            margin: 25px 0 15px;
+            position: relative;
         }
+        .divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            z-index: 1;
+        }
+        .divider span {
+            color: #ffffff;
+            background-color: var(--brand-pink);
+            padding: 0 15px;
+            position: relative;
+            z-index: 2;
+            font-size: 0.9rem;
+        }
+
+        .social-login {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .social-login a {
+            background: white;
+            padding: 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            width: 45px;
+            height: 45px;
+        }
+        .social-login a:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .social-login img { width: 25px; height: 25px; object-fit: contain; }
     </style>
 </head>
 <body>
     <header class="auth-header">Regia & Tinas Care</header>
+    
     <div class="form-container">
         <div class="form-box">
+            
             <div class="form-header">
-                <a href="../home.html" class="back-button"><i class="bi bi-arrow-left"></i></a>
+                <a href="../index.html" class="back-button"><i class="bi bi-arrow-left"></i></a>
                 <h1>Acessar sua conta</h1>
             </div>
             
@@ -112,36 +180,34 @@
                 </div>
                 <div class="input-group">
                     <input type="password" id="senha" placeholder="Digite sua senha" required>
-                    <i class="bi bi-eye-fill eye-icon" id="togglePassword"></i>
+                    <i class="bi bi-eye-slash-fill eye-icon" id="togglePassword" title="Mostrar/Esconder Senha"></i>
                 </div>
                 
                 <div class="form-options">
-                    <label><input type="checkbox" id="remember"> Lembrar</label>
-                    <a href="redefinir_senha.html" class="forgot-link">Esqueci minha senha</a>
+                    <label style="cursor: pointer;"><input type="checkbox" id="remember"> Lembrar de mim</label>
+                    <a href="redefinir_senha.html" class="forgot-link">Esqueci a senha</a>
                 </div>
                 
                 <div class="form-buttons">
-                    <a href="criar_conta.html" class="btn-outline">CADASTRAR</a>
-                    <button type="submit" class="btn-solid">ACESSAR</button>
+                    <a href="criar_conta.html" class="btn-outline">CRIAR CONTA</a>
+                    <button type="submit" class="btn-solid">ENTRAR</button>
                 </div>
             </form>
 
             <div class="divider"><span>Ou acesse com</span></div>
 
             <div class="social-login">
-                <a href="javascript:void(0);" id="btn-google">
-                    <img src="../img/google.png" alt="Login com Google">
+                <a href="#" title="Login com Google" onclick="alert('Função em desenvolvimento!')">
+                    <img src="../img/google.png" alt="G" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2991/2991148.png'">
                 </a>
-                
-                <a href="javascript:void(0);" id="btn-facebook">
-                    <img src="../img/facebook.png" alt="Login com Facebook">
+                <a href="#" title="Login com Facebook" onclick="alert('Função em desenvolvimento!')">
+                    <img src="../img/facebook.png" alt="F" onerror="this.src='https://cdn-icons-png.flaticon.com/512/124/124010.png'">
                 </a>
             </div>
+
         </div> 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/login.js?v=1000" type="module"></script>
+    <script src="../js/login.js" type="module"></script>
 </body>
 </html>

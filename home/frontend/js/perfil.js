@@ -1,88 +1,150 @@
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. CONFIGURAÇÃO GERAL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; 
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    const tutorId = localStorage.getItem('usuario_id');
-    
-    // 1. VERIFICAÇÃO DE SESSÃO
-    if (!tutorId) {
-        window.location.href = '../login.html';
+document.addEventListener('DOMContentLoaded', () => {
+    const userId = localStorage.getItem('usuario_id');
+    if (!userId) {
+        window.location.href = 'login.html';
         return;
     }
 
-    // --- 2. FUNÇÃO PARA CARREGAR DADOS DO PERFIL ---
-    async function carregarPerfil() {
-        try {
-            // Chamamos a rota que busca os dados do usuário no Neon
-            const response = await fetch(`${API_URL}/auth/verificar-role/${tutorId}`);
-            const perfil = await response.json();
+    // Inicialização
+    carregarDadosUsuario(userId);
+    carregarPets(userId);
+    carregarAgendamentos(userId);
+    
+    // Nome no greeting
+    const nomeSalvo = localStorage.getItem('usuario_nome');
+    if(nomeSalvo) document.getElementById('user-greeting').innerText = nomeSalvo.split(' ')[0];
 
-            if (response.ok) {
-                // Preenche os campos do formulário (Garanta que os IDs existam no HTML)
-                if (document.getElementById('nome_completo')) 
-                    document.getElementById('nome_completo').value = perfil.nome_completo || '';
-                
-                if (document.getElementById('telefone')) 
-                    document.getElementById('telefone').value = perfil.telefone || '';
-                
-                if (document.getElementById('email_display')) 
-                    document.getElementById('email_display').value = perfil.email || '';
-            }
-        } catch (error) {
-            console.error("Erro ao carregar perfil:", error);
+    // Listeners
+    document.getElementById('btnSalvarPerfil')?.addEventListener('click', () => salvarPerfil(userId));
+    document.getElementById('form-cadastro-pet')?.addEventListener('submit', (e) => cadastrarPet(e, userId));
+    
+    document.getElementById('logout-button')?.addEventListener('click', () => {
+        if(confirm('Deseja sair da sua conta?')) {
+            localStorage.clear();
+            window.location.href = '../index.html';
         }
-    }
-
-    // --- 3. FUNÇÃO PARA SALVAR ALTERAÇÕES ---
-    const btnSalvar = document.getElementById('btnSalvarPerfil');
-    if (btnSalvar) {
-        btnSalvar.addEventListener('click', async () => {
-            const dadosAtualizados = {
-                nome_completo: document.getElementById('nome_completo').value,
-                telefone: document.getElementById('telefone').value
-            };
-
-            btnSalvar.disabled = true;
-            btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
-
-            try {
-                // Criaremos esta rota 'atualizar-perfil' no seu Python
-                const response = await fetch(`${API_URL}/usuario/atualizar-perfil/${tutorId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dadosAtualizados)
-                });
-
-                if (response.ok) {
-                    alert("Perfil atualizado com sucesso!");
-                    // Atualiza o nome salvo no navegador também
-                    localStorage.setItem('usuario_nome', dadosAtualizados.nome_completo);
-                } else {
-                    alert("Erro ao atualizar os dados.");
-                }
-            } catch (error) {
-                alert("Erro de conexão com o servidor.");
-            } finally {
-                btnSalvar.disabled = false;
-                btnSalvar.textContent = 'Salvar Alterações';
-            }
-        });
-    }
-
-    carregarPerfil();
+    });
 });
+
+// 2. FUNÇÃO: CARREGAR DADOS DO PERFIL
+async function carregarDadosUsuario(id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuario/dados/${id}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('nome_completo').value = data.nome_completo || '';
+            document.getElementById('telefone').value = data.telefone || '';
+            document.getElementById('email_display').value = data.email || '';
+        }
+    } catch (e) { console.error("Erro perfil:", e); }
+}
+
+async function salvarPerfil(id) {
+    const btn = document.getElementById('btnSalvarPerfil');
+    btn.disabled = true; btn.innerText = "Salvando...";
+
+    const payload = {
+        nome_completo: document.getElementById('nome_completo').value,
+        telefone: document.getElementById('telefone').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuario/atualizar/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Perfil atualizado!");
+            localStorage.setItem('usuario_nome', payload.nome_completo);
+        }
+    } catch (e) { alert("Erro ao conectar."); }
+    finally { btn.disabled = false; btn.innerText = "Salvar Alterações"; }
+}
+
+// 3. FUNÇÃO: CARREGAR E CADASTRAR PETS
+async function carregarPets(id) {
+    const container = document.getElementById('lista-pets');
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/meus-pets/${id}`);
+        const pets = await response.json();
+
+        if (pets.length === 0) {
+            container.innerHTML = '<p class="text-muted p-3">Nenhum pet cadastrado.</p>';
+            return;
+        }
+
+        container.innerHTML = pets.map(pet => `
+            <div class="col-md-6">
+                <div class="pet-mini-card d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-0">${pet.nome_pet}</h6>
+                        <small class="text-muted">${pet.especie} | ${pet.raca || 'SRD'}</small>
+                    </div>
+                    <span class="badge bg-light text-secondary border">${pet.porte}</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) { container.innerHTML = 'Erro ao carregar pets.'; }
+}
+
+async function cadastrarPet(e, id) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+
+    const payload = {
+        id_tutor: id,
+        nome_pet: document.getElementById('input_nome_pet').value,
+        especie: document.getElementById('input_especie').value,
+        raca: document.getElementById('input_raca').value,
+        porte: document.getElementById('input_porte').value,
+        observacoes: document.getElementById('input_obs').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/cadastrar-pet`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Pet cadastrado com sucesso!");
+            e.target.reset();
+            document.getElementById('sessao-cadastro-pet').style.display = 'none';
+            carregarPets(id);
+        }
+    } catch (e) { alert("Erro de conexão."); }
+    finally { btn.disabled = false; }
+}
+
+// 4. FUNÇÃO: CARREGAR AGENDAMENTOS
+async function carregarAgendamentos(id) {
+    const tbody = document.getElementById('tabela-meus-agendamentos');
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuario/agendamentos/${id}`);
+        const agendamentos = await response.json();
+
+        if (agendamentos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Sem agendamentos futuros.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = agendamentos.map(ag => `
+            <tr>
+                <td>${new Date(ag.data_hora_inicio).toLocaleString('pt-BR')}</td>
+                <td><i class="bi bi-paw me-1"></i>${ag.nome_pet}</td>
+                <td>${ag.nome_servico}</td>
+                <td><span class="badge ${ag.status === 'confirmado' ? 'bg-success' : 'bg-warning'}">${ag.status}</span></td>
+            </tr>
+        `).join('');
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="4">Erro ao carregar.</td></tr>'; }
+}

@@ -1,82 +1,83 @@
-// 1. CONFIGURAÇÃO DA URL (Sempre no topo do arquivo)
+// 1. CONFIGURAÇÃO DA URL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
-
-// 2. FUNÇÃO PARA VERIFICAR ADMIN
-async function verificarAdmin(userId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-        return false;
-    }
-}
+    : "https://regia-tinas.onrender.com"; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     const formPet = document.getElementById('formCadastroPet');
     const listaPets = document.getElementById('lista-pets');
-    const tutorId = localStorage.getItem('usuario_id'); // ID que salvamos no Login
+    const tutorId = localStorage.getItem('usuario_id');
 
-    // 3. VERIFICAÇÃO DE LOGIN
+    // 2. VERIFICAÇÃO DE LOGIN
     if (!tutorId) {
-        alert("Sessão expirada. Por favor, faça login novamente.");
-        window.location.href = '../login.html';
+        window.location.href = 'login.html';
         return;
     }
 
-    // --- 4. FUNÇÃO PARA LISTAR OS PETS NA TELA ---
+    // --- 3. CARREGAR PETS DO BANCO NEON ---
     async function carregarPets() {
         try {
-            // Usando a API_BASE_URL dinâmica
             const response = await fetch(`${API_BASE_URL}/api/meus-pets/${tutorId}`);
             const pets = await response.json();
 
-            if (!response.ok) throw new Error("Erro ao buscar pets.");
+            if (!listaPets) return;
 
-            if (listaPets) {
-                if (!pets || pets.length === 0) {
-                    listaPets.innerHTML = '<p class="text-muted">Nenhum pet cadastrado ainda.</p>';
-                    return;
-                }
+            if (pets.length === 0) {
+                listaPets.innerHTML = `
+                    <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+                        <i class="bi bi-patch-question text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 text-muted">Você ainda não cadastrou nenhum pet.</h5>
+                    </div>`;
+                return;
+            }
 
-                listaPets.innerHTML = pets.map(pet => `
-                    <div class="card mb-2 shadow-sm">
-                        <div class="card-body">
-                            <i class="bi bi-paw-fill text-primary"></i> 
-                            <strong>${pet.nome_pet}</strong> - <small>${pet.raca || 'SRD'}</small>
+            listaPets.innerHTML = pets.map(pet => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card pet-card h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-light p-3 me-3">
+                                <i class="bi bi-paw-fill fs-3 text-brand"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="card-title fw-bold mb-0">${pet.nome_pet}</h5>
+                                <small class="text-muted text-capitalize">${pet.especie} • ${pet.raca || 'SRD'}</small>
+                                <div class="mt-2">
+                                    <span class="badge bg-light text-secondary border">${pet.porte}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm text-danger border-0" onclick="window.excluirPet(${pet.id_pet})">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </div>
-                `).join('');
-            }
+                </div>
+            `).join('');
+
         } catch (error) {
-            console.error("Erro ao carregar lista:", error);
-            if (listaPets) listaPets.innerHTML = '<p class="text-danger">Erro ao carregar pets.</p>';
+            console.error(error);
+            listaPets.innerHTML = '<p class="text-danger text-center">Erro ao conectar com o servidor.</p>';
         }
     }
 
-    // --- 5. FUNÇÃO PARA CADASTRAR O PET ---
+    // --- 4. CADASTRAR PET VIA MODAL ---
     if (formPet) {
         formPet.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const btn = formPet.querySelector('button[type="submit"]');
             btn.disabled = true;
-            btn.textContent = "Salvando...";
+            btn.innerText = "Salvando...";
 
             const petDados = {
                 id_tutor: tutorId,
                 nome_pet: document.getElementById('nome_pet').value.trim(),
-                especie: document.getElementById('especie').value,
+                especie: document.getElementById('especie').value.trim(),
                 raca: document.getElementById('raca').value.trim(),
                 porte: document.getElementById('porte').value,
                 observacoes: document.getElementById('observacoes').value.trim()
             };
 
             try {
-                // Usando a API_BASE_URL dinâmica
                 const response = await fetch(`${API_BASE_URL}/api/cadastrar-pet`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -85,22 +86,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (response.ok) {
                     alert("Pet cadastrado com sucesso!");
+                    
+                    // Fecha o modal do Bootstrap
+                    const modalEl = document.getElementById('petModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+
                     formPet.reset();
-                    carregarPets(); // Atualiza a lista na hora
+                    carregarPets(); // Recarrega a lista
                 } else {
-                    const erro = await response.json();
-                    alert("Erro ao cadastrar: " + (erro.error || erro.mensagem));
+                    alert("Erro ao salvar pet no servidor.");
                 }
             } catch (error) {
-                console.error("Erro no cadastro de pet:", error);
-                alert("Erro de conexão com o servidor.");
+                alert("Erro de conexão.");
             } finally {
                 btn.disabled = false;
-                btn.textContent = "CADASTRAR PET";
+                btn.innerText = "Salvar Pet";
             }
         });
     }
 
-    // Inicia carregando os pets existentes
+    // --- 5. EXCLUIR PET ---
+    window.excluirPet = async (id) => {
+        if(confirm("Deseja remover este pet da sua lista?")) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/pet/excluir/${id}`, { method: 'DELETE' });
+                if(response.ok) carregarPets();
+            } catch (e) { alert("Erro ao excluir."); }
+        }
+    }
+
     carregarPets();
 });

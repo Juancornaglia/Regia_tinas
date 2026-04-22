@@ -1,52 +1,27 @@
-// 1. DEFINIÇÃO DA URL (Sempre no topo do arquivo)
+// 1. DEFINIÇÃO DA URL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE SEU LINK DO RENDER AQUI
-
-// --- CONFIGURAÇÃO DE CORES E BADGES ---
-function getStatusBadge(status) {
-    const s = status ? status.toLowerCase() : 'pendente';
-    const badges = {
-        confirmado: '<span class="badge bg-success">Confirmado</span>',
-        pendente: '<span class="badge bg-warning text-dark">Pendente</span>',
-        cancelado: '<span class="badge bg-danger">Cancelado</span>',
-        finalizado: '<span class="badge bg-secondary">Finalizado</span>'
-    };
-    return badges[s] || `<span class="badge bg-light text-dark">${s}</span>`;
-}
-
-function formatDateTime(dateTimeString) {
-    if (!dateTimeString) return 'N/A';
-    const date = new Date(dateTimeString);
-    return date.toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    });
-}
+    : "https://regia-tinas.onrender.com";
 
 // --- GERAÇÃO DE HTML PARA A TABELA ---
 function createAppointmentRowHtml(ag) {
+    const dataFormatada = new Date(ag.data_hora_inicio).toLocaleString('pt-BR');
+    const statusClass = ag.status === 'confirmado' ? 'bg-success' : 'bg-warning';
+
     return `
-        <tr id="appointment-row-${ag.id_agendamento}">
-            <td><strong>${ag.nome_cliente || 'N/A'}</strong></td>
-            <td>${ag.nome_pet || 'N/A'} <br><small class="text-muted">${ag.raca_pet || ''}</small></td>
-            <td>${ag.nome_servico || 'Banho & Tosa'}</td>
-            <td>${ag.nome_loja || 'Matriz'}</td>
-            <td>${formatDateTime(ag.data_hora_inicio)}</td>
-            <td>${getStatusBadge(ag.status)}</td>
+        <tr>
+            <td><strong>${ag.dono_nome || 'N/A'}</strong><br><small class="text-muted">${ag.dono_tel || ''}</small></td>
+            <td>${ag.nome_pet || 'N/A'}</td>
+            <td><span class="badge bg-info text-dark">${ag.nome_servico || 'Serviço'}</span></td>
+            <td>${dataFormatada}</td>
+            <td><span class="badge ${statusClass}">${ag.status || 'pendente'}</span></td>
             <td>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-info btn-view" data-id="${ag.id_agendamento}" data-bs-toggle="modal" data-bs-target="#appointmentDetailModal">
-                        <i class="bi bi-eye-fill"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning btn-edit-status" data-id="${ag.id_agendamento}">
-                        <i class="bi bi-pencil-fill"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger btn-cancel" data-id="${ag.id_agendamento}" 
-                        ${['cancelado', 'finalizado'].includes(ag.status) ? 'disabled' : ''}>
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
+                <button class="btn btn-sm btn-success mb-1" onclick="window.avisarWhatsapp('${ag.dono_tel}', '${ag.dono_nome}', '${ag.nome_pet}', '${ag.nome_servico}', '${ag.data_hora_inicio}')">
+                    <i class="bi bi-whatsapp"></i> Avisar
+                </button>
+                <button class="btn btn-sm btn-outline-danger mb-1" onclick="window.cancelarAgendamento(${ag.id_agendamento || ag.id})">
+                    <i class="bi bi-x-circle"></i>
+                </button>
             </td>
         </tr>`;
 }
@@ -57,24 +32,27 @@ async function loadAndDisplayAppointments() {
     const loadingRow = document.getElementById('loading-row-appointments');
     const noAppointmentsRow = document.getElementById('no-appointments-row');
 
-    if (!tableBody) return;
-
     try {
-        // CHAMADA PARA O SEU BACKEND NO RENDER
-        const response = await fetch(`${API_BASE_URL}/api/agendamentos`);
-        const result = await response.json();
-
-        if (!response.ok) throw new Error(result.mensagem || "Erro ao buscar agendamentos");
-
-        const agendamentos = result.data; // Ajuste conforme o formato que seu Flask retorna
+        const token = localStorage.getItem('token'); // Pega o token do login
+        
+        // Bate na rota de admin do seu app.py
+        const response = await fetch(`${API_BASE_URL}/api/admin/agendamentos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const agendamentos = await response.json();
 
         loadingRow.style.display = 'none';
         
-        // Limpa linhas antigas
+        // Se a resposta for um erro (ex: não autorizado)
+        if (!response.ok) throw new Error(agendamentos.mensagem || "Erro na API");
+
+        // Limpa a tabela
         const existingRows = tableBody.querySelectorAll("tr:not(#loading-row-appointments):not(#no-appointments-row)");
         existingRows.forEach(row => row.remove());
 
-        if (agendamentos && agendamentos.length > 0) {
+        // Se o Python retornar uma lista válida
+        if (Array.isArray(agendamentos) && agendamentos.length > 0) {
             noAppointmentsRow.style.display = 'none';
             agendamentos.forEach(ag => {
                 tableBody.insertAdjacentHTML('beforeend', createAppointmentRowHtml(ag));
@@ -84,76 +62,52 @@ async function loadAndDisplayAppointments() {
         }
     } catch (error) {
         console.error('Erro:', error.message);
-        if (loadingRow) loadingRow.style.display = 'none';
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erro ao carregar dados do servidor.</td></tr>`;
+        loadingRow.style.display = 'none';
+        tableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="6" class="text-center text-danger">Erro ao carregar dados do banco: ${error.message}</td></tr>`);
     }
 }
 
-// --- MODAL DE DETALHES VIA API ---
-async function showAppointmentDetails(appointmentId) {
-    const modalBody = document.getElementById('appointmentDetailModalBody');
-    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
+// --- FUNÇÕES GLOBAIS (Botões) ---
+window.avisarWhatsapp = (telefone, dono, pet, servico, dataHora) => {
+    if (!telefone || telefone === 'undefined') {
+        alert("Telefone do cliente não encontrado!");
+        return;
+    }
+    const data = new Date(dataHora).toLocaleDateString('pt-BR');
+    const hora = new Date(dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const msg = encodeURIComponent(`Olá ${dono}! 🐾 Confirmamos o horário do(a) ${pet} para ${servico} no dia ${data} às ${hora}. Podemos confirmar?`);
+    window.open(`https://api.whatsapp.com/send?phone=55${telefone.replace(/\D/g, '')}&text=${msg}`, '_blank');
+};
 
+window.cancelarAgendamento = async (id) => {
+    if(!confirm('Deseja realmente cancelar este agendamento?')) return;
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/api/agendamentos/${appointmentId}`);
-        const result = await response.json();
-        const ag = result.data;
-
-        if (ag) {
-            modalBody.innerHTML = `
-                <h6><strong>Dono:</strong> ${ag.nome_cliente}</h6>
-                <p>📞 Tel: ${ag.telefone_cliente || 'Não informado'}</p>
-                <hr>
-                <h6><strong>Pet:</strong> ${ag.nome_pet}</h6>
-                <p>🧬 Raça: ${ag.raca_pet} | Porte: ${ag.porte_pet || 'N/A'}</p>
-                <p>📝 Obs Pet: ${ag.observacoes_pet || 'Nenhuma'}</p>
-                <hr>
-                <p><strong>🕒 Horário:</strong> ${formatDateTime(ag.data_hora_inicio)}</p>
-                <p><strong>💬 Obs Cliente:</strong> ${ag.observacoes_cliente || 'Sem observações'}</p>
-            `;
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/cancelar-agendamento/${id}`, { 
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if(response.ok) {
+            alert('Agendamento cancelado!');
+            loadAndDisplayAppointments(); // Recarrega a tabela
+        } else {
+            alert("Erro ao cancelar no servidor.");
         }
     } catch (error) {
-        modalBody.innerHTML = `<p class="text-danger text-center">Erro ao carregar detalhes.</p>`;
+        console.error(error);
     }
-}
+};
 
-// --- ATUALIZAÇÃO DE STATUS VIA API ---
-async function changeStatus(id, novoStatus) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/agendamentos/status`, {
-            method: 'PUT', // Ou PATCH, dependendo da sua rota Flask
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_agendamento: id, status: novoStatus })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) throw new Error(result.mensagem);
-        
-        loadAndDisplayAppointments();
-    } catch (error) {
-        alert("Erro ao atualizar status: " + error.message);
-    }
-}
-
-// --- EVENT LISTENERS ---
+// --- INICIALIZAÇÃO E LOGOUT ---
 document.addEventListener('DOMContentLoaded', () => {
     loadAndDisplayAppointments();
 
-    document.addEventListener('click', (e) => {
-        const btnView = e.target.closest('.btn-view');
-        const btnEdit = e.target.closest('.btn-edit-status');
-        const btnCancel = e.target.closest('.btn-cancel');
-
-        if (btnView) showAppointmentDetails(btnView.dataset.id);
-        
-        if (btnEdit) {
-            const s = prompt("Novo status (pendente, confirmado, finalizado, cancelado):");
-            if (s) changeStatus(btnEdit.dataset.id, s.toLowerCase());
-        }
-        
-        if (btnCancel && confirm("Deseja realmente cancelar este agendamento?")) {
-            changeStatus(btnCancel.dataset.id, 'cancelado');
+    document.getElementById('logout-button')?.addEventListener('click', () => {
+        if(confirm('Deseja sair?')) {
+            localStorage.clear();
+            window.location.href = '../usuario/login.html';
         }
     });
 });

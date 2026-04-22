@@ -1,111 +1,174 @@
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// 1. DEFINIÇÃO DA URL DO BACKEND
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; 
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
+// 2. SEGURANÇA: VERIFICAR ADMIN
+async function verificarAdmin(token) {
     try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
+        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${token}`);
+        if (!response.ok) return false;
         const data = await response.json();
         return data.isAdmin;
     } catch (error) {
-        console.error("Erro ao verificar admin:", error);
+        return false;
     }
 }
+
 let productModal;
 
-document.addEventListener('DOMContentLoaded', () => {
+// 3. INICIALIZAÇÃO
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token'); 
+    
+    // Verificação de segurança obrigatória
+    if (!token) {
+        window.location.href = '../usuario/login.html';
+        return;
+    }
+
+    const isAdmin = await verificarAdmin(token);
+    if (!isAdmin) {
+        alert("Acesso restrito!");
+        window.location.href = '../usuario/login.html';
+        return; 
+    }
+
     productModal = new bootstrap.Modal(document.getElementById('productModal'));
+    
     loadProducts();
 
-    // Listener para o formulário (Criar/Editar)
+    // Listeners
     document.getElementById('productForm').addEventListener('submit', handleProductSubmit);
-
-    // Listener para busca em tempo real
     document.getElementById('input-busca').addEventListener('input', handleSearch);
+    
+    document.getElementById('logout-button')?.addEventListener('click', () => {
+        if(confirm('Deseja sair?')) {
+            localStorage.clear();
+            window.location.href = '../usuario/login.html';
+        }
+    });
+
+    // Limpar form ao abrir modal para "Novo Produto"
+    document.getElementById('add-product-button')?.addEventListener('click', () => {
+        document.getElementById('productForm').reset();
+        document.getElementById('editProductId').value = '';
+        document.getElementById('productModalLabel').innerText = "Novo Produto";
+    });
 });
 
+// 4. CARREGAR PRODUTOS DO BANCO
 async function loadProducts() {
     const tableBody = document.getElementById('product-table-body');
     const loadingRow = document.getElementById('loading-row');
     
     try {
-        const response = await fetch(API_URL);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/produtos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const produtos = await response.json();
 
         loadingRow.style.display = 'none';
+        
         // Limpa linhas antigas
         const oldRows = tableBody.querySelectorAll('tr:not(#loading-row):not(#no-products-row)');
         oldRows.forEach(row => row.remove());
 
-        if (produtos.length === 0) {
+        if (!response.ok) throw new Error(produtos.mensagem || "Erro na API");
+
+        if (!Array.isArray(produtos) || produtos.length === 0) {
             document.getElementById('no-products-row').style.display = 'table-row';
             return;
         }
 
+        document.getElementById('no-products-row').style.display = 'none';
+
         produtos.forEach(p => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>#${p.id_produto}</td>
+                <td class="ps-4 fw-bold text-secondary">#${p.id_produto || p.id}</td>
                 <td>
                     <div class="d-flex align-items-center">
-                        <img src="${p.url_imagem || '../img/placeholder.png'}" class="rounded me-2" style="width:40px;height:40px;object-fit:cover">
-                        <div><strong>${p.nome_produto}</strong><br><small class="text-muted">${p.marca || ''}</small></div>
+                        <img src="${p.url_imagem || '../img/placeholder.png'}" class="rounded me-3 shadow-sm" style="width:45px;height:45px;object-fit:cover">
+                        <div><strong class="text-dark">${p.nome_produto}</strong><br><small class="text-muted">${p.marca || 'Sem marca'}</small></div>
                     </div>
                 </td>
-                <td>R$ ${Number(p.preco).toFixed(2)}</td>
+                <td class="fw-bold">R$ ${Number(p.preco).toFixed(2).replace('.', ',')}</td>
                 <td>
-                    ${p.quantidade_estoque} un 
-                    <span class="badge ${p.quantidade_estoque < 5 ? 'bg-danger' : 'bg-success'}">
+                    <span class="fw-bold">${p.quantidade_estoque} un</span> 
+                    <span class="badge ms-2 ${p.quantidade_estoque < 5 ? 'bg-danger' : 'bg-success'}">
                         ${p.quantidade_estoque < 5 ? 'Baixo' : 'Ok'}
                     </span>
                 </td>
-                <td>
-                    <button class="btn btn-sm btn-outline-warning" onclick="openEditModal(${JSON.stringify(p).replace(/"/g, '&quot;')})"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id_produto})"><i class="bi bi-trash"></i></button>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-brand me-1" onclick='window.openEditModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="window.deleteProduct(${p.id_produto || p.id})"><i class="bi bi-trash"></i></button>
                 </td>
             `;
             tableBody.appendChild(tr);
         });
     } catch (error) {
         console.error("Erro ao carregar produtos:", error);
+        loadingRow.style.display = 'none';
+        tableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="5" class="text-center text-danger p-4">Erro ao conectar com o banco de dados.</td></tr>`);
     }
 }
 
+// 5. SALVAR PRODUTO (NOVO OU EDITADO)
 async function handleProductSubmit(e) {
     e.preventDefault();
+    const btn = document.getElementById('saveProductButton');
+    btn.disabled = true;
+    btn.innerText = "Salvando...";
+
     const id = document.getElementById('editProductId').value;
     const method = id ? 'PUT' : 'POST';
-    const url = id ? `${API_URL}/${id}` : API_URL;
+    
+    // Assumindo que a sua rota de administração de produtos é /api/admin/produtos
+    const url = id ? `${API_BASE_URL}/api/admin/produtos/${id}` : `${API_BASE_URL}/api/admin/produtos`;
 
     const data = {
         nome_produto: document.getElementById('nome_produto').value,
-        preco: document.getElementById('preco').value,
-        quantidade_estoque: document.getElementById('quantidade_estoque').value,
+        preco: parseFloat(document.getElementById('preco').value),
+        quantidade_estoque: parseInt(document.getElementById('quantidade_estoque').value),
         url_imagem: document.getElementById('url_imagem').value,
         marca: document.getElementById('marca').value,
         tipo_produto: document.getElementById('tipo_produto').value,
         descricao: document.getElementById('descricao').value
     };
 
-    const response = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(url, {
+            method: method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(data)
+        });
 
-    if (response.ok) {
-        productModal.hide();
-        loadProducts();
-        document.getElementById('productForm').reset();
+        if (response.ok) {
+            alert(id ? "Produto atualizado!" : "Produto criado com sucesso!");
+            productModal.hide();
+            loadProducts();
+            document.getElementById('productForm').reset();
+        } else {
+            const result = await response.json();
+            alert("Erro: " + (result.mensagem || "Falha ao salvar produto."));
+        }
+    } catch (error) {
+        alert("Erro ao conectar com o servidor.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Salvar Produto";
     }
 }
 
+// 6. ABRIR MODAL PARA EDIÇÃO
 window.openEditModal = (p) => {
-    document.getElementById('editProductId').value = p.id_produto;
+    document.getElementById('editProductId').value = p.id_produto || p.id;
     document.getElementById('nome_produto').value = p.nome_produto;
     document.getElementById('preco').value = p.preco;
     document.getElementById('quantidade_estoque').value = p.quantidade_estoque;
@@ -117,13 +180,29 @@ window.openEditModal = (p) => {
     productModal.show();
 };
 
+// 7. EXCLUIR PRODUTO
 window.deleteProduct = async (id) => {
-    if (confirm("Deseja excluir este produto?")) {
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        loadProducts();
+    if (confirm("Deseja realmente excluir este produto?")) {
+        try {
+            const token = localStorage.getItem('token');
+            // Assumindo rota de admin para deletar
+            const response = await fetch(`${API_BASE_URL}/api/admin/produtos/${id}`, { 
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                loadProducts();
+            } else {
+                alert("Erro ao excluir produto no servidor.");
+            }
+        } catch(error) {
+            alert("Erro de conexão.");
+        }
     }
 };
 
+// 8. BUSCA LOCAL
 function handleSearch(e) {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('#product-table-body tr:not(#loading-row):not(#no-products-row)');

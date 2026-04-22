@@ -1,68 +1,71 @@
-// 1. CONFIGURAÇÃO DA URL (Sempre no topo do arquivo)
+// 1. CONFIGURAÇÃO DA URL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE SEU LINK DO RENDER AQUI
-
-// 2. FUNÇÃO PARA VERIFICAR ADMIN
-async function verificarAdmin(userId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-        return false;
-    }
-}
+    : "https://regia-tinas.onrender.com"; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     const idUsuario = localStorage.getItem('usuario_id');
-    const lista = document.getElementById('lista-agendamentos-cliente');
+    const container = document.getElementById('lista-agendamentos-cliente');
 
-    // Verificação de segurança: se não houver ID, manda pro login
     if (!idUsuario) {
-        window.location.href = '../login.html';
+        window.location.href = 'login.html';
         return;
     }
 
     try {
-        // 3. CHAMADA PARA O BACKEND USANDO A URL DINÂMICA
+        // 2. BUSCA AGENDAMENTOS DO CLIENTE LOGADO
         const response = await fetch(`${API_BASE_URL}/api/usuario/agendamentos/${idUsuario}`);
-        
-        if (!response.ok) throw new Error("Erro ao buscar agendamentos");
-        
         const agendamentos = await response.json();
 
-        if (!lista) return;
+        if (!container) return;
 
-        if (!agendamentos || agendamentos.length === 0) {
-            lista.innerHTML = '<p class="text-muted">Você não tem agendamentos marcados.</p>';
+        if (!response.ok) throw new Error("Erro ao buscar dados");
+
+        if (agendamentos.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+                    <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-muted">Você ainda não possui agendamentos.</h5>
+                    <a href="../servicos/agendamento-fluxo.html" class="btn btn-outline-primary mt-3 rounded-pill">Agendar agora</a>
+                </div>`;
             return;
         }
 
-        // 4. RENDERIZAÇÃO DA LISTA
-        lista.innerHTML = agendamentos.map(ag => `
-            <div class="list-group-item mb-3 shadow-sm border-0 rounded-3">
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                    <h5 class="mb-1 fw-bold">${ag.nome_servico} para ${ag.nome_pet}</h5>
-                    <span class="badge ${
-                        ag.status === 'confirmado' ? 'bg-success' : 
-                        ag.status === 'cancelado' ? 'bg-danger' : 'bg-warning'
-                    } text-capitalize">${ag.status}</span>
+        // 3. RENDERIZAÇÃO EM FORMATO DE CARDS LINDOS
+        container.innerHTML = agendamentos.map(ag => {
+            const dataHora = new Date(ag.data_hora_inicio);
+            const statusClass = ag.status === 'confirmado' ? 'confirmado' : (ag.status === 'pendente' ? 'pendente' : '');
+            const badgeClass = ag.status === 'confirmado' ? 'bg-success' : (ag.status === 'cancelado' ? 'bg-danger' : 'bg-warning text-dark');
+
+            return `
+            <div class="col-md-6 col-lg-4">
+                <div class="card card-agendamento ${statusClass} shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <span class="badge ${badgeClass} text-capitalize">${ag.status}</span>
+                            <small class="text-muted fw-bold">#${ag.id_agendamento || '---'}</small>
+                        </div>
+                        <h5 class="card-title fw-bold mb-1">${ag.nome_servico}</h5>
+                        <p class="text-brand fw-bold mb-3"><i class="bi bi-dog me-2"></i>${ag.nome_pet}</p>
+                        
+                        <div class="border-top pt-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-calendar3 me-2 text-muted"></i>
+                                <span>${dataHora.toLocaleDateString('pt-BR')} às ${dataHora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-geo-alt me-2 text-muted"></i>
+                                <small>${ag.nome_loja || 'Unidade Principal'}</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="mb-1">📅 ${new Date(ag.data_hora_inicio).toLocaleString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}</p>
-                <small class="text-secondary">📍 Unidade: ${ag.nome_loja || 'Regia & Tinas Care'}</small>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
     } catch (error) {
-        console.error("Erro na requisição:", error);
-        if (lista) lista.innerHTML = '<p class="text-danger">Não foi possível carregar seus agendamentos.</p>';
+        console.error("Erro:", error);
+        container.innerHTML = `<div class="alert alert-danger text-center">Ocorreu um erro ao carregar seus dados. Verifique a conexão com o servidor.</div>`;
     }
 });

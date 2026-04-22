@@ -3,213 +3,208 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Contatos | CHATUAL DU PET</title>
+    <title>Contatos e Localização | Regia & Tinas Care</title>
     
-    <link rel="icon" type="image/png" href="../img/logo_peuqena4.png">
+    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        /* ==========================================================================
-           CSS DO home.css (Para Navbar, Footer, Botões)
-           ========================================================================== */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         :root { 
-            --chateau-purple: #FE8697; 
-            --chateau-light-purple: #f0e6f0; 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585;
+            --bg-light: #f8f9fa; 
+            --bg-light-pink: #fff5f6;
         }
-        body { background-color: #f8f9fa; color: #333; font-family: Arial, sans-serif; }
-        button, input, textarea, select { font-family: inherit; }
-        .main-purple-text { color: var(--chateau-purple) !important; }
+        
+        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        .text-brand { color: var(--brand-pink) !important; }
 
         /* --- Navbar --- */
-        .navbar { background-color: var(--chateau-purple) !important; padding: 0.5rem 1rem; }
-        .navbar .nav-link { color: #fff !important; }
-        .navbar-nav .profile-link-container { margin-right: 0 !important; }
-        .navbar-nav .profile-icon { margin-right: 0px !important; }
-        .navbar-nav .nav-link#perfil-text { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .navbar { background-color: var(--brand-pink) !important; padding: 0.8rem 1rem; }
+        .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
         .navbar-brand { font-weight: bold !important; }
-        .menu-todos button { color: #fff; font-weight: bold; background: transparent; border: none; }
-        .menu-todos .navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,1%29' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e"); }
-        .location-bar { background: var(--chateau-purple); padding: 4px 8px; font-size: 14px; }
-        .localizacao-logo { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-        .search-form { position: relative; border: 1px solid var(--chateau-purple); border-radius: 20px; overflow: hidden; flex-grow: 1; }
-        .search-form input { border: none; padding: 0.375rem 1rem; flex: 1; background-color: white; }
-        .search-form input:focus { outline: none; box-shadow: 0 0 0 0.2rem rgba(137,0,106,0.25); }
-        .btn-search { background: transparent; border: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; }
 
-        /* --- Botão Customizado --- */
-        .btn-custom { background-color: var(--chateau-purple); color: #fff; border-radius: 20px; padding: 8px 20px; border: 1px solid var(--chateau-purple); transition: 0.3s; display: inline-block; text-decoration: none; text-align: center; }
-        .btn-custom:hover { background-color: #FE8697; border-color: #FE8697; color: #fff; }
-
-        /* --- Footer --- */
-        .main-footer { background-color: #f8f8f8; border-top: 1px solid #ddd; color: #333; font-size: 0.95rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--chateau-purple); margin-bottom: 1rem; }
-        .main-footer a { color: #6c757d; text-decoration: none; line-height: 2; transition: color 0.2s; }
-        .main-footer a:hover { color: var(--chateau-purple); text-decoration: underline; }
-        .footer-cta { background-color: var(--chateau-purple); border-radius: 8px; }
-        .footer-hr { border-color: #eee; }
-        
-        /* ==========================================================================
-           CSS para Páginas Institucionais (Sobre, Lojas, Contatos)
-           ========================================================================== */
-        
-        /* Card de Informação (para lista de WhatsApp) */
-        .info-card {
-            background-color: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            height: 100%;
-        }
-
-        .list-group-item-action:hover {
-            background-color: #f8f9fa;
-            color: var(--chateau-purple);
-        }
-        
-        /* Card de Unidade (para lista de lojas) */
+        /* --- Cards de Unidade --- */
         .store-card {
             background-color: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid #ddd;
+            padding: 2rem;
+            border-radius: 16px;
+            border: none;
             margin-bottom: 1.5rem;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border-left: 6px solid var(--brand-pink);
         }
-        .store-card h5 {
-            color: var(--chateau-purple);
-            font-weight: 600;
-        }
-        .store-card h6 {
-            font-weight: 600;
-            margin-top: 10px;
+        .store-card h5 { color: var(--brand-pink); font-weight: bold; margin-bottom: 1rem; }
+        .store-card h6 { font-weight: bold; margin-top: 15px; color: #555; }
+
+        /* --- Lista de Atendimento --- */
+        .list-group-item { border: none; padding: 1.2rem; transition: 0.3s; margin-bottom: 5px; border-radius: 12px !important; }
+        .list-group-item-action:hover {
+            background-color: var(--bg-light-pink);
+            transform: translateX(5px);
         }
 
-        /* Estilos da galeria (copiado de sobre.html) */
+        /* --- Galeria --- */
         .friend-gallery-img {
             width: 100%;
             height: 250px;
             object-fit: cover;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             transition: transform 0.3s ease;
         }
-        .friend-gallery-img:hover {
-            transform: scale(1.05);
-        }
+        .friend-gallery-img:hover { transform: scale(1.05); }
+
+        /* --- Footer --- */
+        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
+        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--brand-pink); margin-bottom: 1rem; }
+        .main-footer a { color: #ccc; text-decoration: none; line-height: 2; transition: 0.3s; }
+        .main-footer a:hover { color: white; text-decoration: underline; }
+        .footer-cta { background-color: var(--brand-pink); border-radius: 12px; }
+        .footer-hr { border-color: #555; margin: 2rem 0; }
 
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm">
+    <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
         <div class="container">
-             <a class="btn text-white d-flex align-items-center" href="../index.html" style="text-decoration: none;">
+             <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html" style="text-decoration: none;">
                  <i class="bi bi-arrow-left me-2"></i>
-                 <span class="d-none d-sm-inline">Voltar</span>
+                 <span>Início</span>
              </a>
              <a class="navbar-brand fw-bold text-white d-flex align-items-center mx-auto" href="../index.html">
                  <span class="d-none d-md-inline">CONTATOS E LOCALIZAÇÃO</span>
+                 <span class="d-md-none">Contatos</span>
              </a>
              <div style="width: 80px;"></div>
         </div>
     </nav>
 
     <main class="container my-5">
-        <h1 class="text-center mb-5 main-purple-text fw-bold">Fale Conosco</h1>
+        <h1 class="text-center mb-5 text-brand fw-bold display-5">Fale Conosco</h1>
+        
         <div class="row g-5">
             <div class="col-lg-6">
-                <h3 class="fw-bold mb-3">Nossas Unidades</h3>
+                <h3 class="fw-bold mb-4 text-secondary"><i class="bi bi-geo-alt me-2"></i>Nossa Unidade</h3>
                 
                 <div class="store-card">
-                    <h5><i class="bi bi-shop me-2"></i>Unidade Mooca (Matriz)</h5>
-                    <p class="mb-1"><strong>Endereço:</strong> R. do Oratório, 426 - Mooca, São Paulo - SP, 03116-000</p>
-                    <p><strong>Telefone:</strong> (11) 99177-0311</p>
+                    <h5>Unidade São Caetano do Sul (Principal)</h5>
+                    <p class="mb-2"><strong>Endereço:</strong> R. Luiz Fiorotti, 394 - Olímpico, São Caetano do Sul - SP</p>
+                    <p class="mb-3"><strong>Telefone:</strong> (11) 97106-1329</p>
+                    
                     <h6>Horário de Funcionamento:</h6>
-                    <ul class="list-unstyled">
-                        <li>Segunda a Sábado: 08:00 – 18:00</li>
-                        <li>Domingo: Fechado</li>
+                    <ul class="list-unstyled text-muted">
+                        <li><i class="bi bi-clock me-2"></i>Terça a Sábado: 09:00 – 18:00</li>
+                        <li><i class="bi bi-x-circle me-2"></i>Domingo e Segunda: Fechado</li>
                     </ul>
+                    <a href="https://wa.me/5511971061329" target="_blank" class="btn btn-outline-success btn-sm mt-3 rounded-pill">
+                        <i class="bi bi-whatsapp me-2"></i>Falar com esta unidade
+                    </a>
                 </div>
 
-                 <div class="store-card">
-                    <h5><i class="bi bi-shop me-2"></i>Unidade Tatuapé</h5>
-                    <p class="mb-1"><strong>Endereço:</strong> R. Coelho Lisboa, 739 - Tatuapé, São Paulo - SP, 03323-040</p>
-                    <p><strong>Telefone:</strong> (11) 94527-7207</p>
-                </div>
-
-                 <div class="store-card">
-                    <h5><i class="bi bi-shop me-2"></i>Unidade Ipiranga</h5>
-                    <p class="mb-1"><strong>Endereço:</strong> R. Srg. Mor João de Souza, 39 - Ipiranga, São Paulo - SP, 04209-060</p>
-                    <p><strong>Telefone:</strong> (11) 2925-3884</p>
-                </div>
-
-                 <div class="store-card">
-                    <h5><i class="bi bi-shop me-2"></i>Unidade Santos</h5>
-                    <p class="mb-1"><strong>Endereço:</strong> Av. Pres. Wilson, 180 - José Menino, Santos - SP, 11065-201</p>
-                    <p><strong>Telefone:</strong> (13) 97424-2956</p>
+                <div class="alert alert-info border-0 rounded-4 shadow-sm p-4">
+                    <h6 class="fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Atendimento em Domicílio</h6>
+                    <p class="small mb-0 text-muted">Oferecemos o serviço de <strong>Taxi Dog</strong> para toda a região. Buscamos e levamos seu pet com segurança e conforto!</p>
                 </div>
             </div>
             
             <div class="col-lg-6">
-                 <h3 class="fw-bold mb-3">Canais de Atendimento</h3>
-                 <div class="list-group shadow-sm">
-                      <a href="https://wa.me/5511991770311" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-whatsapp fs-4 me-3" style="color: #25D366;"></i><div><strong>WhatsApp - Mooca</strong><br><small>(11) 99177-0311</small></div></a>
-                      <a href="https://wa.me/5511945277207" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-whatsapp fs-4 me-3" style="color: #25D366;"></i><div><strong>WhatsApp - Tatuapé</strong><br><small>(11) 94527-7207</small></div></a>
-                      <a href="https://wa.me/551129253884" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-whatsapp fs-4 me-3" style="color: #25D366;"></i><div><strong>WhatsApp - Ipiranga</strong><br><small>(11) 2925-3884</small></div></a>
-                      <a href="https://wa.me/5513974242956" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-whatsapp fs-4 me-3" style="color: #25D366;"></i><div><strong>WhatsApp - Santos</strong><br><small>(13) 97424-2956</small></div></a>
+                 <h3 class="fw-bold mb-4 text-secondary"><i class="bi bi-chat-dots me-2"></i>Canais Digitais</h3>
+                 <div class="list-group shadow-sm rounded-4 overflow-hidden">
+                      <a href="https://wa.me/5511971061329" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
+                          <i class="bi bi-whatsapp fs-3 me-3" style="color: #25D366;"></i>
+                          <div><strong>WhatsApp Oficial</strong><br><small class="text-muted">(11) 97106-1329</small></div>
+                      </a>
                       
-                      <a href="https://web.facebook.com/chateaudupet" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-facebook fs-4 me-3" style="color: #1877F2;"></i><div><strong>Facebook</strong><br><small>/chateaudupet</small></div></a>
-                      <a href="https://www.instagram.com/chateaudupet/" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-instagram fs-4 me-3" style="color: #E4405F;"></i><div><strong>Instagram</strong><br><small>@chateaudupet</small></div></a>
-                      <a href="mailto:financeiro@chateaudupettatuape.com.br" class="list-group-item list-group-item-action d-flex align-items-center"><i class="bi bi-envelope-fill fs-4 me-3"></i><div><strong>E-mail Financeiro</strong><br><small>financeiro@chateaudupettatuape.com.br</small></div></a>
+                      <a href="#" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
+                          <i class="bi bi-instagram fs-3 me-3" style="color: #E4405F;"></i>
+                          <div><strong>Instagram</strong><br><small class="text-muted">@regiaetinascare</small></div>
+                      </a>
+
+                      <a href="#" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
+                          <i class="bi bi-facebook fs-3 me-3" style="color: #1877F2;"></i>
+                          <div><strong>Facebook</strong><br><small class="text-muted">/regiaetinasscare</small></div>
+                      </a>
+                      
+                      <a href="mailto:contato@regiaetinas.com.br" class="list-group-item list-group-item-action d-flex align-items-center">
+                          <i class="bi bi-envelope-at-fill fs-3 me-3 text-brand"></i>
+                          <div><strong>E-mail de Contato</strong><br><small class="text-muted">contato@regiaetinas.com.br</small></div>
+                      </a>
+                 </div>
+
+                 <div class="mt-4 p-4 bg-white rounded-4 shadow-sm border">
+                    <h6 class="fw-bold mb-2">Trabalhe Conosco</h6>
+                    <p class="small text-muted">É apaixonado por animais? Envie seu currículo para nosso e-mail e venha fazer parte da nossa equipe!</p>
                  </div>
             </div>
         </div>
         
         <div class="row mt-5">
             <div class="col-12">
-                 <h3 class="fw-bold mb-3 text-center">Localização da Matriz no Mapa</h3>
-                 <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm">
+                 <h3 class="fw-bold mb-4 text-center text-secondary">Localização no Mapa</h3>
+                 <div class="ratio ratio-21x9 rounded-4 overflow-hidden shadow-lg border">
                       <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.348004543265!2d-46.61191182379564!3d-23.55593897871216!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59063717206f%3A0x6d907a0c5c631e84!2sR.%20do%20Orat%C3%B3rio%2C%20426%20-%20Mooca%2C%20S%C3%A3o%20Paulo%20-%20SP%2C%2003116-000!5e0!3m2!1spt-BR!2sbr!4v1731033101889!5m2!1spt-BR!2sbr" 
-                        width="100%" 
-                        height="450" 
-                        style="border:0;" 
-                        allowfullscreen="" 
-                        loading="lazy" 
-                        referrerpolicy="no-referrer-when-downgrade">
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3654.5424750275815!2d-46.5647576!3d-23.651199!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce4327429188d3%3A0xc0787e914561066!2sR.%20Luiz%20Fiorotti%2C%20394%20-%20Ol%C3%ADmpico%2C%20S%C3%A3o%20Caetano%20do%20Sul%20-%20SP%2C%2009571-010!5e0!3m2!1spt-BR!2sbr!4v1711750000000!5m2!1spt-BR!2sbr" 
+                        style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
                       </iframe>
                  </div>
             </div>
         </div>
 
         <div class="container my-5">
-            <h2 class="text-center main-purple-text fw-bold mb-4">Galeria: Nossos Amigos</h2>
-            <div class="row g-3">
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal1.webp" alt="Cliente pet 1" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal2.webp" alt="Cliente pet 2" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal3.webp" alt="Cliente pet 3" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal4.webp" alt="Cliente pet 4" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal5.webp" alt="Cliente pet 5" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal6.webp" alt="Cliente pet 6" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal7.webp" alt="Cliente pet 7" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal8.webp" alt="Cliente pet 8" class="friend-gallery-img"></div>
+            <h2 class="text-center text-brand fw-bold mb-5 display-6">Nossos Clientes e Amigos</h2>
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal1.webp" alt="Pet 1" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal2.webp" alt="Pet 2" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal3.webp" alt="Pet 3" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal4.webp" alt="Pet 4" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal5.webp" alt="Pet 5" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal6.webp" alt="Pet 6" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal7.webp" alt="Pet 7" class="friend-gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal8.webp" alt="Pet 8" class="friend-gallery-img"></div>
             </div>
         </div>
     </main>
 
-    <footer class="main-footer pt-5 pb-4 mt-5">
+    <footer class="main-footer">
         <div class="container">
             <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4"><div class="footer-cta p-4"><h4 class="text-white">Como podemos ajudar?</h4><p class="text-white-50">Conheça mais sobre nós.</p><a href="contatos.html" class="btn btn-light btn-sm fw-bold">Fale Conosco</a></div></div>
-                <div class="col-lg-3 col-md-6 mb-4"><h5>Atendimento</h5><ul class="list-unstyled"><li><a href="contatos.html">Central de Ajuda/FAQ</a></li><li><a href="#">Trocas e Devoluções</a></li></ul></div>
-                <div class="col-lg-3 col-md-6 mb-4"><h5>Nossos Serviços</h5><ul class="list-unstyled"><li><a href="../servicos/veterinaria.html">Veterinária 🐾</a></li><li><a href="../servicos/servicos.html">Estética</a></li><li><a href="../servicos/hotel.html">Hotel Pet</a></li><li><a href="../servicos/day_care.html">Day Care</a></li></ul></div>
-                <div class="col-lg-3 col-md-6 mb-4"><h5>Informações Legais</h5><ul class="list-unstyled"><li><a href="#">Política de Privacidade</a></li><li><a href="lojas.html">Nossas Lojas</a></li></ul></div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="footer-cta p-4 text-center">
+                        <h5 class="text-white fw-bold mb-2">Dúvidas?</h5>
+                        <p class="text-white-50 small mb-3">Estamos aqui para ajudar você e seu pet.</p>
+                        <a href="contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5>Atendimento</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="contatos.html">Ajuda e FAQ</a></li>
+                        <li><a href="../usuario/login.html">Minha Conta</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5>Nossos Serviços</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="../servicos/veterinaria.html">Veterinária 🐾</a></li>
+                        <li><a href="../servicos/servicos.html">Banho & Tosa</a></li>
+                        <li><a href="../servicos/hotel.html">Hotel Pet</a></li>
+                        <li><a href="../servicos/day_care.html">Day Care</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5>Informações Legais</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">Política de Privacidade</a></li>
+                        <li><a href="lojas.html">Nossas Lojas</a></li>
+                    </ul>
+                </div>
             </div>
             <hr class="footer-hr">
-            <div class="text-center mt-3 small text-muted">
-                <p class="mb-0">CHATUAL DU PET | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2025 CHATUAL DU PET - Todos os direitos reservados.</p>
+            <div class="text-center mt-3 small text-white-50">
+                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
+                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
             </div>
         </div>
     </footer>

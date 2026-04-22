@@ -1,25 +1,13 @@
-// --- CONFIGURAÇÃO ---
-// 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
+// js/geolocator.js - Geolocalização Regia & Tinas Care
+
+// 1. CONFIGURAÇÃO DA URL CENTRALIZADA
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
+    : "https://regia-tinas.onrender.com"; 
 
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
-}
-export const CHATEAU_SELECTED_STORE_KEY = 'chateau_selected_store';
+export const CHATEAU_SELECTED_STORE_KEY = 'regia_tinas_selected_store';
 
-// Função Haversine (Cálculo matemático de distância entre dois pontos no globo)
-
+// 2. FUNÇÃO HAVERSINE (Cálculo matemático de distância no globo terrestre)
 function getDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Raio da Terra em km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -30,46 +18,45 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// 1. BUSCAR LOJAS REAIS DO NEON (Via Python)
+// 3. BUSCAR LOJAS REAIS DA API PÚBLICA
 async function getUnidadesDoBanco() {
     try {
-        const response = await fetch(`${API_URL}/admin/lojas`);
-        const lojas = await response.json();
-        // Nota: Garanta que sua tabela 'lojas' no Neon tenha as colunas 'latitude' e 'longitude'
-        return lojas;
+        const response = await fetch(`${API_BASE_URL}/api/lojas`);
+        if (!response.ok) throw new Error("Erro na API");
+        return await response.json();
     } catch (error) {
-        console.error("Erro ao carregar unidades:", error);
+        console.error("Erro ao carregar unidades para geolocalização:", error);
         return [];
     }
 }
 
-// 2. DEFINIR LOJA SELECIONADA
+// 4. DEFINIR LOJA SELECIONADA E EXIBIR NA TELA
 function setSelectedStore(storeId, storeName, distance = null) {
     const locationSpan = document.getElementById('unidade-proxima');
     
     localStorage.setItem(CHATEAU_SELECTED_STORE_KEY, JSON.stringify({ id: storeId, name: storeName }));
     
-    let display = `📍 Unidade: ${storeName}`;
+    let display = `<i class="bi bi-geo-alt-fill text-danger me-1"></i> Você está vendo o estoque da unidade: <strong>${storeName}</strong>`;
     if (distance !== null) {
-        display += ` (a ${distance.toFixed(1)} km de você)`;
+        display += ` <small class="text-muted">(a ${distance.toFixed(1)} km de você)</small>`;
     }
 
-    if (locationSpan) locationSpan.textContent = display;
+    if (locationSpan) locationSpan.innerHTML = display;
     
-    // Dispara evento para outros scripts (como o de produtos) filtrarem pela loja
-    window.dispatchEvent(new Event('chateauStoreChanged'));
+    // Dispara um evento para avisar a página da loja que a unidade mudou (útil para recarregar produtos filtrados no futuro)
+    window.dispatchEvent(new Event('storeChanged'));
 }
 
-// 3. ENCONTRAR A MAIS PRÓXIMA
+// 5. ENCONTRAR A LOJA MAIS PRÓXIMA DO USUÁRIO
 async function findNearestStore(userLat, userLon) {
     const unidades = await getUnidadesDoBanco();
     let nearestStore = null;
     let minDistance = Infinity;
 
     unidades.forEach(store => {
-        // Assume que o banco retorna 'latitude' e 'longitude'
+        // Verifica se a loja tem latitude e longitude cadastradas no banco Neon
         if (store.latitude && store.longitude) {
-            const dist = getDistance(userLat, userLon, store.latitude, store.longitude);
+            const dist = getDistance(userLat, userLon, parseFloat(store.latitude), parseFloat(store.longitude));
             if (dist < minDistance) {
                 minDistance = dist;
                 nearestStore = store;
@@ -78,15 +65,18 @@ async function findNearestStore(userLat, userLon) {
     });
 
     if (nearestStore) {
-        setSelectedStore(nearestStore.id_loja, nearestStore.nome_loja, minDistance);
+        setSelectedStore(nearestStore.id_loja || nearestStore.id, nearestStore.nome_loja, minDistance);
+    } else {
+        // Se nenhuma loja tiver coordenada cadastrada, joga para a matriz
+        setSelectedStore(1, "São Caetano do Sul (Matriz)");
     }
 }
 
-// 4. INICIALIZAÇÃO
+// 6. INICIALIZAÇÃO DA GEOLOCALIZAÇÃO
 export function initGeolocation() {
     const locationSpan = document.getElementById('unidade-proxima');
 
-    // Se já escolheu uma antes, mantém
+    // Se já calculou antes e salvou no navegador, não precisa pedir o GPS de novo
     const saved = localStorage.getItem(CHATEAU_SELECTED_STORE_KEY);
     if (saved) {
         const { id, name } = JSON.parse(saved);
@@ -94,15 +84,19 @@ export function initGeolocation() {
         return;
     }
 
+    // Pede permissão de GPS para o usuário
     if (navigator.geolocation) {
-        if (locationSpan) locationSpan.textContent = "📍 Localizando unidade mais próxima...";
+        if (locationSpan) locationSpan.innerHTML = '<span class="spinner-border spinner-border-sm text-danger" role="status"></span> Localizando a loja mais próxima...';
         
         navigator.geolocation.getCurrentPosition(
             (pos) => findNearestStore(pos.coords.latitude, pos.coords.longitude),
-            () => setSelectedStore(1, "Mooca (Padrão)"), // Fallback se negar
+            () => setSelectedStore(1, "São Caetano do Sul (Matriz)"), // Fallback caso o usuário clique em "Bloquear GPS"
             { timeout: 5000 }
         );
+    } else {
+        setSelectedStore(1, "São Caetano do Sul (Matriz)");
     }
 }
 
+// Inicia automaticamente quando a página carregar
 document.addEventListener('DOMContentLoaded', initGeolocation);

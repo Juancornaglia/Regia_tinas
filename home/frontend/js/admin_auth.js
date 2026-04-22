@@ -1,51 +1,48 @@
-// js/admin_auth.js
-// Proteção de rotas para o ambiente Neon + Python
+// js/admin_auth.js - Proteção de rotas para o Painel Admin (Regia & Tinas Care)
+
+// ATENÇÃO: Lembre-se de importar o utils.js no HTML do Admin antes deste script!
 
 export async function checkAdminAuth() {
     const userId = localStorage.getItem('usuario_id');
 
-    // 1. Verifica se sequer existe um ID no navegador
+    // 1. Verifica se sequer existe um ID salvo no navegador
     if (!userId) {
-        console.warn("Nenhum usuário logado. Redirecionando para login...");
+        console.warn("Acesso negado: Nenhum usuário logado.");
         window.location.href = '../usuario/login.html';
         return null;
     }
 
     try {
-        // 2. Pergunta ao Python se esse ID é de um Admin real no Neon
-        // 1. COLOQUE ISSO NO TOPO DO ARQUIVO (FORA DE QUALQUER FUNÇÃO)
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000" 
-    : "https://seu-backend-regia-tinas.onrender.com"; // <--- COLOQUE O SEU LINK DO RENDER AQUI
-
-// 2. AGORA VEJA COMO FICA A SUA FUNÇÃO DE VERIFICAR ADMIN:
-async function verificarAdmin(userId) {
-    try {
-        // Você apaga o link antigo e usa a variável nova:
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
+        // 2. Pergunta ao Python se esse ID é de um Admin real
+        // Usando a variável global que definimos no utils.js
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/verificar-admin/${userId}`);
         
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-    }
-}
+        if (!response.ok) {
+            throw new Error("Falha ao validar permissões com o servidor.");
+        }
+
         const data = await response.json();
 
-        if (response.ok && data.status === 'autorizado') {
-            console.log(`Acesso concedido para o admin: ${data.nome}`);
-            return { id: userId, nome: data.nome };
+        // 3. Valida se a API confirmou que é admin (aceita isAdmin ou role)
+        if (data.isAdmin === true || data.role === 'admin') {
+            console.log("Acesso concedido ao painel administrativo.");
+            
+            // Retorna os dados para a página do Dashboard usar (ex: exibir o nome)
+            return { 
+                id: userId, 
+                nome: localStorage.getItem('usuario_nome') || 'Administrador' 
+            };
         } else {
-            // 3. Se não for admin, limpa tudo e expulsa
+            // 4. Se for apenas um cliente curioso, não apaga o login dele, apenas expulsa para a home
             console.error("Acesso negado: Usuário não possui privilégios de admin.");
-            alert("Área restrita! Apenas administradores podem acessar esta página.");
-            localStorage.clear();
-            window.location.href = '../usuario/login.html';
+            alert("Área restrita! Apenas administradores podem acessar o painel.");
+            window.location.href = '../index.html'; 
             return null;
         }
+        
     } catch (error) {
         console.error("Erro na verificação de segurança:", error);
-        // Em caso de erro de servidor, por segurança, redireciona
+        // Em caso de erro grave (servidor fora do ar), redireciona para o login
         window.location.href = '../usuario/login.html';
         return null;
     }

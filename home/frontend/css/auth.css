@@ -1,23 +1,41 @@
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #f8f8f8;
+/* ==========================================================================
+   CSS DE AUTENTICAÇÃO (LOGIN E CRIAR CONTA) - REGIA & TINAS CARE
+   ========================================================================== */
+
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --brand-pink: #FE8697;
+    --brand-pink-hover: #e57585;
+    --bg-light: #f8f8f8;
+    --text-dark: #333;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-light);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
 
+/* --- Cabeçalho do Site --- */
 .auth-header {
-    background-color: #FE8697;
+    background-color: var(--brand-pink);
     color: white;
     padding: 15px 0;
     text-align: center;
     font-family: 'Ribeye', cursive;
     font-size: 1.8rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 10px rgba(254, 134, 151, 0.2);
+    z-index: 10;
 }
 
+/* --- Container Principal --- */
 .form-container {
     flex-grow: 1;
     display: flex;
@@ -27,87 +45,74 @@ body {
 }
 
 .form-box {
-    background-color: #FE8697; /* Rosa do Regia & Tinas */
+    background-color: var(--brand-pink);
     padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    max-width: 400px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(254, 134, 151, 0.3);
+    max-width: 420px;
     width: 100%;
-    box-sizing: border-box; /* Garante que o padding não jogue os campos para fora */
 }
 
-.form-box h2, .form-box h1 {
-    color: #333 !important; 
-    text-align: center;
-    margin-bottom: 30px;
-    font-weight: bold;
-}
-
+/* --- Cabeçalho do Formulário --- */
 .form-header {
-    color: black;
     display: flex;
     align-items: center;
-    margin-bottom: 25px;
-    position: relative; /* Para posicionar o botão de voltar */
+    justify-content: center;
+    position: relative;
+    margin-bottom: 30px;
 }
 
 .form-header .back-button {
-    color: #fff5f6;
-    font-size: 1.5rem;
-    margin-right: 15px;
+    position: absolute;
+    left: 0;
+    color: white;
+    font-size: 1.8rem;
+    transition: 0.3s ease;
     text-decoration: none;
-    display: flex;
-    align-items: center;
+}
+.form-header .back-button:hover {
+    transform: translateX(-4px);
+    color: #f1f1f1;
 }
 
 .form-header h1 {
+    font-family: 'Inknut Antiqua', serif;
     font-size: 1.6rem;
-    color: #333;
+    color: white;
     margin: 0;
-    flex-grow: 1; /* Para centralizar o h1 */
-    text-align: center; /* Centraliza o texto */
+    text-align: center;
 }
 
+/* --- Inputs e Campos --- */
 .input-group {
+    position: relative;
     width: 100%;
     margin-bottom: 20px;
 }
 
 .input-group input {
-    width: 100%; /* Agora ele respeita o limite do rosa */
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
+    width: 100%;
+    padding: 14px 15px;
+    border: 2px solid transparent;
+    border-radius: 12px;
     background-color: white;
-    color: #333 !important; /* Texto em preto dentro do campo branco */
-    box-sizing: border-box; /* RESOLVE O PROBLEMA DE SAIR PARA FORA */
-}
-.form-options, .form-options label {
-    color: #333 !important; /* Mudando de branco para preto */
-}
-.btn-acessar {
-    background: none;
-    border: 2px solid #333;
-    color: #333 !important;
-    font-weight: bold;
-    padding: 10px 25px;
-    border-radius: 20px;
-    float: right;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-acessar:hover {
-    background-color: #333;
-    color: #FE8697 !important;
+    color: var(--text-dark);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    transition: 0.3s ease;
 }
 
 .input-group input:focus {
     outline: none;
-    border-color: #FE8697;
-    box-shadow: 0 0 0 0.2rem rgba(137, 0, 106, 0.25);
+    border-color: #ffb3ba;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
+.input-group input::placeholder {
+    color: #999;
+}
+
+/* --- Olhinho da Senha --- */
 .eye-icon {
     position: absolute;
     right: 15px;
@@ -115,178 +120,135 @@ body {
     transform: translateY(-50%);
     cursor: pointer;
     color: #888;
+    z-index: 10;
+    font-size: 1.2rem;
+    transition: 0.2s;
 }
+.eye-icon:hover { color: var(--brand-pink); }
+#senha, #new_password, #confirm_new_password { padding-right: 45px; }
 
+/* --- Opções (Lembrar / Esqueci a senha) --- */
 .form-options {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    color: white;
 }
 
 .form-options label {
     display: flex;
     align-items: center;
-    gap: 5px;
-    color: #555;
+    gap: 8px;
     cursor: pointer;
 }
 
-.form-options input[type="checkbox"] {
-    margin-right: 5px;
-}
-
-.form-options a {
-    color: #fff;
+.forgot-link {
+    color: white;
     text-decoration: none;
+    font-weight: 500;
+    transition: 0.2s;
 }
+.forgot-link:hover { text-decoration: underline; opacity: 0.9; }
 
-.form-options a:hover {
-    text-decoration: underline;
-}
-
+/* --- Botões --- */
 .form-buttons {
     display: flex;
-    justify-content: space-between;
-    gap: 15px; /* Espaço entre os botões */
-    margin-bottom: 30px;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.btn {
-    padding: 12px 20px;
+.btn-solid, .btn-outline {
+    flex: 1;
+    padding: 12px;
     border-radius: 25px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: bold;
-    cursor: pointer;
     text-align: center;
-    text-decoration: none; /* Garante que o <a> não tenha sublinhado */
-    flex: 1; /* Faz os botões dividirem o espaço igualmente */
-    white-space: nowrap; /* Evita que o texto quebre em várias linhas */
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
 }
 
+/* Botão Entrar / Salvar (Branco com texto rosa) */
 .btn-solid {
-    background-color: #FE8697;
-    color: white;
-    border: 2px solid #FE8697;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+    background-color: white;
+    color: var(--brand-pink);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
 .btn-solid:hover {
-    background-color: #FE8697;
-    border-color: #FE8697;
-    color: white; /* Garante que a cor do texto continue branca no hover */
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+.btn-solid:disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+    transform: none;
 }
 
+/* Botão Criar Conta (Transparente com borda branca) */
 .btn-outline {
-    background-color: #FE8697;
-    color: #FE8697;
-    border: 2px solid #FE8697;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background-color: transparent;
+    color: white;
+    border: 2px solid white;
 }
-
 .btn-outline:hover {
-    background-color: #FE8697;
+    background-color: rgba(255, 255, 255, 0.1);
     color: white;
 }
 
+/* --- Redes Sociais --- */
 .divider {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 30px 0;
-    color: #888;
+    margin: 25px 0 20px;
+    color: white;
+    font-size: 0.85rem;
+    opacity: 0.9;
 }
-
-.divider::before,
-.divider::after {
+.divider::before, .divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
-
-.divider:not(:empty)::before {
-    margin-right: .25em;
-}
-
-.divider:not(:empty)::after {
-    margin-left: .25em;
-}
+.divider:not(:empty)::before { margin-right: 15px; }
+.divider:not(:empty)::after { margin-left: 15px; }
 
 .social-login {
     display: flex;
-    justify-content: center; /* Centraliza as imagens */
-    gap: 20px; /* Espaço entre as imagens */
+    justify-content: center;
+    gap: 20px;
 }
-
-.social-login a img {
-    width: 40px; /* Tamanho ajustado para as imagens */
-    height: 40px;
-    object-fit: contain; /* Garante que a imagem se ajuste sem cortar */
-    transition: transform 0.2s ease;
-}
-
-.social-login a img:hover {
-    transform: scale(1.1); /* Efeito de zoom no hover */
-}
-
-/* Responsividade */
-@media (max-width: 480px) {
-    .form-box {
-        padding: 20px;
-    }
-    .form-header h1 {
-        font-size: 1.4rem;
-    }
-    .form-buttons {
-        flex-direction: column; /* Botões empilhados em telas menores */
-        gap: 10px;
-    }
-    .btn {
-        width: 100%;
-    }
-}
-/* Estilo Moderno para Regia & Tinas Care */
-:root {
-    --rosa-principal: #FE8697;
-    --cinza-claro: #f8f9fa;
-}
-
-.perfil-container {
-    max-width: 900px;
-    margin: 40px auto;
-    background: white;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-}
-
-/* Esconder o formulário de pet por padrão (vamos usar um Modal ou mostrar só ao clicar) */
-#sessao-cadastro-pet {
-    display: none; 
-    border: 1px solid #ddd;
-    padding: 20px;
-    margin-top: 20px;
-    border-radius: 10px;
-    background: var(--cinza-claro);
-}
-
-.pet-card {
+.social-login a {
+    background-color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    transition: 0.3s;
+    justify-content: center;
+    transition: 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.social-login a:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+.social-login a img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
 }
 
-.pet-card:hover { background: #fff5f6; }
-
-.btn-rosa {
-    background-color: var(--rosa-principal);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    cursor: pointer;
+/* --- Responsividade --- */
+@media (max-width: 480px) {
+    .form-box { padding: 30px 20px; border-radius: 15px; }
+    .form-header h1 { font-size: 1.4rem; }
+    .form-buttons { flex-direction: column; gap: 12px; }
+    .btn-solid, .btn-outline { width: 100%; }
 }
