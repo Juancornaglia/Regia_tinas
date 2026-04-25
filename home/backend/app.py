@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
+from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Importação da sua função de query simplificada
@@ -255,30 +256,62 @@ def buscar_todos_agendamentos():
     conn = None
     cur = None
     try:
+        # 1. Capturar os filtros da URL (se existirem)
+        servico_id = request.args.get('servico')
+        funcionario_id = request.args.get('funcionario')
+        status_filtro = request.args.get('status') # Bônus: Já deixei preparado caso você queira filtrar por status!
+
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        cur.execute('''
+        # 2. Query Base (com o LEFT JOIN para o funcionário e ajustando os nomes para bater com o JS)
+        base_query = '''
             SELECT 
                 a.id_agendamento,
                 a.data_hora_inicio, 
                 a.status, 
-                per.nome_completo as dono_nome,
-                per.telefone as dono_tel,
+                per.nome_completo AS cliente_nome,
+                per.telefone AS cliente_tel,
                 p.nome_pet, 
+                p.raca,
                 s.nome_servico, 
-                l.nome_loja
+                l.nome_loja,
+                func.nome_completo AS nome_funcionario
             FROM public.agendamentos a
             JOIN public.perfis per ON a.id_cliente = per.id
             JOIN public.pets p ON a.id_pet = p.id_pet
             JOIN public.servicos s ON a.id_servico = s.id_servico
             JOIN public.lojas l ON a.id_loja = l.id_loja
-            ORDER BY a.data_hora_inicio ASC
-        ''')
+            LEFT JOIN public.perfis func ON a.id_funcionario = func.id
+            WHERE 1=1
+        '''
+        
+        params = []
+        
+        # 3. Adicionar os filtros dinamicamente na query de forma segura
+        if servico_id:
+            base_query += " AND a.id_servico = %s"
+            params.append(servico_id)
+            
+        if funcionario_id:
+            base_query += " AND a.id_funcionario = %s"
+            params.append(funcionario_id)
+
+        if status_filtro:
+            base_query += " AND a.status = %s"
+            params.append(status_filtro)
+            
+        # 4. Finalizar a query com a ordenação
+        base_query += " ORDER BY a.data_hora_inicio ASC"
+        
+        # Passamos a tuple(params) para evitar ataques de SQL Injection
+        cur.execute(base_query, tuple(params))
         
         agendamentos = cur.fetchall()
         return jsonify(agendamentos), 200
+        
     except Exception as e:
+        print("Erro na rota de agendamentos:", e) # Ajuda a debugar no terminal
         return jsonify({"error": str(e)}), 500
     finally:
         if cur: cur.close()
@@ -390,8 +423,6 @@ def editar_produto(id):
     finally:
         if cur: cur.close()
         if conn: conn.close()
-
-# --- CMS E CONTEÚDO ---
 
 @app.route('/api/cms/content', methods=['GET'])
 def get_cms_content():
@@ -722,7 +753,6 @@ def atualizar_perfil(id_usuario):
         if cur: cur.close()
         if conn: conn.close()
 
-# --- ROTAS DE FILTROS E CONTEÚDO (CMS) ---
 
 @app.route('/api/filtros', methods=['GET'])
 def get_filtros():
@@ -947,6 +977,15 @@ def cadastrar_pet():
         if conn: conn.close()
 # --- 8. CÁLCULO DE HORÁRIOS DISPONÍVEIS (LÓGICA CORE) ---
 
+HORA_INICIO_PADRAO = time(8, 0)
+HORA_FIM_PADRAO = time(18, 0)
+INTERVALO_SLOT_MINUTOS = 30
+
+def get_db_connection():
+    # Substitua pela sua string de conexão real do Neon
+    return psycopg2.connect("sua_string_de_conexao_do_neon")
+
+# --- ROTA: BUSCAR HORÁRIOS DISPONÍVEIS ---
 @app.route('/api/horarios-disponiveis', methods=['GET'])
 def get_available_slots():
     conn = None
@@ -957,75 +996,62 @@ def get_available_slots():
         data_str = request.args.get('data')
 
         if not all([loja_id, servico_id, data_str]):
-            return jsonify({"error": "Parâmetros obrigatórios faltando."}), 400
+            return jsonify({"error": "Parâmetros faltando."}), 400
 
         data_selecionada = datetime.strptime(data_str, '%Y-%m-%d').date()
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. Verificar Bloqueios
-        cur.execute('''
-            SELECT motivo FROM public.dias_bloqueados 
-            WHERE data_bloqueada = %s AND (id_loja = %s OR id_loja IS NULL)
-        ''', (data_str, loja_id))
-        
-        if cur.fetchone():
-            return jsonify([]), 200
+        # 1. Verifica se o dia está bloqueado
+        cur.execute('SELECT motivo FROM public.dias_bloqueados WHERE data_bloqueada = %s AND (id_loja = %s OR id_loja IS NULL)', (data_str, loja_id))
+        if cur.fetchone(): return jsonify([]), 200
 
-        # 2. Capacidade e Duração
+        # 2. Puxa regras de capacidade
         cur.execute('''
             SELECT r.capacidade_simultanea, s.duracao_media_minutos 
-            FROM public.servicos_lo_regras r
+            FROM public.servicos_loja_regras r
             JOIN public.servicos s ON r.id_servico = s.id_servico
             WHERE r.id_loja = %s AND r.id_servico = %s AND r.ativo = true
         ''', (loja_id, servico_id))
         
         regra = cur.fetchone()
-        if not regra: 
-            return jsonify([]), 200
+        if not regra: return jsonify([]), 200
 
-        duracao = regra['duracao_media_minutos'] or INTERVALO_SLOT_MINUTOS
+        duracao = regra['duracao_media_minutos'] or 30
 
-        # 3. Agendamentos Ocupados
+        # 3. Puxa agendamentos já feitos
         cur.execute('''
-            SELECT data_hora_inicio, data_hora_fundo FROM public.agendamentos 
+            SELECT data_hora_inicio, data_hora_fim FROM public.agendamentos 
             WHERE id_loja = %s AND CAST(data_hora_inicio AS DATE) = %s AND status != 'cancelado'
         ''', (loja_id, data_str))
         agendamentos = cur.fetchall()
 
-        # 4. Varredura de Horários
-        horarios_disponiveis = []
-        hora_atual = datetime.combine(data_selecionada, HORA_INICIO_PADRAO)
-        hora_fim_dia = datetime.combine(data_selecionada, HORA_FIM_PADRAO)
+        # 4. Gera os slots
+        slots = []
+        atual = datetime.combine(data_selecionada, HORA_INICIO_PADRAO)
+        fim_dia = datetime.combine(data_selecionada, HORA_FIM_PADRAO)
 
-        while hora_atual < hora_fim_dia:
-            slot_inicio = hora_atual
-            slot_fim = hora_atual + timedelta(minutes=duracao)
+        while atual + timedelta(minutes=duracao) <= fim_dia:
+            slot_inicio = atual
+            slot_fim = atual + timedelta(minutes=duracao)
             
-            if slot_fim.time() > HORA_FIM_PADRAO: 
-                break
-
             conflitos = 0
             for ag in agendamentos:
                 ag_inicio = ag['data_hora_inicio'].replace(tzinfo=None)
-                ag_fim = ag['data_hora_fundo'].replace(tzinfo=None) if ag['data_hora_fundo'] else ag_inicio + timedelta(minutes=duracao)
-                
+                ag_fim = ag['data_hora_fim'].replace(tzinfo=None) if ag['data_hora_fim'] else ag_inicio + timedelta(minutes=duracao)
                 if slot_inicio < ag_fim and slot_fim > ag_inicio:
                     conflitos += 1
-            
+
             if conflitos < regra['capacidade_simultanea']:
-                horarios_disponiveis.append(slot_inicio.strftime('%H:%M'))
+                slots.append(slot_inicio.strftime('%H:%M'))
             
-            hora_atual += timedelta(minutes=INTERVALO_SLOT_MINUTOS)
+            atual += timedelta(minutes=INTERVALO_SLOT_MINUTOS)
 
-        return jsonify(horarios_disponiveis), 200
-
+        return jsonify(slots), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        if cur: cur.close()
         if conn: conn.close()
-
 # --- 9. E-COMMERCE (NOVIDADES) ---
 
 @app.route('/api/ecommerce/novidades', methods=['GET'])

@@ -1,187 +1,211 @@
-// 1. DEFINIÇÃO DA URL DO BACKEND
+// js/admin_horarios.js - CONECTADO À API REAL
+
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://regia-tinas.onrender.com"; 
+    : "https://regia-tinas.onrender.com";
 
-// 2. SEGURANÇA: VERIFICAR SE É ADMIN
-async function verificarAdmin(userId) {
-    try {
-        // CORREÇÃO: Usando a rota que configuramos no app.py (espera o ID do usuário)
-        const response = await fetch(`${API_BASE_URL}/api/auth/verificar-admin/${userId}`);
-        
-        if (!response.ok) return false;
-        
-        const data = await response.json();
-        return data.isAdmin;
-    } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-        return false;
-    }
-}
+document.addEventListener('DOMContentLoaded', () => {
+    carregarProfissionais();
 
-// --- ELEMENTOS DO DOM ---
-const blockDayForm = document.getElementById('blockDayForm');
-const blockedDaysList = document.getElementById('blockedDaysList');
-const loadingBlockedDays = document.getElementById('loadingBlockedDays');
-const lojaSelectHorarios = document.getElementById('loja-select-horarios');
-const storesSelectBlockDay = document.getElementById('block-store');
-
-// --- 3. CARREGAMENTO INICIAL (LOJAS) ---
-async function carregarLojas() {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/admin/lojas`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        // BLINDAGEM: Verifica erro antes de ler o JSON
-        if (!response.ok) throw new Error("Erro ao buscar lojas");
-
-        const lojas = await response.json();
-
-        if (Array.isArray(lojas)) {
-            const optionsHtml = lojas.map(l => `<option value="${l.id_loja || l.id}">${l.nome_loja}</option>`).join('');
-            
-            if (lojaSelectHorarios) {
-                lojaSelectHorarios.innerHTML = '<option value="" selected disabled>Selecione uma loja...</option>' + optionsHtml;
-            }
-            if (storesSelectBlockDay) {
-                storesSelectBlockDay.innerHTML = '<option value="ALL">Todas as Lojas</option>' + optionsHtml;
-            }
-        }
-    } catch (error) {
-        console.error("Erro ao buscar lojas:", error);
-    }
-}
-
-// --- 4. GESTÃO DE BLOQUEIOS (Feriados/Manutenção) ---
-async function carregarBloqueios() {
-    if (!blockedDaysList) return;
-    if (loadingBlockedDays) loadingBlockedDays.style.display = 'block';
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/admin/dias-bloqueados`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        // BLINDAGEM: Verifica erro antes de ler o JSON
-        if (!response.ok) throw new Error("Erro ao carregar bloqueios.");
-
-        const bloqueios = await response.json();
-
-        if (loadingBlockedDays) loadingBlockedDays.style.display = 'none';
-
-        if (Array.isArray(bloqueios) && bloqueios.length > 0) {
-            blockedDaysList.innerHTML = bloqueios.map(b => `
-                <li class="list-group-item d-flex justify-content-between align-items-center border-start border-4 border-danger mb-2 shadow-sm rounded">
-                    <div>
-                        <strong class="text-dark">${new Date(b.data_bloqueada).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> 
-                        <span class="badge bg-secondary ms-2">${b.nome_loja || 'Todas as Lojas'}</span>
-                        <br><small class="text-muted">${b.motivo || 'Sem motivo informado'}</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-danger" onclick="window.removerBloqueio(${b.id_bloqueio || b.id})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </li>
-            `).join('');
-        } else {
-            blockedDaysList.innerHTML = '<li class="list-group-item text-muted text-center py-4">Nenhum dia bloqueado no momento.</li>';
-        }
-    } catch (error) {
-        if (loadingBlockedDays) loadingBlockedDays.style.display = 'none';
-        blockedDaysList.innerHTML = '<li class="list-group-item text-danger text-center">Erro ao conectar com o banco de dados.</li>';
-    }
-}
-
-// --- 5. BLOQUEAR UM NOVO DIA ---
-if (blockDayForm) {
-    blockDayForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = blockDayForm.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerText = "BLOQUEANDO...";
-
-        const dados = {
-            data: document.getElementById('block-date').value,
-            id_loja: document.getElementById('block-store').value,
-            motivo: document.getElementById('block-reason').value
-        };
-
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/api/admin/bloquear-dia`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify(dados)
-            });
-
-            // BLINDAGEM HÍBRIDA
-            if (!response.ok) {
-                let errorMsg = "Falha ao bloquear o dia.";
-                try {
-                    const erro = await response.json();
-                    errorMsg = erro.mensagem || erro.error || errorMsg;
-                } catch (jsonErr) {
-                    if (response.status === 403) errorMsg = "Sem permissão de administrador.";
-                }
-                throw new Error(errorMsg);
-            }
-
-            alert("Dia bloqueado com sucesso!");
-            blockDayForm.reset();
-            carregarBloqueios();
-
-        } catch (error) {
-            alert("Erro: " + error.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "BLOQUEAR DIA";
+    // Quando escolhe um funcionário, carrega a agenda dele
+    document.getElementById('profissional-select').addEventListener('change', (e) => {
+        const idProfissional = e.target.value;
+        if(idProfissional) {
+            document.getElementById('area-agenda').style.display = 'block';
+            carregarHorarioPadrao(idProfissional);
+            carregarFolgas(idProfissional);
+            // renderizarCalendarioMock(); // Opcional: Manter o mini-calendário visual
         }
     });
-}
 
-// --- 6. FUNÇÃO GLOBAL PARA REMOVER BLOQUEIO ---
-window.removerBloqueio = async (id) => {
-    if (!confirm("Deseja liberar este dia para novos agendamentos?")) return;
+    // Salvar nova folga/bloqueio
+    document.getElementById('blockDayForm').addEventListener('submit', salvarFolga);
+    
+    // Salvar grade de horários da semana
+    document.getElementById('horariosForm').addEventListener('submit', salvarGradeHorarios);
+});
 
+// --- 1. BUSCAR FUNCIONÁRIOS DO BANCO ---
+async function carregarProfissionais() {
+    const select = document.getElementById('profissional-select');
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/admin/remover-bloqueio/${id}`, { 
-            method: 'DELETE',
+        const response = await fetch(`${API_BASE_URL}/api/admin/funcionarios`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
-            alert("Dia liberado com sucesso!");
-            carregarBloqueios();
-        } else {
-            alert("Erro ao tentar desbloquear no servidor.");
+            const profissionais = await response.json();
+            profissionais.forEach(p => {
+                select.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.nome_completo}</option>`);
+            });
         }
     } catch (error) {
-        alert("Erro de conexão ao servidor.");
+        console.error("Erro ao carregar profissionais", error);
+    }
+}
+
+// --- 2. CARREGAR GRADE DE HORÁRIOS ---
+async function carregarHorarioPadrao(idProfissional) {
+    const tbody = document.getElementById('tabela-horarios-body');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border text-danger"></div></td></tr>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/horarios-profissional/${idProfissional}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const horarios = response.ok ? await response.json() : [];
+        const diasSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
+        tbody.innerHTML = diasSemana.map(dia => {
+            // Procura se já tem salvo no banco, senão traz vazio
+            const h = horarios.find(x => x.dia_semana === dia) || { is_folga: false, hora_inicio: '09:00', hora_fim: '18:00' };
+            const checkFolga = h.is_folga ? '' : 'checked';
+            const disabled = h.is_folga ? 'disabled' : '';
+
+            return `
+            <tr data-dia="${dia}">
+                <td class="fw-bold text-secondary">${dia}</td>
+                <td>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input switch-folga" type="checkbox" role="switch" ${checkFolga}>
+                        <label class="form-check-label small">${h.is_folga ? 'Folga' : 'Trabalha'}</label>
+                    </div>
+                </td>
+                <td><input type="time" class="form-control form-control-sm shadow-sm input-inicio" value="${h.hora_inicio || ''}" ${disabled}></td>
+                <td><input type="time" class="form-control form-control-sm shadow-sm input-fim" value="${h.hora_fim || ''}" ${disabled}></td>
+            </tr>
+            `;
+        }).join('');
+
+        // Adiciona evento para desabilitar/habilitar horários ao clicar na chave de Folga
+        document.querySelectorAll('.switch-folga').forEach(switchEl => {
+            switchEl.addEventListener('change', (e) => {
+                const tr = e.target.closest('tr');
+                const isFolga = !e.target.checked;
+                tr.querySelector('label').innerText = isFolga ? 'Folga' : 'Trabalha';
+                tr.querySelector('.input-inicio').disabled = isFolga;
+                tr.querySelector('.input-fim').disabled = isFolga;
+            });
+        });
+
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-danger text-center">Ligue o servidor Python.</td></tr>';
+    }
+}
+
+// --- 3. SALVAR GRADE DE HORÁRIOS ---
+async function salvarGradeHorarios(e) {
+    e.preventDefault();
+    const idProfissional = document.getElementById('profissional-select').value;
+    const linhas = document.querySelectorAll('#tabela-horarios-body tr');
+    
+    const grade = Array.from(linhas).map(tr => ({
+        dia_semana: tr.dataset.dia,
+        is_folga: !tr.querySelector('.switch-folga').checked,
+        hora_inicio: tr.querySelector('.input-inicio').value || null,
+        hora_fim: tr.querySelector('.input-fim').value || null
+    }));
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/horarios-profissional/${idProfissional}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ grade })
+        });
+
+        if (response.ok) alert("Horários semanais salvos com sucesso!");
+        else alert("Erro ao salvar horários.");
+    } catch (error) {
+        alert("Erro de conexão.");
+    }
+}
+
+// --- 4. CARREGAR FOLGAS/BLOQUEIOS ESPECÍFICOS ---
+async function carregarFolgas(idProfissional) {
+    const list = document.getElementById('blockedDaysList');
+    list.innerHTML = '<div class="text-center p-3"><span class="spinner-border text-danger"></span></div>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/ausencias-profissional/${idProfissional}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const folgas = await response.json();
+            if(folgas.length === 0) {
+                list.innerHTML = '<li class="list-group-item text-muted">Nenhuma ausência registrada.</li>';
+                return;
+            }
+
+            list.innerHTML = folgas.map(f => `
+                <li class="list-group-item d-flex justify-content-between align-items-center border-start border-4 border-danger mb-2 shadow-sm rounded bg-white">
+                    <div>
+                        <strong class="text-dark"><i class="bi bi-calendar-event me-2"></i>${new Date(f.data_bloqueada).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong><br>
+                        <small class="text-muted">${f.motivo || 'Folga'}</small>
+                    </div>
+                    <button class="btn btn-sm btn-light text-danger" title="Cancelar Folga" onclick="window.removerFolga(${f.id_bloqueio}, '${idProfissional}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </li>
+            `).join('');
+        }
+    } catch (error) {
+        list.innerHTML = '<li class="list-group-item text-danger">Erro de conexão.</li>';
+    }
+}
+
+// --- 5. SALVAR NOVA FOLGA ---
+async function salvarFolga(e) {
+    e.preventDefault();
+    const idProfissional = document.getElementById('profissional-select').value;
+    const dataAusencia = document.getElementById('blockDayForm').querySelector('input[type="date"]').value;
+    const motivo = document.getElementById('blockDayForm').querySelector('select').value;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/bloquear-dia`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ id_funcionario: idProfissional, data: dataAusencia, motivo })
+        });
+
+        if (response.ok) {
+            alert("Ausência registrada!");
+            document.getElementById('blockDayForm').reset();
+            carregarFolgas(idProfissional);
+        } else {
+            alert("Erro ao salvar folga.");
+        }
+    } catch (error) {
+        alert("Erro de conexão.");
+    }
+}
+
+// --- 6. REMOVER FOLGA ---
+window.removerFolga = async (idBloqueio, idProfissional) => {
+    if(!confirm("Deseja cancelar esta folga/ausência?")) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/admin/remover-bloqueio/${idBloqueio}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) carregarFolgas(idProfissional);
+        else alert("Erro ao cancelar folga.");
+    } catch (error) {
+        alert("Erro de conexão.");
     }
 };
-
-// --- 7. INICIALIZAÇÃO DA PÁGINA ---
-document.addEventListener('DOMContentLoaded', async () => {
-    const userId = localStorage.getItem('usuario_id');
-    
-    if (!userId) {
-        window.location.href = '../usuario/login.html';
-        return;
-    }
-
-    const isAdmin = await verificarAdmin(userId); 
-    if (!isAdmin) {
-        alert("Acesso restrito!");
-        window.location.href = '../usuario/login.html';
-        return; 
-    }
-
-    carregarLojas();
-    carregarBloqueios();
-});

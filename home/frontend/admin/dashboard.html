@@ -8,59 +8,8 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../css/admin.css?v=2">
-
-    <style>
-        :root {
-            --brand-pink: #FE8697;
-            --brand-pink-dark: #e57585;
-            --bg-light: #f4f6f9;
-        }
-
-        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; overflow-x: hidden; }
-
-        /* --- Sidebar --- */
-        .admin-sidebar {
-            background-color: #343a40;
-            min-height: 100vh;
-            color: white;
-            padding-top: 20px;
-            position: fixed;
-            width: 250px;
-            z-index: 1000;
-        }
-        .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #4f5962; margin-bottom: 20px; }
-        .sidebar-header h4 { color: var(--brand-pink); font-weight: bold; margin: 0; font-size: 1.2rem;}
-        
-        .admin-sidebar .nav-link { color: #c2c7d0; padding: 12px 20px; transition: 0.3s; }
-        .admin-sidebar .nav-link:hover, .admin-sidebar .nav-link.active {
-            background-color: rgba(254, 134, 151, 0.1);
-            color: var(--brand-pink);
-            border-left: 4px solid var(--brand-pink);
-        }
-        .logout-btn-container { position: absolute; bottom: 20px; width: 100%; padding: 0 20px; }
-
-        /* --- Main Content --- */
-        .admin-main-content {
-            margin-left: 250px;
-            padding: 30px;
-            min-height: 100vh;
-        }
-
-        /* --- Cards e KPIs --- */
-        .stat-card {
-            border: none;
-            border-radius: 12px;
-            border-left: 5px solid var(--brand-pink);
-            transition: 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
-        .stat-value { font-size: 2rem; font-weight: bold; color: #333; }
-        .stat-icon { font-size: 2.5rem; opacity: 0.2; color: var(--brand-pink); }
-        
-        .dashboard-panel { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 24px; }
-        .panel-title { font-size: 1.1rem; font-weight: bold; color: #444; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-    </style>
+    
+    <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
 
@@ -75,6 +24,7 @@
             <li class="nav-item"><a class="nav-link" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_horarios.html"><i class="bi bi-clock-history me-2"></i>Horários</a></li>
+            <li class="nav-item"><a class="nav-link" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Editor Visual</a></li>
         </ul>
         
         <div class="logout-btn-container">
@@ -158,7 +108,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light text-muted small text-uppercase">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Data/Hora</th>
                                     <th>Tutor</th>
@@ -193,20 +143,8 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="../js/utils.js"></script>
     <script src="../js/admin_dashboard.js"></script>
-
-    <script>
-        // Funcionalidade do botão de Sair
-        document.getElementById('logout-button').addEventListener('click', () => {
-            if(confirm('Tem certeza que deseja sair do painel administrativo?')) {
-                localStorage.clear();
-                window.location.href = '../usuario/login.html';
-            }
-        });
-    </script>
 </body>
 </html>
