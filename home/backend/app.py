@@ -6,28 +6,25 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
-from db.neon_db import executar_query
-from flask import request, jsonify
-from psycopg2.extras import RealDictCursor
 from werkzeug.security import check_password_hash, generate_password_hash
-check_password_hash
 
-# Importação da sua função de query simplificada
+# Importação centralizada da sua função de query
 from db.neon_db import executar_query 
 
 # 1. Configurações Iniciais
 load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Garante que o caminho para o frontend esteja correto independente de onde o script rode
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, '../frontend'))
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
-# Configuração do CORS (Unificada e Segura para o seu Front-end)
+# Configuração do CORS unificada
 CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://127.0.0.1:5501",
-            "http://localhost:5501", # Adicionado para evitar erro local
+            "http://localhost:5501",
             "https://regia-tinas.onrender.com" 
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -36,16 +33,18 @@ CORS(app, resources={
 })
 
 def get_db_connection():
-    # Conexão centralizada com o Neon via variável de ambiente
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
-    return conn
+    """Conexão centralizada com tratamento de erro para o DSN"""
+    url = os.environ.get('DATABASE_URL')
+    if not url:
+        raise ValueError("A variável DATABASE_URL não foi encontrada. Verifique o painel do Render!")
+    return psycopg2.connect(url)
 
 # 3. Constantes Globais
 HORA_INICIO_PADRAO = time(9, 0)
 HORA_FIM_PADRAO = time(18, 0)
 INTERVALO_SLOT_MINUTOS = 30 
 
-# --- SERVIDO DE ARQUIVOS (FRONTEND) ---
+# --- SERVIDOR DE ARQUIVOS (FRONTEND) ---
 
 @app.route('/')
 def index():
@@ -68,7 +67,9 @@ def servir_paginas(path):
     return send_from_directory(FRONTEND_DIR, path)
 
 # --- ROTAS DE API (CONTEÚDO GERAL E USUÁRIO) ---
-@app.route('/api/usuario/agendamentos/<int:id_usuario>', methods=['GET'])
+
+# Ajustado para aceitar UUID (String) em vez de apenas Inteiro
+@app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
 def get_agendamentos_usuario(id_usuario):
     conn = None
     cur = None
@@ -76,8 +77,8 @@ def get_agendamentos_usuario(id_usuario):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Junta as tabelas para entregar o nome do pet, serviço e loja
-        cur.execute('''
+        # Query organizada para facilitar a leitura
+        query = '''
             SELECT a.id_agendamento, a.data_hora_inicio, a.status,
                    pt.nome_pet, s.nome_servico, l.nome_loja
             FROM public.agendamentos a
@@ -86,140 +87,125 @@ def get_agendamentos_usuario(id_usuario):
             LEFT JOIN public.lojas l ON a.id_loja = l.id_loja
             WHERE a.id_cliente = %s
             ORDER BY a.data_hora_inicio DESC
-        ''', (id_usuario,))
+        '''
+        cur.execute(query, (id_usuario,))
         
         agendamentos = cur.fetchall()
         return jsonify(agendamentos), 200
     except Exception as e:
+        print(f"Erro ao buscar agendamentos: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
 
-@app.route('/api/usuario/dados/<int:id_usuario>', methods=['GET'])
+# --- ROTAS DE DADOS DO USUÁRIO E PETS ---
+
+@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
 def get_usuario_dados(id_usuario):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT nome_completo, telefone, email FROM public.perfis WHERE id = %s", (id_usuario,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        if user:
-            return jsonify(user), 200
+        # Usando executar_query para simplificar e evitar esquecer conexões abertas
+        sql = "SELECT nome_completo, telefone, email FROM public.perfis WHERE id = %s"
+        user = executar_query(sql, (id_usuario,))
+        
+        if user and len(user) > 0:
+            return jsonify(user[0]), 200
         return jsonify({"error": "Usuário não encontrado"}), 404
     except Exception as e:
+        print(f"Erro ao buscar dados do usuário: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/meus-pets/<int:id_tutor>', methods=['GET'])
+@app.route('/api/meus-pets/<id_tutor>', methods=['GET'])
 def get_meus_pets(id_tutor):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT id_pet, nome_pet, especie, raca, porte FROM public.pets WHERE id_tutor = %s", (id_tutor,))
-        pets = cur.fetchall()
-        cur.close()
-        conn.close()
+        sql = "SELECT id_pet, nome_pet, especie, raca, porte FROM public.pets WHERE id_tutor = %s"
+        pets = executar_query(sql, (id_tutor,))
         return jsonify(pets), 200
     except Exception as e:
+        print(f"Erro ao buscar pets: {e}")
         return jsonify({"error": str(e)}), 500
-# --- ADICIONE ESTAS DUAS NO SEU APP.PY ---
+
+# --- LISTAGENS PÚBLICAS (AGENDAMENTO E LOJA) ---
 
 @app.route('/api/lojas', methods=['GET'])
 def listar_lojas_publico():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        # O agendamento.js espera 'id_loja' e 'nome_loja'
-        cur.execute('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
-        lojas = cur.fetchall()
+        lojas = executar_query('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
         return jsonify(lojas), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
 
 @app.route('/api/servicos_lista', methods=['GET'])
 def listar_servicos_publico():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        # O agendamento.js espera 'id_servico' e 'nome_servico'
-        cur.execute('SELECT id_servico, nome_servico FROM public.servicos ORDER BY nome_servico')
-        servicos = cur.fetchall()
+        servicos = executar_query('SELECT id_servico, nome_servico FROM public.servicos ORDER BY nome_servico')
         return jsonify(servicos), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
 
 @app.route('/api/produtos')
 def listar_produtos():
-    # Usando sua função executar_query
-    produtos = executar_query("SELECT * FROM public.produtos WHERE status_produto = 'Ativo'")
-    return jsonify(produtos)
+    try:
+        # Retorna apenas produtos ativos para a vitrine
+        produtos = executar_query("SELECT * FROM public.produtos WHERE status_produto = 'Ativo' ORDER BY nome_produto")
+        return jsonify(produtos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# --- ROTAS ADMIN E DASHBOARD ---
+# --- ROTAS ADMIN E DASHBOARD (ESTATÍSTICAS) ---
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Faturamento total (Pedidos)
+        res_faturamento = executar_query('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
+        faturamento = res_faturamento[0]['faturamento'] if res_faturamento and res_faturamento[0]['faturamento'] else 0
         
-        cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
-        res_faturamento = cur.fetchone()['faturamento'] or 0
-        
-        cur.execute('SELECT COUNT(*) as total FROM public.agendamentos')
-        total_agendamentos = cur.fetchone()['total']
+        # Total de Agendamentos
+        res_agendamentos = executar_query('SELECT COUNT(*) as total FROM public.agendamentos')
+        total_agendamentos = res_agendamentos[0]['total'] if res_agendamentos else 0
 
-        cur.execute("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
-        total_clientes = cur.fetchone()['total']
+        # Total de Clientes (Baseado na Role)
+        res_clientes = executar_query("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = res_clientes[0]['total'] if res_clientes else 0
 
-        cur.execute("SELECT COUNT(*) as total FROM public.pets")
-        total_pets = cur.fetchone()['total']
-        
-        cur.close()
-        conn.close()
+        # Total de Pets cadastrados
+        res_pets = executar_query("SELECT COUNT(*) as total FROM public.pets")
+        total_pets = res_pets[0]['total'] if res_pets else 0
         
         return jsonify({
-            "faturamento": float(res_faturamento), 
+            "faturamento": float(faturamento), 
             "total_agendamentos": total_agendamentos,
             "total_clientes": total_clientes,
             "total_pets": total_pets
         }), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+        print(f"Erro no Dashboard Admin: {e}")
+        return jsonify({"error": "Falha ao carregar estatísticas do painel"}), 500
+    
 @app.route('/api/admin/dashboard-completo', methods=['GET'])
 def dashboard_completo():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # 1. Busca os KPIs (Estatísticas Principais)
+        # Faturamento Total
+        res_faturamento = executar_query('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
+        faturamento = res_faturamento[0]['faturamento'] if res_faturamento and res_faturamento[0]['faturamento'] else 0
         
-        # 1. KPIs
-        cur.execute('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
-        faturamento = cur.fetchone()['faturamento'] or 0
+        # Agendamentos de Hoje
+        res_hoje = executar_query("SELECT COUNT(*) as total FROM public.agendamentos WHERE CAST(data_hora_inicio AS DATE) = CURRENT_DATE")
+        agendamentos_hoje = res_hoje[0]['total'] if res_hoje else 0
         
-        cur.execute("SELECT COUNT(*) as total FROM public.agendamentos WHERE CAST(data_hora_inicio AS DATE) = CURRENT_DATE")
-        agendamentos_hoje = cur.fetchone()['total']
+        # Total de Pets no Sistema
+        res_pets = executar_query("SELECT COUNT(*) as total FROM public.pets")
+        total_pets = res_pets[0]['total'] if res_pets else 0
         
-        cur.execute("SELECT COUNT(*) as total FROM public.pets")
-        total_pets = cur.fetchone()['total']
+        # Total de Clientes Cadastrados
+        res_clientes = executar_query("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = res_clientes[0]['total'] if res_clientes else 0
         
-        cur.execute("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
-        total_clientes = cur.fetchone()['total']
-        
-        # 2. Agendamentos Recentes
-        cur.execute('''
+        # 2. Busca Agendamentos Recentes (Próximos atendimentos)
+        # Fazemos os joins para trazer nomes de clientes e pets em uma só tabela
+        query_recentes = '''
             SELECT a.id_agendamento as id, a.data_hora_inicio, a.status, 
                    p.nome_completo as cliente_nome, p.telefone as cliente_tel,
                    pt.nome_pet, pt.raca as pet_raca, s.nome_servico
@@ -229,13 +215,13 @@ def dashboard_completo():
             JOIN public.servicos s ON a.id_servico = s.id_servico
             WHERE CAST(a.data_hora_inicio AS DATE) >= CURRENT_DATE
             ORDER BY a.data_hora_inicio ASC LIMIT 10
-        ''')
-        lista_agendamentos = cur.fetchall()
+        '''
+        lista_agendamentos = executar_query(query_recentes)
         
-        # 3. Estoque Crítico
-        cur.execute("SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5 LIMIT 5")
-        estoque_critico = cur.fetchall()
+        # 3. Alerta de Estoque Crítico (Produtos com menos de 5 unidades)
+        estoque_critico = executar_query("SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5 LIMIT 5")
         
+        # Retorno unificado para o frontend
         return jsonify({
             "stats": {
                 "faturamento": float(faturamento),
@@ -243,31 +229,28 @@ def dashboard_completo():
                 "total_pets": total_pets,
                 "total_clientes": total_clientes
             },
-            "agendamentos": lista_agendamentos,
-            "estoque_critico": estoque_critico,
-            "graficos": [1200, 950, 400, 600] 
+            "agendamentos": lista_agendamentos if lista_agendamentos else [],
+            "estoque_critico": estoque_critico if estoque_critico else [],
+            "graficos": [1200, 950, 400, 600] # Dados fixos para o gráfico de exemplo
         }), 200
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro Crítico no Dashboard Completo: {e}")
+        return jsonify({"error": "Falha ao processar dados do painel administrativo"}), 500
+    
 # --- 4. ROTA ADMIN: TODOS OS AGENDAMENTOS ---
+# --- ROTAS DE GESTÃO ADMINISTRATIVA (AGENDAMENTOS, LOJAS E PEDIDOS) ---
+
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
-    conn = None
-    cur = None
     try:
-        # 1. Capturar os filtros da URL (se existirem)
+        # 1. Capturar os filtros da URL
         servico_id = request.args.get('servico')
         funcionario_id = request.args.get('funcionario')
-        status_filtro = request.args.get('status') # Bônus: Já deixei preparado caso você queira filtrar por status!
+        status_filtro = request.args.get('status')
 
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # 2. Query Base (com o LEFT JOIN para o funcionário e ajustando os nomes para bater com o JS)
+        # 2. Query Base com JOINs para trazer informações completas
+        # O LEFT JOIN no funcionário é vital: se o pet ainda não tiver um tosador/vet atribuído, ele ainda aparece na lista.
         base_query = '''
             SELECT 
                 a.id_agendamento,
@@ -291,7 +274,7 @@ def buscar_todos_agendamentos():
         
         params = []
         
-        # 3. Adicionar os filtros dinamicamente na query de forma segura
+        # 3. Construção dinâmica dos filtros
         if servico_id:
             base_query += " AND a.id_servico = %s"
             params.append(servico_id)
@@ -304,164 +287,138 @@ def buscar_todos_agendamentos():
             base_query += " AND a.status = %s"
             params.append(status_filtro)
             
-        # 4. Finalizar a query com a ordenação
         base_query += " ORDER BY a.data_hora_inicio ASC"
         
-        # Passamos a tuple(params) para evitar ataques de SQL Injection
-        cur.execute(base_query, tuple(params))
+        # Executa usando sua função centralizada
+        agendamentos = executar_query(base_query, tuple(params))
         
-        agendamentos = cur.fetchall()
-        return jsonify(agendamentos), 200
+        return jsonify(agendamentos if agendamentos else []), 200
         
     except Exception as e:
-        print("Erro na rota de agendamentos:", e) # Ajuda a debugar no terminal
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro na listagem administrativa de agendamentos: {e}")
+        return jsonify({"error": "Falha ao carregar lista de agendamentos"}), 500
 
-@app.route('/api/admin/lojas', methods=['GET', 'OPTIONS'])
+@app.route('/api/admin/lojas', methods=['GET'])
 def listar_lojas_admin():
-    if request.method == 'OPTIONS': 
-        return jsonify({}), 200
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
-        lojas = cur.fetchall()
-        return jsonify(lojas), 200
+        # Simples e direto: o CORS já cuida do preflight (OPTIONS)
+        lojas = executar_query('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
+        return jsonify(lojas if lojas else []), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
-# --- ROTAS DE GESTÃO DE PEDIDOS ---
 
 @app.route('/api/admin/pedidos', methods=['GET'])
 def listar_todos_pedidos():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        cur.execute('''
+        # Busca todos os pedidos e o nome do cliente que comprou
+        query_pedidos = '''
             SELECT p.*, per.nome_completo 
             FROM public.pedidos p
             JOIN public.perfis per ON p.id_cliente = per.id
             ORDER BY p.data_pedido DESC
-        ''')
-        
-        pedidos = cur.fetchall()
-        return jsonify(pedidos), 200
+        '''
+        pedidos = executar_query(query_pedidos)
+        return jsonify(pedidos if pedidos else []), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro na listagem de pedidos: {e}")
+        return jsonify({"error": "Falha ao carregar histórico de vendas"}), 500
 
 # --- ROTAS DE GESTÃO DE PRODUTOS (ADMIN) ---
 
+# --- GESTÃO DE PRODUTOS (ADMIN) ---
+
 @app.route('/api/admin/produtos', methods=['GET'])
 def listar_produtos_admin():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT * FROM public.produtos ORDER BY nome_produto ASC')
-        produtos = cur.fetchall()
-        return jsonify(produtos), 200
+        # Busca todos os produtos, incluindo os inativos, para o gerenciamento
+        produtos = executar_query('SELECT * FROM public.produtos ORDER BY nome_produto ASC')
+        return jsonify(produtos if produtos else []), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
 
 @app.route('/api/admin/produtos', methods=['POST'])
 def criar_produto():
-    dados = request.get_json()
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('''
-            INSERT INTO public.produtos (nome_produto, preco, quantidade_estoque, url_imagem, descricao, marca, tipo_produto)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ''', (dados['nome_produto'], dados['preco'], dados['quantidade_estoque'], dados['url_imagem'], 
-              dados['descricao'], dados['marca'], dados['tipo_produto']))
+        dados = request.get_json()
         
-        conn.commit()
-        return jsonify({"message": "Produto criado!"}), 201
+        # Query completa incluindo os campos que você definiu no seu Modal do Frontend
+        sql = '''
+            INSERT INTO public.produtos (
+                nome_produto, preco, quantidade_estoque, url_imagem, 
+                descricao, marca, tipo_produto, status_produto, preco_promocional
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        '''
+        params = (
+            dados.get('nome_produto'), dados.get('preco'), 
+            dados.get('quantidade_estoque'), dados.get('url_imagem'), 
+            dados.get('descricao'), dados.get('marca'), 
+            dados.get('tipo_produto'), dados.get('status_produto', 'Ativo'),
+            dados.get('preco_promocional')
+        )
+        
+        executar_query(sql, params)
+        return jsonify({"message": "Produto cadastrado com sucesso!"}), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao criar produto: {e}")
+        return jsonify({"error": "Falha ao salvar o produto"}), 500
 
-@app.route('/api/admin/produtos/<int:id>', methods=['PUT'])
-def editar_produto(id):
-    dados = request.get_json()
-    conn = None
-    cur = None
+@app.route('/api/admin/produtos/<id_produto>', methods=['PUT'])
+def editar_produto(id_produto):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('''
+        dados = request.get_json()
+        
+        sql = '''
             UPDATE public.produtos 
             SET nome_produto=%s, preco=%s, quantidade_estoque=%s, 
-                url_imagem=%s, descricao=%s, marca=%s, tipo_produto=%s
+                url_imagem=%s, descricao=%s, marca=%s, tipo_produto=%s,
+                status_produto=%s, preco_promocional=%s
             WHERE id_produto = %s
-        ''', (dados['nome_produto'], dados['preco'], dados['quantidade_estoque'], 
-              dados['url_imagem'], dados['descricao'], dados['marca'], dados['tipo_produto'], id))
+        '''
+        params = (
+            dados.get('nome_produto'), dados.get('preco'), 
+            dados.get('quantidade_estoque'), dados.get('url_imagem'), 
+            dados.get('descricao'), dados.get('marca'), 
+            dados.get('tipo_produto'), dados.get('status_produto'),
+            dados.get('preco_promocional'),
+            id_produto
+        )
         
-        conn.commit()
-        return jsonify({"message": "Produto atualizado!"}), 200
+        executar_query(sql, params)
+        return jsonify({"message": "Produto atualizado com sucesso!"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao editar produto {id_produto}: {e}")
+        return jsonify({"error": "Falha ao atualizar os dados do produto"}), 500
+
+# --- EDITOR VISUAL / CMS ---
 
 @app.route('/api/cms/content', methods=['GET'])
 def get_cms_content():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT element_id, content_value FROM public.cms_content')
-        content = cur.fetchall()
-        return jsonify(content), 200
+        # Busca textos e imagens configuráveis do site
+        content = executar_query('SELECT element_id, content_value FROM public.cms_content')
+        return jsonify(content if content else []), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
+        print(f"Erro ao carregar conteúdo CMS: {e}")
+        return jsonify({"error": "Falha ao carregar textos do site"}), 500
 # --- BUSCA DINÂMICA (E-COMMERCE) ---
+
+# --- SISTEMA DE BUSCA AVANÇADA ---
 
 @app.route('/api/busca', methods=['GET'])
 def buscar_produtos():
-    termo = request.args.get('q', '').strip()
-    categoria = request.args.get('categoria', '')
-    marca = request.args.get('marca', '')
-    preco_min = request.args.get('preco_min')
-    preco_max = request.args.get('preco_max')
-
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
+        # Captura os filtros da URL
+        termo = request.args.get('q', '').strip()
+        categoria = request.args.get('categoria', '')
+        marca = request.args.get('marca', '')
+        preco_min = request.args.get('preco_min')
+        preco_max = request.args.get('preco_max')
+
+        # SQL Base: Apenas produtos que o dono quer vender agora
         sql = "SELECT * FROM public.produtos WHERE status_produto = 'Ativo'"
         params = []
 
+        # Filtro de texto (Nome, Marca ou Descrição)
         if termo:
             sql += " AND (nome_produto ILIKE %s OR marca ILIKE %s OR descricao ILIKE %s)"
             search_param = f"%{termo}%"
@@ -485,21 +442,20 @@ def buscar_produtos():
 
         sql += " ORDER BY nome_produto ASC"
         
-        cur.execute(sql, tuple(params))
-        produtos = cur.fetchall()
-        return jsonify(produtos), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        # Executa a busca filtrada
+        produtos = executar_query(sql, tuple(params))
+        return jsonify(produtos if produtos else []), 200
 
-# --- ROTAS DE FINALIZAÇÃO DE PEDIDOS E CHECKOUT ---
+    except Exception as e:
+        print(f"Erro na busca de produtos: {e}")
+        return jsonify({"error": "Falha ao processar a busca"}), 500
+
+# --- FINALIZAÇÃO DE PEDIDOS (CHECKOUT COM TRANSAÇÃO) ---
 
 @app.route('/api/finalizar-pedido', methods=['POST'])
 def finalizar_pedido():
     dados = request.get_json()
-    id_usuario = dados.get('id_usuario')
+    id_usuario = dados.get('id_usuario') # Espera o UUID do cliente
     itens = dados.get('itens') 
     total = dados.get('total')
 
@@ -509,7 +465,8 @@ def finalizar_pedido():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 1. Cria o Pedido Principal
+        # Início da Transação: Se algo der errado, nada é gravado
+        # 1. Cria o registro principal na tabela de pedidos
         cur.execute('''
             INSERT INTO public.pedidos (id_cliente, total_pedido, status_pedido, data_pedido)
             VALUES (%s, %s, 'processando', NOW())
@@ -518,592 +475,427 @@ def finalizar_pedido():
         
         id_pedido = cur.fetchone()[0]
 
-        # 2. Registra os Itens e Baixa Estoque
+        # 2. Loop para registrar cada item e atualizar o estoque
         for item in itens:
+            # Registra o item no pedido
             cur.execute('''
                 INSERT INTO public.itens_pedido (id_pedido, id_produto, quantidade)
                 VALUES (%s, %s, %s)
             ''', (id_pedido, item['id'], item['quantidade']))
             
+            # Baixa a quantidade do estoque físico
             cur.execute('''
                 UPDATE public.produtos 
                 SET quantidade_estoque = quantidade_estoque - %s 
-                WHERE id_produto = %s
-            ''', (item['quantidade'], item['id']))
+                WHERE id_produto = %s AND quantidade_estoque >= %s
+            ''', (item['quantidade'], item['id'], item['quantidade']))
 
+        # Se chegou aqui sem erros, grava permanentemente no Neon
         conn.commit()
         return jsonify({"status": "sucesso", "id_pedido": id_pedido}), 201
 
     except Exception as e:
+        # Se houve erro (ex: falta de estoque), desfaz tudo o que foi tentado
         if conn: conn.rollback()
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+        print(f"Erro Crítico no Checkout: {e}")
+        return jsonify({"status": "erro", "mensagem": "Falha ao finalizar o pedido. Verifique o estoque."}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
-
-@app.route('/api/checkout/finalizar', methods=['POST'])
-def finalizar_checkout():
-    dados = request.get_json()
-    id_usuario = dados.get('id_usuario')
-    carrinho = dados.get('itens') 
-
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        total_venda = 0
-        
-        # 1. Validar Estoque e Somar Total
-        for item in carrinho:
-            cur.execute('SELECT preco, quantidade_estoque, nome_produto FROM public.produtos WHERE id_produto = %s', (item['id'],))
-            prod = cur.fetchone()
-            
-            if not prod or prod['quantidade_estoque'] < item['quantidade']:
-                return jsonify({"error": f"Estoque insuficiente: {prod['nome_produto'] if prod else 'Produto'}"}), 400
-            
-            total_venda += float(prod['preco']) * item['quantidade']
-
-        # 2. Registrar Pedido Principal
-        cur.execute('''
-            INSERT INTO public.pedidos (id_cliente, total_pedido, status_pedido, data_pedido)
-            VALUES (%s, %s, 'pago', NOW()) RETURNING id_pedido
-        ''', (id_usuario, total_venda))
-        
-        id_pedido = cur.fetchone()['id_pedido']
-
-        # 3. Baixar Estoque e 4. Fidelidade
-        for item in carrinho:
-            cur.execute('UPDATE public.produtos SET quantidade_estoque = quantidade_estoque - %s WHERE id_produto = %s',
-                        (item['quantidade'], item['id']))
-
-        pontos_ganhos = int(total_venda)
-        cur.execute('''
-            INSERT INTO public.fidelidade_pontos (id_cliente, saldo_pontos, data_atualizacao)
-            VALUES (%s, %s, NOW())
-            ON CONFLICT (id_cliente) 
-            DO UPDATE SET saldo_pontos = fidelidade_pontos.saldo_pontos + %s, data_atualizacao = NOW()
-        ''', (id_usuario, pontos_ganhos, pontos_ganhos))
-
-        conn.commit()
-        return jsonify({
-            "status": "sucesso", 
-            "id_pedido": id_pedido, 
-            "pontos": pontos_ganhos
-        }), 201
-
-    except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
-# --- ROTAS DE AUTENTICAÇÃO E FIDELIDADE ---
 
 @app.route('/api/auth/verificar-admin/<id_usuario>', methods=['GET'])
 def verificar_admin_api(id_usuario): 
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
-        usuario = cur.fetchone()
+        # Busca o cargo do usuário usando o UUID
+        resultado = executar_query('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
         
-        if usuario:
+        if resultado and len(resultado) > 0:
+            usuario = resultado[0]
             is_admin = (usuario['role'] == 'admin')
-            return jsonify({"isAdmin": is_admin, "role": usuario['role']}), 200
+            return jsonify({
+                "isAdmin": is_admin, 
+                "role": usuario['role']
+            }), 200
+            
         return jsonify({"isAdmin": False, "message": "Usuário não encontrado"}), 404
             
     except Exception as e:
-        return jsonify({"error": str(e), "isAdmin": False}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro na verificação de admin: {e}")
+        return jsonify({"error": "Erro interno", "isAdmin": False}), 500 
+
+# --- CADASTRO DE NOVOS CLIENTES ---
+
+# --- GESTÃO DE CONTA E SEGURANÇA ---
 
 @app.route('/api/usuario/cadastrar', methods=['POST'])
 def cadastrar_usuario():
-    dados = request.get_json()
-    nome = dados.get('nome')
-    email = dados.get('email')
-    senha = dados.get('senha')
-
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute('SELECT id FROM public.perfis WHERE email = %s', (email,))
-        if cur.fetchone():
+        dados = request.get_json()
+        nome = dados.get('nome')
+        email = dados.get('email')
+        senha = dados.get('senha')
+
+        # 1. Verifica se o e-mail já existe na tabela perfis
+        usuario_existente = executar_query('SELECT id FROM public.perfis WHERE email = %s', (email,))
+        if usuario_existente:
             return jsonify({"status": "erro", "mensagem": "Este e-mail já está cadastrado."}), 400
 
+        # 2. Criptografa a senha antes de salvar (Segurança máxima)
         senha_hash = generate_password_hash(senha)
 
-        cur.execute('''
-            INSERT INTO public.perfis (nome_completo, email, senha, role)
-            VALUES (%s, %s, %s, 'cliente')
-        ''', (nome, email, senha_hash))
+        # 3. Insere o novo cliente com role padrão 'cliente'
+        sql_insert = '''
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo)
+            VALUES (%s, %s, %s, 'cliente', true)
+        '''
+        executar_query(sql_insert, (nome, email, senha_hash))
         
-        conn.commit()
         return jsonify({"status": "sucesso", "mensagem": "Conta criada com sucesso!"}), 201
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
-@app.route('/api/fidelidade/adicionar', methods=['POST'])
-def adicionar_pontos():
-    dados = request.get_json()
-    id_cliente = dados.get('id_cliente')
-    valor_gasto = float(dados.get('valor_gasto', 0))
-    tipo = dados.get('tipo') 
-    id_referencia = dados.get('id_referencia')
-
-    pontos_ganhos = int(valor_gasto)
-
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        cur.execute('''
-            INSERT INTO public.fidelidade_historico 
-            (id_cliente, pontos, tipo, id_referencia_pedido, id_referencia_agendamento, data_registro)
-            VALUES (%s, %s, %s, %s, %s, NOW())
-        ''', (
-            id_cliente, 
-            pontos_ganhos, 
-            tipo, 
-            id_referencia if tipo == 'pedido' else None,
-            id_referencia if tipo == 'agendamento' else None
-        ))
-
-        cur.execute('''
-            INSERT INTO public.fidelidade_pontos (id_cliente, saldo_pontos, data_atualizacao)
-            VALUES (%s, %s, NOW())
-            ON CONFLICT (id_cliente) 
-            DO UPDATE SET saldo_pontos = fidelidade_pontos.saldo_pontos + %s, data_atualizacao = NOW()
-        ''', (id_cliente, pontos_ganhos, pontos_ganhos))
-
-        conn.commit()
-        return jsonify({"status": "sucesso", "pontos_ganhos": pontos_ganhos}), 200
 
     except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
-# --- ROTAS DE PERFIL E SEGURANÇA ---
+        print(f"Erro no cadastro: {e}")
+        return jsonify({"status": "erro", "mensagem": "Falha ao criar conta"}), 500
 
 @app.route('/api/usuario/redefinir-senha', methods=['POST'])
 def redefinir_senha():
-    dados = request.get_json()
-    email = dados.get('email')
-    nova_senha = dados.get('nova_senha')
-
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute('SELECT id FROM public.perfis WHERE email = %s', (email,))
-        usuario = cur.fetchone()
+        dados = request.get_json()
+        email = dados.get('email')
+        nova_senha = dados.get('nova_senha')
+
+        # 1. Verifica se o usuário existe na base
+        usuario = executar_query('SELECT id FROM public.perfis WHERE email = %s', (email,))
         
         if not usuario:
             return jsonify({"status": "erro", "mensagem": "E-mail não encontrado."}), 404
 
+        # 2. Gera o novo hash da senha redefinida
         senha_hash = generate_password_hash(nova_senha)
 
-        cur.execute('UPDATE public.perfis SET senha = %s WHERE email = %s', (senha_hash, email))
-        conn.commit()
+        # 3. Atualiza o banco de dados
+        executar_query('UPDATE public.perfis SET senha = %s WHERE email = %s', (senha_hash, email))
         
         return jsonify({"status": "sucesso", "mensagem": "Senha alterada com sucesso!"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao redefinir senha para {email}: {e}")
+        return jsonify({"status": "erro", "mensagem": "Falha ao processar a redefinição"}), 500
 
-@app.route('/api/usuario/atualizar-perfil/<int:id_usuario>', methods=['PUT'])
+@app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
 def atualizar_perfil(id_usuario):
-    dados = request.get_json()
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+        dados = request.get_json()
         
-        cur.execute('''
+        # Atualiza dados básicos do perfil do cliente
+        # Note que id_usuario aqui aceita o UUID do banco
+        sql = '''
             UPDATE public.perfis 
             SET nome_completo = %s, telefone = %s 
             WHERE id = %s
-        ''', (dados['nome_completo'], dados['telefone'], id_usuario))
+        '''
+        executar_query(sql, (dados.get('nome_completo'), dados.get('telefone'), id_usuario))
         
-        conn.commit()
-        return jsonify({"message": "Perfil atualizado!"}), 200
+        return jsonify({"status": "sucesso", "message": "Perfil atualizado com sucesso!"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao atualizar perfil {id_usuario}: {e}")
+        return jsonify({"status": "erro", "mensagem": "Falha ao atualizar os dados do perfil"}), 500
 
+# --- SISTEMA DE FILTROS E BUSCA ---
 
 @app.route('/api/filtros', methods=['GET'])
 def get_filtros():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Busca categorias e marcas únicas para alimentar os filtros do front-end
+        res_categorias = executar_query('SELECT DISTINCT tipo_produto FROM public.produtos WHERE tipo_produto IS NOT NULL')
+        res_marcas = executar_query('SELECT DISTINCT marca FROM public.produtos WHERE marca IS NOT NULL')
         
-        cur.execute('SELECT DISTINCT tipo_produto FROM public.produtos WHERE tipo_produto IS NOT NULL')
-        categorias = [r['tipo_produto'] for r in cur.fetchall()]
-        
-        cur.execute('SELECT DISTINCT marca FROM public.produtos WHERE marca IS NOT NULL')
-        marcas = [r['marca'] for r in cur.fetchall()]
+        categorias = [r['tipo_produto'] for r in res_categorias] if res_categorias else []
+        marcas = [r['marca'] for r in res_marcas] if res_marcas else []
         
         return jsonify({"categorias": categorias, "marcas": marcas}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao carregar filtros: {e}")
+        return jsonify({"error": "Falha ao carregar opções de filtro"}), 500
+
+# --- GERENCIAMENTO DE CONTEÚDO (CMS) ---
 
 @app.route('/api/cms/update', methods=['POST'])
 def update_cms_content():
-    dados = request.get_json() 
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+        dados = request.get_json() 
         
+        # Loop para atualizar múltiplos elementos do site de uma vez (UPSERT)
         for item in dados:
-            cur.execute('''
+            sql = '''
                 INSERT INTO public.cms_content (element_id, content_value, updated_at)
                 VALUES (%s, %s, NOW())
                 ON CONFLICT (element_id) 
                 DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()
-            ''', (item['element_id'], item['content_value']))
+            '''
+            executar_query(sql, (item['element_id'], item['content_value']))
         
-        conn.commit()
-        return jsonify({"message": "Conteúdo atualizado com sucesso!"}), 200
+        return jsonify({"message": "Conteúdo do site atualizado com sucesso!"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao atualizar CMS: {e}")
+        return jsonify({"error": "Falha ao salvar alterações do site"}), 500
 
-# --- ROTAS DE GESTÃO DE PRODUTOS E PEDIDOS (ADMIN) ---
+# --- GESTÃO ADMINISTRATIVA (PRODUTOS E PEDIDOS) ---
 
-@app.route('/api/admin/produtos/<int:id>', methods=['DELETE'])
-def excluir_produto(id):
-    conn = None
-    cur = None
+@app.route('/api/admin/produtos/<id_produto>', methods=['DELETE'])
+def excluir_produto(id_produto):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('DELETE FROM public.produtos WHERE id_produto = %s', (id,))
-        conn.commit()
-        return jsonify({"message": "Produto excluído!"}), 200
+        # Exclusão física do produto (Cuidado: isso remove o item permanentemente)
+        executar_query('DELETE FROM public.produtos WHERE id_produto = %s', (id_produto,))
+        return jsonify({"message": "Produto removido com sucesso!"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao excluir produto {id_produto}: {e}")
+        return jsonify({"error": "Não foi possível excluir o produto. Verifique se ele possui pedidos vinculados."}), 500
 
-@app.route('/api/admin/atualizar-status-pedido/<int:id_pedido>', methods=['PUT'])
+@app.route('/api/admin/atualizar-status-pedido/<id_pedido>', methods=['PUT'])
 def atualizar_status_pedido(id_pedido):
-    novo_status = request.get_json().get('status')
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('''
-            UPDATE public.pedidos 
-            SET status_pedido = %s 
-            WHERE id_pedido = %s
-        ''', (novo_status, id_pedido))
-        conn.commit()
-        return jsonify({"message": "Status atualizado"}), 200
+        dados = request.get_json()
+        novo_status = dados.get('status')
+        
+        # Permite ao admin/funcionário alterar o status (ex: 'Saiu para entrega', 'Concluído')
+        sql = 'UPDATE public.pedidos SET status_pedido = %s WHERE id_pedido = %s'
+        executar_query(sql, (novo_status, id_pedido))
+        
+        return jsonify({"message": f"Status do pedido {id_pedido} atualizado para {novo_status}"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
+        print(f"Erro ao atualizar pedido {id_pedido}: {e}")
+        return jsonify({"error": "Falha ao atualizar o status do pedido"}), 500
+    
 # --- GESTÃO DE BLOQUEIOS DE CALENDÁRIO ---
 
-@app.route('/api/admin/remover-bloqueio/<int:id_bloqueio>', methods=['DELETE'])
+# --- GESTÃO DE BLOQUEIOS (FERIADOS E MANUTENÇÃO) ---
+
+@app.route('/api/admin/remover-bloqueio/<id_bloqueio>', methods=['DELETE'])
 def remover_bloqueio(id_bloqueio):
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('DELETE FROM public.dias_bloqueados WHERE id_bloqueio = %s', (id_bloqueio,))
-        conn.commit()
-        return jsonify({"message": "Removido"}), 200
+        # Remove o bloqueio de data específica
+        executar_query('DELETE FROM public.dias_bloqueados WHERE id_bloqueio = %s', (id_bloqueio,))
+        return jsonify({"message": "Bloqueio removido com sucesso"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao remover bloqueio: {e}")
+        return jsonify({"error": "Falha ao processar exclusão"}), 500
 
 @app.route('/api/admin/bloquear-dia', methods=['POST'])
 def bloquear_dia():
-    dados = request.get_json()
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+        dados = request.get_json()
         
-        id_loja = None if dados['id_loja'] == 'ALL' else int(dados['id_loja'])
+        # Se id_loja for 'ALL', salvamos como None (NULL no banco) para bloquear todas
+        id_loja = None if dados.get('id_loja') == 'ALL' else dados.get('id_loja')
         
-        cur.execute('''
+        sql = '''
             INSERT INTO public.dias_bloqueados (id_loja, data_bloqueada, motivo)
             VALUES (%s, %s, %s)
-        ''', (id_loja, dados['data'], dados['motivo']))
+        '''
+        executar_query(sql, (id_loja, dados.get('data'), dados.get('motivo')))
         
-        conn.commit()
         return jsonify({"message": "Dia bloqueado com sucesso!"}), 201
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao bloquear dia: {e}")
+        return jsonify({"error": "Falha ao salvar bloqueio"}), 500
 
 @app.route('/api/admin/dias-bloqueados', methods=['GET'])
 def listar_bloqueios():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('''
+        # Traz os bloqueios e o nome da loja vinculada (se houver)
+        query = '''
             SELECT b.*, l.nome_loja 
             FROM public.dias_bloqueados b
             LEFT JOIN public.lojas l ON b.id_loja = l.id_loja
             ORDER BY b.data_bloqueada DESC
-        ''')
-        bloqueios = cur.fetchall()
-        return jsonify(bloqueios), 200
+        '''
+        bloqueios = executar_query(query)
+        return jsonify(bloqueios if bloqueios else []), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
 
-@app.route('/api/admin/cancelar-agendamento/<int:id_agendamento>', methods=['POST'])
+# --- GESTÃO DE AGENDAMENTOS (AÇÕES) ---
+
+@app.route('/api/admin/cancelar-agendamento/<id_agendamento>', methods=['POST'])
 def cancelar_agendamento(id_agendamento):
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("UPDATE public.agendamentos SET status = 'cancelado' WHERE id_agendamento = %s", (id_agendamento,))
-        conn.commit()
+        # Apenas altera o status para 'cancelado' para manter o histórico
+        executar_query("UPDATE public.agendamentos SET status = 'cancelado' WHERE id_agendamento = %s", (id_agendamento,))
         return jsonify({"message": "Agendamento cancelado com sucesso"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao cancelar agendamento: {e}")
+        return jsonify({"error": "Falha ao cancelar"}), 500
 
-# --- 7. GESTÃO DE PETS ---
+# --- GESTÃO DE PETS (CADASTRO) ---
 
 @app.route('/api/cadastrar-pet', methods=['POST'])
 def cadastrar_pet():
-    dados = request.get_json()
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+        dados = request.get_json()
         
-        cur.execute('''
+        # O id_tutor aqui deve ser o UUID do cliente logado
+        sql = '''
             INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id_pet
-        ''', (
-            dados['id_tutor'], 
-            dados['nome_pet'], 
+        '''
+        params = (
+            dados.get('id_tutor'), 
+            dados.get('nome_pet'), 
             dados.get('especie'), 
             dados.get('raca'), 
             dados.get('porte'), 
             dados.get('observacoes')
-        ))
+        )
         
-        novo_id = cur.fetchone()[0]
-        conn.commit()
-        return jsonify({"message": "Pet cadastrado!", "id": novo_id}), 201
+        # Usamos a query para inserir e pegar o novo ID
+        resultado = executar_query(sql, params)
+        novo_id = resultado[0]['id_pet'] if resultado else None
+        
+        return jsonify({"message": "Pet cadastrado com sucesso!", "id": novo_id}), 201
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao cadastrar pet: {e}")
+        return jsonify({"error": "Falha ao salvar dados do pet"}), 500
     
-    @app.route('/api/pet/excluir/<int:id_pet>', methods=['DELETE'])
-    def excluir_pet(id_pet):
-        conn = None
-        cur = None
+# --- 7. GESTÃO DE PETS (EXCLUSÃO) ---
+
+@app.route('/api/pet/excluir/<id_pet>', methods=['DELETE'])
+def excluir_pet(id_pet):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # Deleta o pet do banco de dados Neon
-        cur.execute('DELETE FROM public.pets WHERE id_pet = %s', (id_pet,))
-        conn.commit()
-        return jsonify({"message": "Pet excluído com sucesso!"}), 200
+        # Tenta deletar o pet. O banco vai impedir se houver agendamentos vinculados (Integridade Referencial)
+        executar_query('DELETE FROM public.pets WHERE id_pet = %s', (id_pet,))
+        return jsonify({"message": "Pet removido com sucesso!"}), 200
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": "Não foi possível excluir o pet. Verifique se ele não possui agendamentos ativos."}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao excluir pet: {e}")
+        return jsonify({"error": "Não foi possível excluir o pet. Verifique se ele possui agendamentos históricos."}), 500
+
 # --- 8. CÁLCULO DE HORÁRIOS DISPONÍVEIS (LÓGICA CORE) ---
 
-HORA_INICIO_PADRAO = time(8, 0)
-HORA_FIM_PADRAO = time(18, 0)
-INTERVALO_SLOT_MINUTOS = 30
-
-def get_db_connection():
-    # Substitua pela sua string de conexão real do Neon
-    return psycopg2.connect("sua_string_de_conexao_do_neon")
-
-# --- ROTA: BUSCAR HORÁRIOS DISPONÍVEIS ---
 @app.route('/api/horarios-disponiveis', methods=['GET'])
 def get_available_slots():
-    conn = None
-    cur = None
     try:
         loja_id = request.args.get('loja_id')
         servico_id = request.args.get('servico_id')
-        data_str = request.args.get('data')
+        data_str = request.args.get('data') # Formato esperado: YYYY-MM-DD
 
         if not all([loja_id, servico_id, data_str]):
-            return jsonify({"error": "Parâmetros faltando."}), 400
+            return jsonify({"error": "Faltam parâmetros para calcular horários."}), 400
 
         data_selecionada = datetime.strptime(data_str, '%Y-%m-%d').date()
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. Verifica se o dia está bloqueado
-        cur.execute('SELECT motivo FROM public.dias_bloqueados WHERE data_bloqueada = %s AND (id_loja = %s OR id_loja IS NULL)', (data_str, loja_id))
-        if cur.fetchone(): return jsonify([]), 200
+        # 1. Verifica se o dia está bloqueado (Feriados ou Folgas)
+        bloqueio = executar_query('''
+            SELECT motivo FROM public.dias_bloqueados 
+            WHERE data_bloqueada = %s AND (id_loja = %s OR id_loja IS NULL)
+        ''', (data_str, loja_id))
+        
+        if bloqueio:
+            return jsonify([]), 200 # Retorna lista vazia se o dia estiver trancado
 
-        # 2. Puxa regras de capacidade
-        cur.execute('''
+        # 2. Busca regras de capacidade e duração do serviço
+        regra_res = executar_query('''
             SELECT r.capacidade_simultanea, s.duracao_media_minutos 
             FROM public.servicos_loja_regras r
             JOIN public.servicos s ON r.id_servico = s.id_servico
             WHERE r.id_loja = %s AND r.id_servico = %s AND r.ativo = true
         ''', (loja_id, servico_id))
         
-        regra = cur.fetchone()
-        if not regra: return jsonify([]), 200
+        if not regra_res:
+            return jsonify([]), 200 # Sem regra definida, sem horários
 
+        regra = regra_res[0]
         duracao = regra['duracao_media_minutos'] or 30
+        capacidade_maxima = regra['capacidade_simultanea']
 
-        # 3. Puxa agendamentos já feitos
-        cur.execute('''
+        # 3. Puxa agendamentos já ocupados para este dia e loja
+        agendamentos = executar_query('''
             SELECT data_hora_inicio, data_hora_fim FROM public.agendamentos 
             WHERE id_loja = %s AND CAST(data_hora_inicio AS DATE) = %s AND status != 'cancelado'
         ''', (loja_id, data_str))
-        agendamentos = cur.fetchall()
 
-        # 4. Gera os slots
-        slots = []
-        atual = datetime.combine(data_selecionada, HORA_INICIO_PADRAO)
+        # 4. Geração Dinâmica de Slots
+        slots_disponiveis = []
+        
+        # Combinamos a data com a hora de início e fim padrão da Regia & Tinas
+        inicio_dia = datetime.combine(data_selecionada, HORA_INICIO_PADRAO)
         fim_dia = datetime.combine(data_selecionada, HORA_FIM_PADRAO)
 
+        atual = inicio_dia
         while atual + timedelta(minutes=duracao) <= fim_dia:
             slot_inicio = atual
             slot_fim = atual + timedelta(minutes=duracao)
             
+            # Conta quantos agendamentos batem com este horário (conflitos)
             conflitos = 0
             for ag in agendamentos:
+                # Remove timezone se existir para evitar erro de comparação
                 ag_inicio = ag['data_hora_inicio'].replace(tzinfo=None)
                 ag_fim = ag['data_hora_fim'].replace(tzinfo=None) if ag['data_hora_fim'] else ag_inicio + timedelta(minutes=duracao)
+                
                 if slot_inicio < ag_fim and slot_fim > ag_inicio:
                     conflitos += 1
 
-            if conflitos < regra['capacidade_simultanea']:
-                slots.append(slot_inicio.strftime('%H:%M'))
+            # Se ainda houver "vaga" na loja para esse horário, adiciona à lista
+            if conflitos < capacidade_maxima:
+                slots_disponiveis.append(slot_inicio.strftime('%H:%M'))
             
+            # Pula para o próximo intervalo (ex: de 30 em 30 min)
             atual += timedelta(minutes=INTERVALO_SLOT_MINUTOS)
 
-        return jsonify(slots), 200
+        return jsonify(slots_disponiveis), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if conn: conn.close()
+        print(f"Erro no motor de horários: {e}")
+        return jsonify({"error": "Falha ao calcular disponibilidade"}), 500
 # --- 9. E-COMMERCE (NOVIDADES) ---
+
+# --- 9. E-COMMERCE: PRODUTOS RECENTES (NOVIDADES) ---
 
 @app.route('/api/ecommerce/novidades', methods=['GET'])
 def get_novidades():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('''
+        # Busca os 8 produtos mais recentes cadastrados
+        sql = '''
             SELECT id_produto, nome_produto, url_imagem, preco, preco_promocional 
             FROM public.produtos 
-            ORDER BY data_cadastro DESC LIMIT 8
-        ''')
-        produtos = cur.fetchall()
-        return jsonify(produtos), 200
+            WHERE status_produto = 'Ativo'
+            ORDER BY id_produto DESC LIMIT 8
+        '''
+        produtos = executar_query(sql)
+        return jsonify(produtos if produtos else []), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao buscar novidades: {e}")
+        return jsonify({"error": "Falha ao carregar novidades"}), 500
 
-# --- 10. CRIAÇÃO DE AGENDAMENTO ---
+# --- 10. CRIAÇÃO DE AGENDAMENTO (CONFIRMAÇÃO) ---
 
 @app.route('/api/agendar', methods=['POST'])
 def create_appointment():
-    data = request.get_json()
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+        data = request.get_json()
         
-        cur.execute('SELECT duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (data['id_servico'],))
-        resultado = cur.fetchone()
+        # 1. Busca a duração do serviço para calcular o fim
+        res_servico = executar_query('SELECT duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (data['id_servico'],))
         
-        if not resultado:
+        if not res_servico:
             return jsonify({"error": "Serviço não encontrado"}), 404
             
-        duracao = resultado[0]
-        inicio = datetime.fromisoformat(data['data_hora_inicio'].replace('Z', '+00:00')).replace(tzinfo=None)
+        duracao = res_servico[0]['duracao_media_minutos'] or 30
+        
+        # 2. Tratamento da Data e Hora
+        # Removemos o 'Z' ou offsets para garantir compatibilidade com o banco
+        inicio_str = data['data_hora_inicio'].replace('Z', '').split('+')[0]
+        inicio = datetime.fromisoformat(inicio_str)
         fim = inicio + timedelta(minutes=duracao)
 
-        cur.execute('''
+        # 3. Insere o agendamento no banco
+        # CORREÇÃO: data_hora_fim em vez de data_hora_fundo
+        sql = '''
             INSERT INTO public.agendamentos 
-            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fundo, status, observacoes_cliente)
+            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, observacoes_cliente)
             VALUES (%s, %s, %s, %s, %s, %s, 'confirmado', %s)
             RETURNING id_agendamento
-        ''', (
+        '''
+        params = (
             data['id_cliente'], 
             data.get('id_pet'), 
             data['id_loja'], 
@@ -1111,19 +903,17 @@ def create_appointment():
             inicio, 
             fim, 
             data.get('observacoes_cliente')
-        ))
+        )
         
-        id_novo = cur.fetchone()[0]
-        conn.commit()
-        return jsonify({"message": "Agendado!", "id": id_novo}), 201
+        resultado = executar_query(sql, params)
+        id_novo = resultado[0]['id_agendamento'] if resultado else None
+        
+        return jsonify({"message": "Agendamento realizado com sucesso!", "id": id_novo}), 201
     except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        print(f"Erro ao criar agendamento: {e}")
+        return jsonify({"error": "Falha ao processar o agendamento"}), 500
 
-# --- 11. LOGIN ---
+# --- 11. SISTEMA DE LOGIN (HÍBRIDO) ---
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -1135,34 +925,25 @@ def login():
         email = dados.get('email')
         senha_digitada = dados.get('senha') 
         
-        # Log de depuração (aparece no painel de logs do Render)
-        print(f"Tentativa de login para: {email}")
-
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"status": "erro", "mensagem": "Falha ao conectar ao banco"}), 500
-
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Busca o perfil na tabela 'perfis'
+        sql = 'SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s AND ativo = true'
+        usuario_res = executar_query(sql, (email,))
         
-        # Consulta na tabela 'perfis'
-        cur.execute('SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s AND ativo = true', (email,))
-        usuario = cur.fetchone()
-        
-        if usuario:
-            # Lógica híbrida: aceita senha pura (Carlos) ou Hash (Admin/Usuários novos)
+        if usuario_res:
+            usuario = usuario_res[0]
             senha_db = usuario['senha']
             senha_valida = False
             
+            # Checa se é Hash ou Texto Puro (Suporte para Carlos e Admin)
             if senha_db and (senha_db.startswith('scrypt') or senha_db.startswith('pbkdf2')):
                 senha_valida = check_password_hash(senha_db, senha_digitada)
             else:
-                # Comparação direta para senhas inseridas manualmente via SQL
-                senha_valida = (senha_db == senha_digitada)
+                senha_valida = (str(senha_db) == str(senha_digitada))
 
             if senha_valida:
                 return jsonify({
                     "status": "sucesso",
-                    "id": str(usuario['id']), # Convertendo UUID para string para evitar erro de JSON
+                    "id": str(usuario['id']), # UUID para String
                     "nome": usuario['nome_completo'],
                     "role": usuario['role']
                 }), 200
@@ -1170,17 +951,12 @@ def login():
         return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401
             
     except Exception as e:
-        # Este print é seu melhor amigo para debugar no painel do Render
         print(f"ERRO CRÍTICO NO LOGIN: {str(e)}") 
         return jsonify({"status": "erro", "mensagem": "Erro interno no servidor"}), 500
-    finally:
-        # Fecha as conexões com segurança
-        if 'cur' in locals() and cur: cur.close()
-        if 'conn' in locals() and conn: conn.close()
 
-# --- 12. EXECUÇÃO ---
+# --- 12. EXECUÇÃO DO SERVIDOR ---
 
 if __name__ == '__main__':
-    # Pegamos a porta do ambiente (Render) ou usamos a 5000 local
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # Configuração vital para o Render (PORT) e escuta em 0.0.0.0
+    porta = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=porta, debug=False)
