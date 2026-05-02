@@ -8,6 +8,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from db.neon_db import executar_query
 from flask import request, jsonify
+from psycopg2.extras import RealDictCursor
 from werkzeug.security import check_password_hash, generate_password_hash
 check_password_hash
 
@@ -1123,69 +1124,59 @@ def create_appointment():
         if conn: conn.close()
 
 # --- 11. LOGIN ---
+
 @app.route('/api/login', methods=['POST'])
 def login():
-    dados = request.get_json()
-    email = dados.get('email')
-    senha_digitada = dados.get('senha') 
-    
-    conn = None
-    cur = None
     try:
+        dados = request.get_json()
+        if not dados:
+            return jsonify({"status": "erro", "mensagem": "Dados não recebidos"}), 400
+            
+        email = dados.get('email')
+        senha_digitada = dados.get('senha') 
+        
+        # Log de depuração (aparece no painel de logs do Render)
+        print(f"Tentativa de login para: {email}")
+
         conn = get_db_connection()
+        if not conn:
+            return jsonify({"status": "erro", "mensagem": "Falha ao conectar ao banco"}), 500
+
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Buscamos na tabela correta: perfis
+        
+        # Consulta na tabela 'perfis'
         cur.execute('SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s AND ativo = true', (email,))
         usuario = cur.fetchone()
         
         if usuario:
-            # LÓGICA DUPLA: 
-            # 1. Tenta verificar se a senha é um hash (segurança)
-            # 2. Se falhar, verifica se é texto puro (para o Carlos/testes)
+            # Lógica híbrida: aceita senha pura (Carlos) ou Hash (Admin/Usuários novos)
+            senha_db = usuario['senha']
             senha_valida = False
             
-            if usuario['senha'] and usuario['senha'].startswith('scrypt'):
-                senha_valida = check_password_hash(usuario['senha'], senha_digitada)
+            if senha_db and (senha_db.startswith('scrypt') or senha_db.startswith('pbkdf2')):
+                senha_valida = check_password_hash(senha_db, senha_digitada)
             else:
-                senha_valida = (usuario['senha'] == senha_digitada)
+                # Comparação direta para senhas inseridas manualmente via SQL
+                senha_valida = (senha_db == senha_digitada)
 
             if senha_valida:
                 return jsonify({
                     "status": "sucesso",
-                    "id": usuario['id'],
+                    "id": str(usuario['id']), # Convertendo UUID para string para evitar erro de JSON
                     "nome": usuario['nome_completo'],
-                    "role": usuario['role'] # Crucial para o seu login.js redirecionar
+                    "role": usuario['role']
                 }), 200
         
         return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401
             
     except Exception as e:
-        print(f"Erro no Login: {e}")
+        # Este print é seu melhor amigo para debugar no painel do Render
+        print(f"ERRO CRÍTICO NO LOGIN: {str(e)}") 
         return jsonify({"status": "erro", "mensagem": "Erro interno no servidor"}), 500
     finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
-# Rota de verificação atualizada para usar UUID e a tabela PERFIS
-@app.route('/api/auth/verificar-role/<uuid:id_usuario>', methods=['GET'])
-def verificar_role(id_usuario):
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Corrigido: tabela 'perfis' e coluna 'id' (que é UUID)
-        cur.execute('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
-        user = cur.fetchone()
-        
-        if user:
-            return jsonify({"role": user['role']}), 200
-        return jsonify({"error": "Usuário não encontrado"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        # Fecha as conexões com segurança
+        if 'cur' in locals() and cur: cur.close()
+        if 'conn' in locals() and conn: conn.close()
 
 # --- 12. EXECUÇÃO ---
 
