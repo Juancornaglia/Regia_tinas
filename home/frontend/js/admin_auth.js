@@ -1,54 +1,59 @@
-export async function checkAdminAuth() {
-    // 1. Mudamos: Agora buscamos o TOKEN, não mais o ID solto
-    const token = localStorage.getItem('token_acesso');
+/**
+ * admin_auth.js - Validador de Segurança do Painel Administrativo
+ */
 
-    if (!token) {
-        console.warn("Acesso negado: Nenhum token de autenticação encontrado.");
-        window.location.href = '../usuario/login.html';
+export async function checkAdminAuth() {
+    // 1. Buscamos o ID e o CARGO que o login.js salvou
+    const userId = localStorage.getItem('usuario_id');
+    const userRole = localStorage.getItem('usuario_role');
+
+    // Se não tiver ID ou se não for admin, nem tenta ir pro servidor, já barra aqui
+    if (!userId || userRole !== 'admin') {
+        console.warn("Acesso negado: Usuário não possui permissão de Administrador.");
+        
+        if (userRole === 'funcionario') {
+            window.location.href = 'funcionario.html'; // Se for o Carlos, manda pra tela dele
+        } else {
+            window.location.href = '../usuario/login.html'; // Se for cliente ou deslogado, vai pro login
+        }
         return null;
     }
 
-    const baseUrl = window.API_BASE_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    const baseUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
         ? "http://localhost:5000" 
-        : "https://regia-tinas.onrender.com");
+        : "https://regia-tinas.onrender.com";
 
     try {
-        // 2. Mudamos: A rota não precisa mais do ID na URL. Enviamos o token no Header.
-        const response = await fetch(`${baseUrl}/api/auth/verificar-admin`, {
+        // 2. Chamamos a rota de verificação que criamos no app.py passando o ID
+        const response = await fetch(`${baseUrl}/api/auth/verificar-admin/${userId}`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`, // O padrão de mercado para enviar tokens
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
         
         if (!response.ok) {
-            throw new Error("Falha ao validar permissões com o servidor.");
+            throw new Error("Erro na comunicação com o servidor.");
         }
 
-        let data;
-        try {
-            data = await response.json();
-        } catch (jsonErr) {
-            throw new Error("Resposta inválida do servidor.");
-        }
+        const data = await response.json();
 
-        if (data.isAdmin === true || data.role === 'admin') {
-            console.log("Acesso concedido ao painel administrativo.");
-            // O backend seguro é quem deve nos devolver o nome e ID validados dentro do JSON
+        // 3. O servidor confirmou que é admin?
+        if (data.isAdmin === true) {
+            console.log("Acesso administrativo confirmado pelo servidor.");
             return { 
-                id: data.id, 
-                nome: data.nome || 'Administrador' 
+                id: userId, 
+                nome: localStorage.getItem('usuario_nome') || 'Administrador',
+                role: 'admin'
             };
         } else {
-            console.error("Acesso negado: Usuário não possui privilégios de admin.");
-            alert("Área restrita! Apenas administradores podem acessar o painel.");
-            window.location.href = '../index.html'; 
+            console.error("Tentativa de acesso administrativo negada pelo servidor.");
+            alert("Acesso restrito! Apenas administradores podem acessar esta área.");
+            window.location.href = '../usuario/perfil.html'; 
             return null;
         }
         
     } catch (error) {
-        console.error("Erro na verificação de segurança:", error);
+        console.error("Erro técnico na segurança:", error);
+        // Em caso de erro de conexão (servidor fora), por segurança, deslogamos
         window.location.href = '../usuario/login.html';
         return null;
     }
