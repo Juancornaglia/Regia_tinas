@@ -8,7 +8,8 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from db.neon_db import executar_query
 from flask import request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
+check_password_hash
 
 # Importação da sua função de query simplificada
 from db.neon_db import executar_query 
@@ -1122,7 +1123,6 @@ def create_appointment():
         if conn: conn.close()
 
 # --- 11. LOGIN ---
-
 @app.route('/api/login', methods=['POST'])
 def login():
     dados = request.get_json()
@@ -1134,33 +1134,48 @@ def login():
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s', (email,))
+        # Buscamos na tabela correta: perfis
+        cur.execute('SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s AND ativo = true', (email,))
         usuario = cur.fetchone()
         
-        if usuario and check_password_hash(usuario['senha'], senha_digitada):
-            return jsonify({
-                "status": "sucesso",
-                "id": usuario['id'],
-                "nome": usuario['nome_completo'],
-                "role": usuario['role']
-            }), 200
+        if usuario:
+            # LÓGICA DUPLA: 
+            # 1. Tenta verificar se a senha é um hash (segurança)
+            # 2. Se falhar, verifica se é texto puro (para o Carlos/testes)
+            senha_valida = False
+            
+            if usuario['senha'] and usuario['senha'].startswith('scrypt'):
+                senha_valida = check_password_hash(usuario['senha'], senha_digitada)
+            else:
+                senha_valida = (usuario['senha'] == senha_digitada)
+
+            if senha_valida:
+                return jsonify({
+                    "status": "sucesso",
+                    "id": usuario['id'],
+                    "nome": usuario['nome_completo'],
+                    "role": usuario['role'] # Crucial para o seu login.js redirecionar
+                }), 200
         
-        return jsonify({"status": "erro", "mensagem": "Credenciais inválidas"}), 401
+        return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401
             
     except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+        print(f"Erro no Login: {e}")
+        return jsonify({"status": "erro", "mensagem": "Erro interno no servidor"}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
 
-@app.route('/api/auth/verificar-role/<int:id_usuario>', methods=['GET'])
+# Rota de verificação atualizada para usar UUID e a tabela PERFIS
+@app.route('/api/auth/verificar-role/<uuid:id_usuario>', methods=['GET'])
 def verificar_role(id_usuario):
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT role FROM public.usuarios WHERE id = %s', (id_usuario,))
+        # Corrigido: tabela 'perfis' e coluna 'id' (que é UUID)
+        cur.execute('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
         user = cur.fetchone()
         
         if user:
@@ -1171,6 +1186,7 @@ def verificar_role(id_usuario):
     finally:
         if cur: cur.close()
         if conn: conn.close()
+
 # --- 12. EXECUÇÃO ---
 
 if __name__ == '__main__':
