@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Equipe - Regia & Tinas Care</title>
+    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --brand-pink: #FE8697;
+            --brand-dark: #2c3e50;
+            --sidebar-width: 260px;
+        }
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--brand-dark) 0%, #1a252f 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 1rem 1.5rem;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.05);
+            border-left-color: var(--brand-pink);
+        }
+        .logout-btn-container {
+            padding: 1.5rem;
+            margin-top: auto;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .admin-main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+        .dashboard-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .table-hover tbody tr:hover {
+            background-color: #fff5f6;
+            cursor: pointer;
+        }
+        .badge-status {
+            padding: 0.5em 1em;
+            border-radius: 50rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="admin-sidebar shadow">
+        <div class="sidebar-header text-center">
+            <i class="bi bi-person-badge fs-2 mb-2 d-block text-white opacity-50"></i>
+            <h4>Regia & Tinas Care</h4>
+            <small class="text-white-50" id="cargo-display">Área da Equipe</small>
+        </div>
+        
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item"><a class="nav-link active" href="funcionario.html"><i class="bi bi-list-check me-2"></i>Meu Turno</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-calendar3 me-2"></i>Minha Agenda</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-clipboard2-pulse me-2"></i>Prontuários</a></li>
+        </ul>
+        
+        <div class="logout-btn-container">
+            <button id="logout-button" class="btn btn-danger w-100 btn-sm fw-bold">
+                <i class="bi bi-box-arrow-right me-2"></i>Sair
+            </button>
+        </div>
+    </aside>
+
+    <main class="admin-main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-0">Visão Operacional</h2>
+                <p class="text-muted">Bem-vindo(a), <span id="nome-funcionario" class="fw-bold">Equipe</span>. Excelente turno!</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()"><i class="bi bi-arrow-clockwise me-2"></i>Atualizar Agenda</button>
+        </div>
+        
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card stat-card shadow-sm h-100 border-start border-primary border-4">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small text-uppercase fw-bold">Atendimentos (Hoje)</h6>
+                            <div id="kpi-atendimentos" class="fs-3 fw-bold text-dark"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
+                        </div>
+                        <i class="bi bi-scissors stat-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card shadow-sm h-100 border-start border-4" style="border-color: #FE8697 !important;">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small text-uppercase fw-bold">Pets no Day Care</h6>
+                            <div id="kpi-daycare" class="fs-3 fw-bold text-dark"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
+                        </div>
+                        <i class="bi bi-house-heart stat-icon" style="color: #FE8697;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card shadow-sm h-100 border-start border-warning border-4">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1 small text-uppercase fw-bold">Avisos e Vacinas</h6>
+                            <div id="kpi-avisos" class="fs-3 fw-bold text-dark"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
+                        </div>
+                        <i class="bi bi-bell-fill stat-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="dashboard-panel h-100">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2" style="color: #FE8697;"></i>Minha Fila de Atendimento</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th>Horário</th>
+                                    <th>Pet / Tutor</th>
+                                    <th>Serviço</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Ação Rápida</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-fila-trabalho">
+                                <tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-secondary"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="dashboard-panel mb-4 bg-light border-0">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-box-arrow-down text-danger me-2"></i>Baixa de Uso Interno</h6>
+                    <p class="small text-muted mb-3">Registre produtos consumidos durante os serviços (shampoo, remédios).</p>
+                    <button class="btn btn-outline-danger w-100 shadow-sm fw-bold mb-2">
+                        <i class="bi bi-upc-scan me-2"></i>Registrar Consumo
+                    </button>
+                </div>
+
+                <div class="dashboard-panel">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-syringe text-info me-2"></i>Atenção: Vacinas</h6>
+                    <ul class="list-group list-group-flush" id="lista-alertas-vacinas">
+                        <li class="list-group-item px-0 text-center text-muted small py-3">Carregando alertas do sistema...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/utils.js"></script>
+    
+    <script type="module" src="../js/funcionario.js"></script>
+</body>
+</html>

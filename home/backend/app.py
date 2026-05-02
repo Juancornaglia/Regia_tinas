@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
+from db.neon_db import executar_query
 from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -1175,4 +1176,4 @@ def verificar_role(id_usuario):
 if __name__ == '__main__':
     # Pegamos a porta do ambiente (Render) ou usamos a 5000 local
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)

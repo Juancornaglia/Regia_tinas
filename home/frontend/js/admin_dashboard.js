@@ -1,7 +1,21 @@
-// js/admin_dashboard.js - Painel Gerencial Regia & Tinas Care (VERSÃO DE TESTE DE LAYOUT)
+// Importa a função de segurança que acabamos de criar
+import { checkAdminAuth } from './admin_auth.js';
 
-// ATENÇÃO: O arquivo utils.js e o Chart.js devem estar importados no HTML antes deste script!
+// Roda a verificação assim que a página começar a carregar
+document.addEventListener("DOMContentLoaded", async () => {
+    // Chama o "Guarda de Trânsito"
+    const usuarioLogado = await checkAdminAuth();
 
+    // Se ele retornar nulo, a pessoa foi expulsa, então paramos o código aqui
+    if (!usuarioLogado) return;
+
+    // Se passou, exibe o nome do administrador na tela!
+    console.log("Bem-vindo, " + usuarioLogado.nome);
+    
+    // Aqui embaixo você continua o resto do código do seu dashboard...
+    // carregarGraficos();
+    // carregarAgendamentosDoDia();
+});
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Iniciando carregamento do Dashboard Admin em MODO TESTE VISUAL...");
     
