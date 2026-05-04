@@ -4,60 +4,60 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
 
-let listaMestra = []; // Guarda todos os usuários do banco
-let filtroAtual = 'todos';
+let todosUsuarios = []; // Cache local para busca instantânea
+let filtroCargo = 'todos';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Catraca de Segurança
     const auth = await checkAdminAuth();
     if (!auth) return;
 
+    // 2. Carregar dados iniciais
     await carregarBaseUsuarios();
 
-    // Evento de Busca Inteligente
+    // 3. Listener da Busca Inteligente
     document.getElementById('input-busca-inteligente').addEventListener('input', (e) => {
-        filtrarERenderizar(e.target.value);
+        renderizarCards(e.target.value);
     });
 
-    // Eventos dos Botões de Filtro
-    document.querySelectorAll('#pills-tab .nav-link').forEach(btn => {
+    // 4. Listener das Abas (Filtros de Categoria)
+    document.querySelectorAll('#pills-tab button').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            document.querySelector('#pills-tab .active').classList.remove('active');
-            e.target.classList.add('active');
-            filtroAtual = e.target.getAttribute('data-role');
-            filtrarERenderizar(document.getElementById('input-busca-inteligente').value);
+            filtroCargo = e.target.getAttribute('data-role');
+            renderizarCards(document.getElementById('input-busca-inteligente').value);
         });
     });
 });
 
 async function carregarBaseUsuarios() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/usuarios/listar-completo`);
-        listaMestra = await response.json();
-        filtrarERenderizar('');
+        const response = await fetch(`${API_BASE_URL}/api/admin/usuarios/listar-tudo`);
+        todosUsuarios = await response.json();
+        renderizarCards('');
     } catch (error) {
-        console.error("Erro ao carregar usuários:", error);
+        console.error("Erro ao carregar banco:", error);
     }
 }
 
-function filtrarERenderizar(termo) {
-    const container = document.getElementById('lista-usuarios');
-    const t = termo.toLowerCase();
+function renderizarCards(termoBusca) {
+    const container = document.getElementById('lista-usuarios-cards');
+    const termo = termoBusca.toLowerCase();
 
-    const filtrados = listaMestra.filter(u => {
-        // Busca Inteligente: Nome, Email ou CPF
+    // LÓGICA DA BUSCA INTELIGENTE
+    const filtrados = todosUsuarios.filter(u => {
         const matchesSearch = 
-            (u.nome_completo && u.nome_completo.toLowerCase().includes(t)) ||
-            (u.email && u.email.toLowerCase().includes(t)) ||
-            (u.cpf && u.cpf.includes(t));
-
-        // Filtro de Categoria (Aba)
-        const matchesRole = filtroAtual === 'todos' || u.role === filtroAtual;
-
+            u.nome_completo.toLowerCase().includes(termo) || 
+            u.email.toLowerCase().includes(termo) || 
+            (u.cpf && u.cpf.includes(termo)) ||
+            u.id.includes(termo);
+        
+        const matchesRole = filtroCargo === 'todos' || u.role === filtroCargo;
+        
         return matchesSearch && matchesRole;
     });
 
     if (filtrados.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center py-5 text-muted">Nenhum usuário encontrado com esses critérios.</div>';
+        container.innerHTML = '<div class="col-12 text-center py-5 text-muted">Nenhum usuário encontrado.</div>';
         return;
     }
 
@@ -75,19 +75,19 @@ function filtrarERenderizar(termo) {
                         </span>
                     </div>
                     
-                    <div class="small text-muted mb-3">
-                        <div><i class="bi bi-phone me-2"></i>${user.telefone || 'N/A'}</div>
-                        <div><i class="bi bi-card-text me-2"></i>CPF: ${user.cpf || 'N/A'}</div>
+                    <div class="mb-3 small">
+                        <div class="text-muted"><i class="bi bi-phone me-2"></i>${user.telefone || 'Não informado'}</div>
+                        <div class="text-muted"><i class="bi bi-card-text me-2"></i>CPF: ${user.cpf || 'Não informado'}</div>
                     </div>
 
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 border-top pt-3">
                         <select class="form-select form-select-sm" onchange="window.mudarCargo('${user.id}', this.value)">
                             <option value="cliente" ${user.role === 'cliente' ? 'selected' : ''}>Cliente</option>
                             <option value="funcionario" ${user.role === 'funcionario' ? 'selected' : ''}>Funcionário</option>
                             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
-                        <button class="btn btn-sm btn-outline-danger" onclick="window.desativarUsuario('${user.id}')" title="Desativar">
-                            <i class="bi bi-trash"></i>
+                        <button class="btn btn-sm btn-outline-danger" onclick="window.excluirUsuario('${user.id}')" title="Inativar">
+                            <i class="bi bi-person-x"></i>
                         </button>
                     </div>
                 </div>
@@ -96,9 +96,9 @@ function filtrarERenderizar(termo) {
     `).join('');
 }
 
-// Funções Globais expostas ao Window
+// Funções expostas ao window para os botões do HTML funcionarem
 window.mudarCargo = async (id, novoRole) => {
-    if(!confirm(`Mudar acesso para ${novoRole.toUpperCase()}?`)) return;
+    if(!confirm("Deseja alterar as permissões deste usuário?")) return;
     try {
         const response = await fetch(`${API_BASE_URL}/api/admin/usuarios/alterar-role`, {
             method: 'PUT',
