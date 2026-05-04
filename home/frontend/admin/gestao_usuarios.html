@@ -13,8 +13,8 @@
         .user-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .role-funcionario { border-left-color: #0dcaf0; }
         .role-admin { border-left-color: #dc3545; }
-        .nav-pills .nav-link.active { background-color: #FE8697; }
-        .search-header { position: sticky; top: 0; background: #f8f9fc; z-index: 10; padding-bottom: 20px; }
+        .section-title { color: #2c3e50; font-weight: 700; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }
+        .search-header { position: sticky; top: 0; background: #f8f9fc; z-index: 10; padding-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -37,19 +37,19 @@
         <div class="search-header">
             <h2 class="fw-bold mb-3">Gestão de Pessoas</h2>
             
-            <div class="input-group input-group-lg shadow-sm mb-4">
+            <div class="input-group input-group-lg shadow-sm">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search brand-pink"></i></span>
-                <input type="text" id="input-busca-inteligente" class="form-control border-start-0" placeholder="Busque por nome, e-mail ou CPF...">
+                <input type="text" id="input-busca-inteligente" class="form-control border-start-0 border-end-0" placeholder="Nome, e-mail ou CPF...">
+                <button class="btn btn-dark px-4" id="btn-buscar-manual">Buscar</button>
             </div>
-
-            <ul class="nav nav-pills mb-2" id="pills-tab">
-                <li class="nav-item"><button class="nav-link active" data-role="todos">Todos</button></li>
-                <li class="nav-item"><button class="nav-link" data-role="funcionario">Equipe</button></li>
-                <li class="nav-item"><button class="nav-link" data-role="cliente">Clientes</button></li>
-            </ul>
         </div>
 
-        <div class="row g-3" id="container-lista-usuarios">
+        <h4 class="section-title"><i class="bi bi-shield-shaded me-2 text-primary"></i>Equipe (Admin & Funcionários)</h4>
+        <div class="row g-3" id="lista-equipe">
+            </div>
+
+        <h4 class="section-title"><i class="bi bi-person-heart me-2 text-pink" style="color: #FE8697;"></i>Base de Clientes</h4>
+        <div class="row g-3" id="lista-clientes">
             </div>
     </main>
 

@@ -4,130 +4,80 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
 
-let listaOriginal = []; // Cache dos usuários
-let filtroCargo = 'todos';
+let listaOriginal = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     const auth = await checkAdminAuth();
     if (!auth) return;
 
-    // Carrega os dados do Neon
     await carregarUsuarios();
 
-    // 🔍 BUSCA EM TEMPO REAL
-    const inputBusca = document.getElementById('input-busca-inteligente');
-    if (inputBusca) {
-        inputBusca.addEventListener('input', (e) => {
-            filtrarERenderizar(e.target.value);
-        });
-    }
+    const input = document.getElementById('input-busca-inteligente');
+    const btn = document.getElementById('btn-buscar-manual');
 
-    // 📂 FILTRO POR ABAS (Equipe / Clientes)
-    document.querySelectorAll('#pills-tab button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Estética das abas
-            document.querySelector('#pills-tab .active').classList.remove('active');
-            e.target.classList.add('active');
-            
-            // Lógica do filtro
-            filtroCargo = e.target.getAttribute('data-role');
-            filtrarERenderizar(document.getElementById('input-busca-inteligente').value);
-        });
-    });
+    // Busca inteligente ao digitar
+    input.addEventListener('input', () => filtrarERenderizar(input.value));
+    // Busca ao clicar no botão
+    btn.addEventListener('click', () => filtrarERenderizar(input.value));
 });
 
 async function carregarUsuarios() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/admin/usuarios/listar-tudo`);
-        if (!res.ok) throw new Error("Erro ao buscar dados");
-        
+        if (res.status === 404) throw new Error("Rota não encontrada no servidor.");
         listaOriginal = await res.json();
-        console.log("Usuários carregados:", listaOriginal.length);
-        filtrarERenderizar(''); // Primeira renderização
+        filtrarERenderizar('');
     } catch (error) {
-        console.error("Erro na carga inicial:", error);
-        document.getElementById('container-lista-usuarios').innerHTML = 
-            '<div class="alert alert-danger text-center">Erro ao conectar com o banco de dados.</div>';
+        console.error("Erro:", error);
     }
 }
 
 function filtrarERenderizar(termo) {
-    const container = document.getElementById('container-lista-usuarios');
-    if (!container) return;
-
     const t = termo.toLowerCase().trim();
+    const equipeContainer = document.getElementById('lista-equipe');
+    const clientesContainer = document.getElementById('lista-clientes');
 
-    const filtrados = listaOriginal.filter(u => {
-        // Blindagem contra campos nulos no banco (evita o erro do .toLowerCase)
-        const nome = (u.nome_completo || "").toLowerCase();
-        const email = (u.email || "").toLowerCase();
-        const cpf = (u.cpf || "");
+    const filtrados = listaOriginal.filter(u => 
+        (u.nome_completo || "").toLowerCase().includes(t) || 
+        (u.email || "").toLowerCase().includes(t) || 
+        (u.cpf || "").includes(t)
+    );
 
-        const matchesSearch = nome.includes(t) || email.includes(t) || cpf.includes(t);
-        const matchesRole = filtroCargo === 'todos' || u.role === filtroCargo;
+    const equipeHtml = filtrados.filter(u => u.role === 'admin' || u.role === 'funcionario').map(user => cardUsuario(user)).join('');
+    const clientesHtml = filtrados.filter(u => u.role === 'cliente').map(user => cardUsuario(user)).join('');
 
-        return matchesSearch && matchesRole;
-    });
+    equipeContainer.innerHTML = equipeHtml || '<p class="text-muted ps-3">Nenhum membro da equipe encontrado.</p>';
+    clientesContainer.innerHTML = clientesHtml || '<p class="text-muted ps-3">Nenhum cliente encontrado.</p>';
+}
 
-    if (filtrados.length === 0) {
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="bi bi-person-x fs-1 text-muted"></i>
-                <p class="text-muted mt-2">Nenhum usuário encontrado para "${termo}"</p>
-            </div>`;
-        return;
-    }
-
-    container.innerHTML = filtrados.map(user => `
+function cardUsuario(user) {
+    return `
         <div class="col-md-6 col-lg-4">
             <div class="card user-card shadow-sm role-${user.role}">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h6 class="fw-bold mb-0 text-dark">${user.nome_completo || 'Sem Nome'}</h6>
-                            <small class="text-muted d-block">${user.email || 'Sem e-mail'}</small>
-                        </div>
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold mb-0">${user.nome_completo || 'Sem Nome'}</h6>
                         <span class="badge ${user.role === 'admin' ? 'bg-danger' : (user.role === 'funcionario' ? 'bg-info text-dark' : 'bg-pink')} small">
-                            ${user.role ? user.role.toUpperCase() : 'CLIENTE'}
+                            ${user.role.toUpperCase()}
                         </span>
                     </div>
-                    
-                    <div class="mb-3 small">
-                        <div class="text-muted"><i class="bi bi-phone me-2"></i>${user.telefone || 'Não cadastrado'}</div>
-                        <div class="text-muted"><i class="bi bi-card-text me-2"></i>CPF: ${user.cpf || 'Não cadastrado'}</div>
-                    </div>
-
-                    <div class="d-flex gap-2 border-top pt-3">
-                        <select class="form-select form-select-sm shadow-none" onchange="window.mudarCargo('${user.id}', this.value)">
-                            <option value="cliente" ${user.role === 'cliente' ? 'selected' : ''}>Tornar Cliente</option>
-                            <option value="funcionario" ${user.role === 'funcionario' ? 'selected' : ''}>Tornar Funcionário</option>
-                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Tornar Admin</option>
-                        </select>
-                    </div>
+                    <p class="small text-muted mb-3">${user.email}</p>
+                    <select class="form-select form-select-sm" onchange="window.mudarCargo('${user.id}', this.value)">
+                        <option value="cliente" ${user.role === 'cliente' ? 'selected' : ''}>Cliente</option>
+                        <option value="funcionario" ${user.role === 'funcionario' ? 'selected' : ''}>Funcionário</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    </select>
                 </div>
             </div>
-        </div>
-    `).join('');
+        </div>`;
 }
 
-// FUNÇÕES GLOBAIS
 window.mudarCargo = async (id, novoRole) => {
-    if(!confirm(`Deseja alterar as permissões para ${novoRole.toUpperCase()}?`)) return;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/usuarios/alterar-role`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({id_usuario: id, novo_role: novoRole})
-        });
-        
-        if(response.ok) {
-            console.log("Cargo alterado!");
-            await carregarUsuarios(); // Recarrega a lista do banco
-        } else {
-            alert("Erro ao salvar no banco.");
-        }
-    } catch (e) {
-        alert("Erro de conexão.");
-    }
+    if(!confirm("Mudar permissões?")) return;
+    await fetch(`${API_BASE_URL}/api/admin/usuarios/alterar-role`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id_usuario: id, novo_role: novoRole})
+    });
+    carregarUsuarios();
 };

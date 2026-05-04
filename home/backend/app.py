@@ -748,23 +748,22 @@ def verificar_admin_db(id_usuario):
             return jsonify({"isAdmin": False}), 403
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route('/api/admin/usuarios/listar-completo', methods=['GET'])
-def listar_todos_usuarios_admin():
+    
+@app.route('/api/admin/usuarios/listar-tudo', methods=['GET'])
+def listar_usuarios_final():
     try:
-        # Pega todos da tabela perfis que estão ativos
-        sql = "SELECT id, nome_completo, email, cpf, telefone, role, ativo FROM public.perfis WHERE ativo = true ORDER BY nome_completo ASC"
+        # Pega todos da tabela perfis que estão ativos e organiza por cargo e nome
+        sql = """
+            SELECT id, nome_completo, email, role, cpf, telefone 
+            FROM public.perfis 
+            WHERE ativo = true 
+            ORDER BY role ASC, nome_completo ASC
+        """
         usuarios = executar_query(sql)
         return jsonify(usuarios), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/admin/usuarios/listar-completo', methods=['GET'])
-def listar_todos_usuarios():
-    # Busca todos os dados necessários para a gestão, incluindo endereço e telefone
-    sql = "SELECT id, nome_completo, email, role, telefone, cpf, ativo FROM public.perfis ORDER BY nome_completo ASC"
-    usuarios = executar_query(sql)
-    return jsonify(usuarios), 200    
+        print(f"Erro ao listar usuários: {e}")
+        return jsonify({"error": "Falha interna no servidor"}), 500
 
 @app.route('/api/admin/dias-bloqueados', methods=['GET'])
 def listar_bloqueios():
