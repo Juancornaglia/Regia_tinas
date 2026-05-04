@@ -736,6 +736,104 @@ def alterar_role_usuario():
         print(f"Erro ao alterar cargo: {e}")
         return jsonify({"error": "Falha ao atualizar cargo"}), 500
 
+@app.route('/api/pets/usuario/<id_usuario>', methods=['GET'])
+def listar_pets_usuario(id_usuario):
+    sql = "SELECT id_pet, nome_pet, especie, raca, porte, observacoes FROM public.pets WHERE id_tutor = %s"
+    return jsonify(executar_query(sql, (id_usuario,))), 200
+
+@app.route('/api/pets', methods=['POST'])
+def cadastrar_pet():
+    dados = request.json
+    sql = """
+        INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes) 
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    executar_query(sql, (dados['id_tutor'], dados['nome_pet'], dados['especie'], dados['raca'], dados['porte'], dados['observacoes']))
+    return jsonify({"message": "Pet cadastrado!"}), 201
+
+@app.route('/api/pets/<id_pet>', methods=['DELETE'])
+def deletar_pet(id_pet):
+    sql = "DELETE FROM public.pets WHERE id_pet = %s"
+    executar_query(sql, (id_pet,))
+    return jsonify({"message": "Pet removido"}), 200
+
+# ==========================================
+# GESTÃO DE PERFIL E FIDELIDADE
+# ==========================================
+
+@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
+def buscar_dados_usuario(id_usuario):
+    """Busca nome, email e telefone para preencher o formulário de perfil"""
+    sql = "SELECT nome_completo, email, telefone FROM public.perfis WHERE id = %s"
+    resultado = executar_query(sql, (id_usuario,))
+    if resultado:
+        return jsonify(resultado[0]), 200
+    return jsonify({"error": "Usuário não encontrado"}), 404
+
+@app.route('/api/fidelidade/<id_cliente>', methods=['GET'])
+def buscar_pontos_fidelidade(id_cliente):
+    """Soma todos os pontos do histórico do cliente"""
+    sql = "SELECT COALESCE(SUM(pontos), 0) as total FROM public.fidelidade_historico WHERE id_cliente = %s"
+    resultado = executar_query(sql, (id_cliente,))
+    return jsonify(resultado[0]), 200
+
+@app.route('/api/perfil/atualizar', methods=['PUT'])
+def atualizar_dados_perfil():
+    """Atualiza as informações básicas do tutor"""
+    dados = request.json
+    sql = "UPDATE public.perfis SET nome_completo = %s, telefone = %s WHERE id = %s"
+    executar_query(sql, (dados['nome_completo'], dados['telefone'], dados['id']))
+    return jsonify({"message": "Perfil atualizado!"}), 200
+
+# ==========================================
+# GESTÃO DE PETS (CLIENTE)
+# ==========================================
+
+@app.route('/api/pets/usuario/<id_usuario>', methods=['GET'])
+def listar_pets_por_tutor(id_usuario):
+    """Lista todos os pets de um cliente específico"""
+    sql = "SELECT id_pet, nome_pet, especie, raca, porte, observacoes FROM public.pets WHERE id_tutor = %s"
+    pets = executar_query(sql, (id_usuario,))
+    return jsonify(pets), 200
+
+@app.route('/api/pets', methods=['POST'])
+def cadastrar_novo_pet():
+    """Insere um novo pet no banco Neon"""
+    d = request.json
+    sql = """
+        INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes) 
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    executar_query(sql, (d['id_tutor'], d['nome_pet'], d['especie'], d['raca'], d['porte'], d['observacoes']))
+    return jsonify({"message": "Pet cadastrado com sucesso"}), 201
+
+@app.route('/api/pets/<id_pet>', methods=['DELETE'])
+def remover_pet_cliente(id_pet):
+    """Exclui um pet (Cuidado: agendamentos vinculados podem dar erro de FK se não tratados)"""
+    sql = "DELETE FROM public.pets WHERE id_pet = %s"
+    executar_query(sql, (id_pet,))
+    return jsonify({"message": "Pet removido"}), 200
+
+# ==========================================
+# AGENDAMENTOS (HISTÓRICO DO CLIENTE)
+# ==========================================
+
+@app.route('/api/agendamentos/cliente/<id_cliente>', methods=['GET'])
+def listar_agenda_cliente(id_cliente):
+    """Busca o histórico de agendamentos com nomes de pet e serviço (usando JOIN)"""
+    sql = """
+        SELECT a.id_agendamento, a.data_hora_inicio, a.status, 
+               p.nome_pet, s.nome_servico, l.nome_loja
+        FROM public.agendamentos a
+        JOIN public.pets p ON a.id_pet = p.id_pet
+        JOIN public.servicos s ON a.id_servico = s.id_servico
+        JOIN public.lojas l ON a.id_loja = l.id_loja
+        WHERE a.id_cliente = %s
+        ORDER BY a.data_hora_inicio DESC
+    """
+    agenda = executar_query(sql, (id_cliente,))
+    return jsonify(agenda), 200
+
 @app.route('/api/auth/verificar-admin/<id_usuario>', methods=['GET'])
 def verificar_admin_db(id_usuario):
     try:

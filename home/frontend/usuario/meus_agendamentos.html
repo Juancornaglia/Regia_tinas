@@ -3,88 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meus Agendamentos - Regia & Tinas Care</title>
+    <title>Meus Agendamentos | Regia & Tinas Care</title>
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        :root { 
-            --brand-pink: #FE8697; 
-            --brand-pink-hover: #e57585;
-            --bg-light: #f8f9fa; 
-        }
+        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
         body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; }
-        
         .navbar { background-color: var(--brand-pink) !important; }
         .text-brand { color: var(--brand-pink) !important; }
         
-        .nav-tabs .nav-link { color: #666; font-weight: 500; border: none; }
+        /* Tabs Estilizadas */
+        .nav-tabs { border-bottom: 2px solid #eee; }
+        .nav-tabs .nav-link { color: #888; font-weight: 600; border: none; padding: 1rem 1.5rem; transition: 0.3s; }
+        .nav-tabs .nav-link:hover { color: var(--brand-pink); }
         .nav-tabs .nav-link.active { color: var(--brand-pink); border-bottom: 3px solid var(--brand-pink); background: none; }
 
+        /* Cards de Agendamento */
         .card-agendamento { 
             border: none; 
-            border-radius: 15px; 
+            border-radius: 20px; 
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.02);
             transition: 0.3s; 
-            border-left: 5px solid #ccc;
+            border-left: 6px solid #dee2e6;
         }
-        .card-agendamento.confirmado { border-left-color: #198754; }
-        .card-agendamento.pendente { border-left-color: #ffc107; }
+        .card-agendamento:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.05); }
         
-        .btn-brand { 
-            background-color: var(--brand-pink); 
-            color: white; 
-            border-radius: 25px; 
-            font-weight: bold; 
-            border: none;
-            padding: 10px 20px;
-        }
-        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; }
+        /* Cores por Status */
+        .status-confirmado { border-left-color: #198754 !important; }
+        .status-pendente { border-left-color: #ffc107 !important; }
+        .status-cancelado { border-left-color: #dc3545 !important; }
+        .status-concluido { border-left-color: #0dcaf0 !important; }
+
+        .btn-brand { background-color: var(--brand-pink); color: white; border-radius: 25px; font-weight: bold; border: none; padding: 10px 25px; transition: 0.3s; }
+        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; transform: scale(1.05); }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm">
+    <nav class="navbar navbar-expand-lg shadow-sm mb-4">
         <div class="container">
-            <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html">
-                <i class="bi bi-arrow-left me-2"></i>Início
+            <a class="btn btn-sm btn-outline-light rounded-pill fw-bold" href="../index.html">
+                <i class="bi bi-arrow-left me-1"></i> Início
             </a>
-            <span class="navbar-brand fw-bold text-white mx-auto">Minha Conta</span>
-            <div style="width: 80px;"></div>
+            <span class="navbar-brand fw-bold text-white mx-auto">Área do Cliente</span>
         </div>
     </nav>
 
     <main class="container my-5">
-        <ul class="nav nav-tabs mb-5">
+        <ul class="nav nav-tabs mb-5 justify-content-center">
             <li class="nav-item"><a class="nav-link" href="perfil.html"><i class="bi bi-person me-2"></i>Perfil</a></li>
             <li class="nav-item"><a class="nav-link" href="meus_pets.html"><i class="bi bi-dog me-2"></i>Meus Pets</a></li>
-            <li class="nav-item"><a class="nav-link active" href="meus_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
+            <li class="nav-item"><a class="nav-link active" href="meus_agendamentos.html"><i class="bi bi-calendar-heart me-2"></i>Agendamentos</a></li>
             <li class="nav-item"><a class="nav-link" href="meus_pedidos.html"><i class="bi bi-bag me-2"></i>Pedidos</a></li>
         </ul>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
-                <h2 class="fw-bold text-dark">Meus Agendamentos</h2>
-                <p class="text-muted">Confira abaixo seus horários marcados e histórico.</p>
+                <h2 class="fw-bold text-dark mb-1">Meus Agendamentos</h2>
+                <p class="text-muted mb-0">Gerencie seus horários e histórico de serviços.</p>
             </div>
-            <a href="../servicos/agendamento-fluxo.html" class="btn btn-brand">
-                <i class="bi bi-plus-lg me-2"></i>Novo Agendamento
+            <a href="agendamento.html" class="btn btn-brand shadow-sm">
+                <i class="bi bi-plus-lg me-2"></i>Agendar Novo Serviço
             </a>
         </div>
 
-        <div id="lista-agendamentos-cliente" class="row g-3">
+        <div id="lista-agendamentos-cliente" class="row g-4">
             <div class="col-12 text-center py-5">
                 <div class="spinner-border text-brand" role="status"></div>
-                <p class="mt-2 text-muted">Buscando seus horários no sistema...</p>
+                <p class="mt-2 text-muted fw-500">Sincronizando com a clínica...</p>
             </div>
         </div>
-
     </main>
 
-    <footer class="main-footer pt-5 pb-4 mt-5 border-top bg-white">
-        <div class="container text-center">
-            <p class="mb-1 fw-bold text-brand">REGIA & TINA'S CARE</p>
-            <p class="small text-muted mb-0">© 2026 - Todos os direitos reservados</p>
-        </div>
+    <footer class="pt-5 pb-4 mt-5 border-top bg-white text-center">
+        <p class="mb-1 fw-bold text-brand">REGIA & TINA'S CARE</p>
+        <p class="small text-muted mb-0">© 2026 - Tecnologia a serviço do seu pet</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

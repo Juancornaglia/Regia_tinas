@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel para Pets - Regia & Tinas Care</title>
+    <title>Hotel para Pets | Regia & Tinas Care</title>
     
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -17,193 +17,175 @@
             --bg-light-pink: #fff5f6;
         }
 
-        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', sans-serif; }
         .text-brand { color: var(--brand-pink) !important; }
 
         /* --- Navbar --- */
         .navbar { background-color: var(--brand-pink) !important; padding: 0.8rem 1rem; }
-        .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
+        .navbar .btn-back { border-radius: 20px; border: 1px solid rgba(255,255,255,0.5); transition: 0.3s; color: white !important; }
+        .navbar .btn-back:hover { background: rgba(255,255,255,0.2); }
         
         /* --- Botão Customizado --- */
         .btn-brand { 
             background-color: var(--brand-pink); 
             color: #fff; 
-            border-radius: 25px; 
-            padding: 12px 30px; 
+            border-radius: 30px; 
+            padding: 15px 40px; 
             border: none; 
             font-weight: bold; 
             transition: 0.3s; 
-            display: inline-block; 
-            text-decoration: none; 
+            box-shadow: 0 4px 15px rgba(254, 134, 151, 0.3);
+            text-decoration: none;
+            display: inline-block;
         }
         .btn-brand:hover { 
             background-color: var(--brand-pink-hover); 
             color: #fff; 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(254, 134, 151, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(254, 134, 151, 0.5);
         }
 
         /* --- Lista de Benefícios --- */
-        .text-content ul { list-style-type: none; padding-left: 0; }
-        .text-content ul li { 
-            margin-bottom: 1rem; 
-            color: #555;
-            font-size: 1.05rem;
-            display: flex;
-            align-items: center;
-        }
-        .text-content ul li i { 
-            color: var(--brand-pink); 
-            font-size: 1.3rem;
-            margin-right: 12px; 
-        }
+        .list-hotel { list-style: none; padding-left: 0; }
+        .list-hotel li { margin-bottom: 1.2rem; color: #555; font-size: 1.05rem; display: flex; align-items: center; font-weight: 500; }
+        .list-hotel li i { color: var(--brand-pink); font-size: 1.4rem; margin-right: 15px; }
 
         /* --- Imagens e Galeria --- */
         .hero-img {
-            max-height: 450px; 
+            max-height: 480px; 
             object-fit: cover; 
             width: 100%; 
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
 
         .gallery-img {
             width: 100%; 
-            height: 200px; 
+            height: 220px; 
             object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
+            border-radius: 18px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: 0.4s ease;
         }
-        .gallery-img:hover {
-            transform: scale(1.05);
-        }
+        .gallery-img:hover { transform: scale(1.04); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
 
-        /* --- Seção CTA (Agendamento) --- */
+        /* --- Seção CTA --- */
         .cta-section {
             background-color: var(--bg-light-pink);
             padding: 4rem 2rem;
-            margin-top: 4rem;
-            margin-bottom: 4rem;
-            border-radius: 16px;
+            margin: 4rem 0;
+            border-radius: 25px;
             text-align: center;
-            border: 1px solid var(--brand-pink);
-            box-shadow: 0 10px 30px rgba(254, 134, 151, 0.1);
+            border: 2px dashed var(--brand-pink);
         }
 
-        /* --- Footer --- */
-        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--brand-pink); margin-bottom: 1rem; }
-        .main-footer a { color: #ccc; text-decoration: none; line-height: 2; transition: 0.3s; }
-        .main-footer a:hover { color: white; text-decoration: underline; }
-        .footer-cta { background-color: var(--brand-pink); border-radius: 12px; }
-        .footer-hr { border-color: #555; margin: 2rem 0; }
-
+        .main-footer { background-color: #2d3436; color: #dfe6e9; padding: 60px 0 30px; margin-top: 5rem; }
+        .main-footer h5 { color: var(--brand-pink); font-weight: bold; margin-bottom: 1.5rem; }
+        .main-footer a { color: #b2bec3; text-decoration: none; transition: 0.3s; }
+        .main-footer a:hover { color: white; }
     </style>
 </head>
 <body>
+
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
         <div class="container">
-             <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html" style="text-decoration: none;">
-                 <i class="bi bi-arrow-left me-2"></i>
-                 <span class="d-none d-sm-inline">Início</span>
+             <a class="btn btn-back fw-bold" href="../index.html">
+                 <i class="bi bi-arrow-left me-2"></i>Início
              </a>
-             <a class="navbar-brand fw-bold text-white d-flex align-items-center mx-auto" href="../index.html">
-                 <span class="d-none d-md-inline">HOTEL PET</span>
-                 <span class="d-md-none">Hotel</span> 
-             </a>
-             <div style="width: 80px;"></div> 
+             <span class="navbar-brand fw-bold text-white mx-auto">HOTEL PET & HOSPEDAGEM</span>
+             <div style="width: 90px;"></div> 
         </div>
     </nav>
 
     <main class="container my-5">
         <div class="row align-items-center mb-5">
             <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="text-content">
+                <div class="pe-lg-4">
                     <h1 class="text-brand fw-bold display-5 mb-3">O Segundo Lar do seu Pet</h1>
-                    <p class="lead text-muted mb-3">Viaje tranquilo sabendo que seu pet está em um ambiente seguro, confortável e com companhia 24h por dia.</p>
-                    <p class="text-secondary mb-4">Nossas instalações são projetadas para o bem-estar dos animais, com áreas de recreação, espaços individuais para descanso e monitoramento constante por nossa equipe apaixonada por pets.</p>
+                    <p class="lead text-muted mb-4">Viaje tranquilo sabendo que seu melhor amigo está em um ambiente seguro, climatizado e com supervisão 24h por dia.</p>
                     
-                    <ul class="list-unstyled mt-3 fw-bold">
-                        <li><i class="bi bi-check-circle-fill"></i>Ambiente 100% climatizado</li>
-                        <li><i class="bi bi-check-circle-fill"></i>Recreação com supervisão profissional</li>
-                        <li><i class="bi bi-check-circle-fill"></i>Alimentação conforme a orientação do tutor</li>
-                        <li><i class="bi bi-check-circle-fill"></i>Monitoramento 24 horas por dia</li>
+                    <ul class="list-hotel">
+                        <li><i class="bi bi-shield-check"></i> Monitoramento por câmeras 24 horas</li>
+                        <li><i class="bi bi-thermometer-half"></i> Suítes individuais e climatizadas</li>
+                        <li><i class="bi bi-egg-fried"></i> Alimentação personalizada (você traz a ração)</li>
+                        <li><i class="bi bi-cup-hot"></i> Recreação e socialização inclusas</li>
                     </ul>
+
+                    <a href="agendamento.html" class="btn btn-brand btn-lg mt-4">
+                        <i class="bi bi-calendar-check me-2"></i> Reservar Estadia
+                    </a>
                 </div>
             </div>
             <div class="col-lg-6 text-center">
-                 <img src="../img/hotel1.webp" class="hero-img" alt="Cães descansando no Hotel Pet">
+                 <img src="../img/hotel1.webp" class="hero-img" alt="Cães felizes no Hotel">
             </div>
         </div>
 
         <section class="cta-section">
-            <i class="bi bi-airplane text-brand mb-3" style="font-size: 3rem;"></i>
-            <h2 class="text-brand fw-bold mb-3 display-6">Planejando uma viagem?</h2>
-            <p class="lead text-muted mb-4">Garanta a vaga do seu melhor amigo em nosso hotel e viaje sem preocupações!</p>
-            <a href="agendamento-fluxo.html" class="btn btn-lg btn-brand rounded-pill px-5">
-                <i class="bi bi-calendar-plus me-2"></i>Fazer Reserva
-            </a>
+            <div class="container">
+                <i class="bi bi-airplane-engines text-brand mb-3" style="font-size: 3.5rem;"></i>
+                <h2 class="text-brand fw-bold mb-3">Vai viajar? Nós cuidamos dele!</h2>
+                <p class="lead text-muted mb-4 mx-auto" style="max-width: 600px;">
+                    Nosso hotel aceita cães de todos os portes. Garanta a reserva com antecedência, especialmente em feriados e datas festivas!
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="https://wa.me/5511971061329" target="_blank" class="btn btn-outline-dark rounded-pill px-4 fw-bold">
+                        <i class="bi bi-whatsapp me-2"></i>Tirar Dúvidas
+                    </a>
+                    <a href="agendamento.html" class="btn btn-brand rounded-pill px-5">
+                        Fazer Reserva Online
+                    </a>
+                </div>
+            </div>
         </section>
         
         <div class="container my-5">
             <div class="text-center mb-5">
-                <h2 class="text-brand fw-bold display-6">Nossas Acomodações</h2>
-                <p class="lead text-muted">Um espaço pensado em cada detalhe para o conforto e diversão.</p>
+                <h2 class="text-brand fw-bold display-6">Nossas Instalações</h2>
+                <p class="lead text-muted">Um tour visual pelo conforto que seu pet merece.</p>
             </div>
             
             <div class="row g-4">
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel2.webp" alt="Acomodação hotel pet" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel3.webp" alt="Acomodação hotel pet" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel4.webp" alt="Acomodação hotel pet" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel5.webp" alt="Acomodação hotel pet" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel6.webp" alt="Acomodação hotel pet" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel7.webp" alt="Acomodação hotel pet" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/day_care3.webp" alt="Área de recreação" class="gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/day_care4.webp" alt="Área de recreação" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel2.webp" alt="Quarto individual" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel3.webp" alt="Área de sono" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel4.webp" alt="Cuidado pet" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel5.webp" alt="Brinquedos" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel6.webp" alt="Espaço amplo" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/hotel7.webp" alt="Hospedagem pet" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/day_care3.webp" alt="Área externa" class="gallery-img"></div>
+                <div class="col-lg-3 col-md-4 col-6"><img src="../img/day_care4.webp" alt="Gramado" class="gallery-img"></div>
             </div>
         </div>
     </main>
 
     <footer class="main-footer">
-        <div class="container">
-            <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="footer-cta p-4 text-center">
-                        <h5 class="text-white mb-2">Como podemos ajudar?</h5>
-                        <p class="text-white-50 small mb-3">Conheça mais sobre nós.</p>
-                        <a href="../paginas_institucionais/contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
+        <div class="container text-center">
+            <div class="row text-start mb-5">
+                <div class="col-md-4 mb-4">
+                    <h5>Regia & Tinas Care</h5>
+                    <p class="small">Referência em cuidado animal na região da Vila Prudente e São Caetano.</p>
+                    <div class="fs-4 d-flex gap-3">
+                        <i class="bi bi-instagram text-white-50"></i>
+                        <i class="bi bi-facebook text-white-50"></i>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Atendimento</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="../paginas_institucionais/contatos.html">Central de Ajuda/FAQ</a></li>
-                        <li><a href="#">Trocas e Devoluções</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Nossos Serviços</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="veterinaria.html">Veterinária 🐾</a></li>
+                <div class="col-md-4 mb-4">
+                    <h5>Links Úteis</h5>
+                    <ul class="list-unstyled small">
+                        <li><a href="veterinaria.html">Clínica Veterinária</a></li>
                         <li><a href="servicos.html">Banho & Tosa</a></li>
-                        <li><a href="hotel.html">Hotel Pet</a></li>
-                        <li><a href="day_care.html">Day Care</a></li>
+                        <li><a href="day_care.html">Creche (Day Care)</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Informações Legais</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#">Política de Privacidade</a></li>
-                        <li><a href="../paginas_institucionais/lojas.html">Nossas Lojas</a></li>
-                    </ul>
+                <div class="col-md-4">
+                    <h5>Contato</h5>
+                    <p class="small mb-1"><i class="bi bi-geo-alt me-2 text-brand"></i>R. Luiz Fiorotti, 394 - Olímpico</p>
+                    <p class="small mb-1"><i class="bi bi-telephone me-2 text-brand"></i>(11) 97106-1329</p>
+                    <p class="small"><i class="bi bi-envelope me-2 text-brand"></i>contato@regiaetinas.com.br</p>
                 </div>
             </div>
-            <hr class="footer-hr">
-            <div class="text-center mt-3 small text-white-50">
-                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
-            </div>
+            <hr style="opacity: 0.1">
+            <p class="mb-0 small">© 2026 REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
         </div>
     </footer>
 

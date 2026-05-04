@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banho & Tosa - Regia & Tinas Care</title>
+    <title>Banho & Tosa | Regia & Tinas Care</title>
     
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -17,48 +17,42 @@
             --bg-light-pink: #fff5f6;
         }
 
-        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', sans-serif; }
         .text-brand { color: var(--brand-pink) !important; }
 
         /* --- Navbar --- */
         .navbar { background-color: var(--brand-pink) !important; padding: 0.8rem 1rem; }
-        .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
+        .navbar .btn-back { border-radius: 20px; border: 1px solid rgba(255,255,255,0.5); transition: 0.3s; color: white !important; }
+        .navbar .btn-back:hover { background: rgba(255,255,255,0.2); }
         
         /* --- Botão Customizado --- */
         .btn-brand { 
             background-color: var(--brand-pink); 
             color: #fff; 
-            border-radius: 25px; 
-            padding: 12px 30px; 
+            border-radius: 30px; 
+            padding: 15px 40px; 
             border: none; 
             font-weight: bold; 
             transition: 0.3s; 
-            display: inline-block; 
-            text-decoration: none; 
+            box-shadow: 0 4px 15px rgba(254, 134, 151, 0.3);
+            text-decoration: none;
+            display: inline-block;
         }
         .btn-brand:hover { 
             background-color: var(--brand-pink-hover); 
             color: #fff; 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(254, 134, 151, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(254, 134, 151, 0.5);
         }
 
-        /* --- Lista de Tópicos (com checks) --- */
-        .text-content ul { list-style-type: none; padding-left: 0; }
-        .text-content ul li { 
-            padding-left: 2em; 
-            text-indent: -2em; 
-            margin-bottom: 1rem; 
-            color: #555;
-            font-size: 1.05rem;
-        }
-        .text-content ul li::before { 
-            font-family: 'bootstrap-icons' !important;
-            content: "\F26A"; 
-            margin-right: 12px; 
-            color: var(--brand-pink); 
-            font-size: 1.2rem;
-            vertical-align: middle;
+        /* --- Lista de Serviços --- */
+        .list-paws { list-style: none; padding-left: 0; }
+        .list-paws li { position: relative; padding-left: 35px; margin-bottom: 15px; font-weight: 500; color: #555; }
+        .list-paws li::before { 
+            content: '🐾'; 
+            position: absolute; 
+            left: 0; 
+            color: var(--brand-pink);
         }
 
         /* --- Galeria de Clientes Estilosos --- */
@@ -66,47 +60,37 @@
             width: 100%;
             height: 250px; 
             object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: 0.4s ease;
         }
-        .gallery-grid img:hover {
-            transform: scale(1.05);
-        }
+        .gallery-grid img:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
 
-        /* --- Seção CTA (Agendamento) --- */
+        /* --- Seção CTA --- */
         .cta-section {
             background-color: var(--bg-light-pink);
             padding: 4rem 2rem;
-            margin-top: 5rem;
-            border-radius: 16px;
+            margin: 4rem 0;
+            border-radius: 25px;
             text-align: center;
-            border: 1px solid var(--brand-pink);
-            box-shadow: 0 10px 30px rgba(254, 134, 151, 0.1);
+            border: 2px dashed var(--brand-pink);
         }
 
-        /* --- Footer --- */
-        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--brand-pink); margin-bottom: 1rem; }
-        .main-footer a { color: #ccc; text-decoration: none; line-height: 2; transition: 0.3s; }
-        .main-footer a:hover { color: white; text-decoration: underline; }
-        .footer-cta { background-color: var(--brand-pink); border-radius: 12px; }
-        .footer-hr { border-color: #555; margin: 2rem 0; }
-
+        .main-footer { background-color: #2d3436; color: #dfe6e9; padding: 60px 0 30px; }
+        .main-footer h5 { color: var(--brand-pink); font-weight: bold; margin-bottom: 1.5rem; }
+        .main-footer a { color: #b2bec3; text-decoration: none; transition: 0.3s; }
+        .main-footer a:hover { color: white; }
     </style>
 </head>
 <body>
+
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
         <div class="container">
-            <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html" style="text-decoration: none;">
-                <i class="bi bi-arrow-left me-2"></i>
-                <span class="d-none d-sm-inline">Início</span>
-            </a>
-            <a class="navbar-brand fw-bold text-white d-flex align-items-center mx-auto" href="../index.html">
-                <span class="d-none d-md-inline">BANHO & TOSA</span>
-                <span class="d-md-none">Estética Pet</span> 
-            </a>
-            <div style="width: 80px;"></div>
+             <a class="btn btn-back fw-bold" href="../index.html">
+                 <i class="bi bi-arrow-left me-2"></i>Início
+             </a>
+             <span class="navbar-brand fw-bold text-white mx-auto">ESTÉTICA PET & CUIDADO</span>
+             <div style="width: 90px;"></div> 
         </div>
     </nav>
 
@@ -114,103 +98,88 @@
         
         <div class="row align-items-center mb-5">
             <div class="col-lg-7 mb-4 mb-lg-0">
-                <div class="text-content">
+                <div class="pe-lg-4">
                     <h1 class="text-brand fw-bold display-5 mb-3">Renove o Visual do seu Amigão</h1>
-                    <p class="lead text-muted mb-4">Nosso centro de estética oferece um serviço completo e especializado, garantindo o bem-estar, a higiene e a beleza do seu pet.</p>
+                    <p class="lead text-muted mb-4">Nosso centro de estética oferece um serviço especializado, garantindo a higiene, a beleza e o relaxamento que seu pet merece.</p>
                     
-                    <h4 class="fw-bold text-secondary mb-4 border-bottom pb-2">Nossos Serviços Incluem</h4>
-                    <ul class="list-unstyled mt-3">
-                        <li>Banhos para cães e gatos de todos os portes com produtos premium.</li>
-                        <li>Tosa higiênica, na máquina, na tesoura e tosa específica da raça.</li>
-                        <li>Hidratações profundas e aplicações de ozônio (terapia relaxante).</li>
-                        <li>Corte de unhas e limpeza cuidadosa de ouvidos (já inclusos nos banhos).</li>
-                        <li>Serviço de <strong>Taxi Dog (Leva e Traz)</strong> para a sua total comodidade.</li>
+                    <h4 class="fw-bold text-secondary mb-4 border-bottom pb-2">O que oferecemos:</h4>
+                    <ul class="list-paws">
+                        <li>Banhos terapêuticos com produtos hipoalergênicos premium.</li>
+                        <li>Tosa higiênica, na máquina, tesoura e padrão da raça.</li>
+                        <li>Hidratações profundas e ozonioterapia (relaxamento puro!).</li>
+                        <li>Corte de unhas e limpeza de ouvidos inclusos em todos os banhos.</li>
+                        <li><strong>Taxi Dog exclusivo:</strong> Buscamos e levamos seu pet com segurança.</li>
                     </ul>
                     
-                    <a href="agendamento-fluxo.html" class="btn btn-lg btn-brand mt-4"><i class="bi bi-calendar-check me-2"></i> Agendar um Horário</a>
+                    <a href="agendamento.html" class="btn btn-lg btn-brand mt-4">
+                        <i class="bi bi-calendar-check me-2"></i> Agendar um Horário
+                    </a>
                 </div>
             </div>
             <div class="col-lg-5 text-center">
-                <img src="../img/veteri_5.webp" alt="Pet no Banho e Tosa" class="img-fluid rounded-4 shadow-lg" style="object-fit: cover; max-height: 450px;">
+                <img src="../img/veteri_5.webp" alt="Pet no Banho e Tosa" class="img-fluid rounded-5 shadow-lg" style="object-fit: cover; max-height: 480px; width: 100%;">
             </div>
         </div>
 
-        <hr class="my-5 text-muted">
+        <hr class="my-5 opacity-10">
 
         <div class="text-center mb-5">
             <h2 class="text-brand fw-bold display-6">Nossos Clientes Estilosos</h2>
-            <p class="lead text-muted">Veja o resultado de alguns amigos que passaram por aqui e saíram de visual novo!</p>
+            <p class="lead text-muted">Veja alguns amigos que saíram daqui prontos para o desfile!</p>
         </div>
         
         <div class="row g-4 gallery-grid">
-            <div class="col-md-4 col-6">
-                <img src="../img/animal1.webp" alt="Pet tosado" class="img-fluid">
-            </div>
-            <div class="col-md-4 col-6">
-                <img src="../img/animal2.webp" alt="Pet no banho" class="img-fluid">
-            </div>
-            <div class="col-md-4 col-6">
-                <img src="../img/animal3.webp" alt="Pet tosado 2" class="img-fluid">
-            </div>
-            <div class="col-md-4 col-6">
-                <img src="../img/animal4.webp" alt="Pet feliz após a tosa" class="img-fluid">
-            </div>
-            <div class="col-md-4 col-6">
-                <img src="../img/animal5.webp" alt="Cliente Pet 1" class="img-fluid">
-            </div>
-            <div class="col-md-4 col-6">
-                <img src="../img/animal8.webp" alt="Cliente Pet 2" class="img-fluid">
-            </div>
+            <div class="col-md-4 col-6"><img src="../img/animal1.webp" alt="Pet tosado" class="img-fluid"></div>
+            <div class="col-md-4 col-6"><img src="../img/animal2.webp" alt="Pet no banho" class="img-fluid"></div>
+            <div class="col-md-4 col-6"><img src="../img/animal3.webp" alt="Tosa na tesoura" class="img-fluid"></div>
+            <div class="col-md-4 col-6"><img src="../img/animal4.webp" alt="Poodle feliz" class="img-fluid"></div>
+            <div class="col-md-4 col-6"><img src="../img/animal5.webp" alt="Banho relaxante" class="img-fluid"></div>
+            <div class="col-md-4 col-6"><img src="../img/animal8.webp" alt="Visual novo" class="img-fluid"></div>
         </div>
 
         <section class="cta-section">
-            <i class="bi bi-scissors text-brand mb-3" style="font-size: 3rem;"></i>
-            <h2 class="text-brand fw-bold mb-3">Está na hora do banho?</h2>
-            <p class="lead text-muted mb-4">Seu pet merece esse cuidado! Agende agora e deixe o trabalho sujo com a gente.</p>
-            <a href="agendamento-fluxo.html" class="btn btn-brand btn-lg px-5 rounded-pill">Solicitar Agendamento</a>
+            <div class="container">
+                <i class="bi bi-scissors text-brand mb-3" style="font-size: 3.5rem;"></i>
+                <h2 class="text-brand fw-bold mb-3">Está na hora de um "tapa" no visual?</h2>
+                <p class="lead text-muted mb-4 mx-auto" style="max-width: 600px;">
+                    Manter a pelagem limpa e aparada previne doenças de pele e melhora o conforto térmico do seu pet.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="https://wa.me/5511971061329" target="_blank" class="btn btn-outline-dark rounded-pill px-4 fw-bold">
+                        <i class="bi bi-whatsapp me-2"></i>Chamar no Whats
+                    </a>
+                    <a href="agendamento.html" class="btn btn-brand rounded-pill px-5">
+                        Agendar Banho Online
+                    </a>
+                </div>
+            </div>
         </section>
 
     </main>
 
     <footer class="main-footer">
-        <div class="container">
-            <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="footer-cta p-4 text-center">
-                        <h5 class="text-white mb-2">Como podemos ajudar?</h5>
-                        <p class="text-white-50 small mb-3">Conheça mais sobre nós.</p>
-                        <a href="../paginas_institucionais/contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
-                    </div>
+        <div class="container text-center">
+            <div class="row text-start mb-5">
+                <div class="col-md-4 mb-4">
+                    <h5>Regia & Tinas Care</h5>
+                    <p class="small">O melhor centro de estética animal da região, com profissionais certificados e muito carinho.</p>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Atendimento</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="../paginas_institucionais/contatos.html">Central de Ajuda/FAQ</a></li>
-                        <li><a href="#">Trocas e Devoluções</a></li>
+                <div class="col-md-4 mb-4">
+                    <h5>Mais Serviços</h5>
+                    <ul class="list-unstyled small">
+                        <li><a href="veterinaria.html">Consultas Veterinárias</a></li>
+                        <li><a href="hotel.html">Hospedagem Pet</a></li>
+                        <li><a href="day_care.html">Creche (Day Care)</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Nossos Serviços</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="veterinaria.html">Veterinária 🐾</a></li>
-                        <li><a href="servicos.html">Banho & Tosa</a></li>
-                        <li><a href="hotel.html">Hotel Pet</a></li>
-                        <li><a href="day_care.html">Day Care</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Informações Legais</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#">Política de Privacidade</a></li>
-                        <li><a href="../paginas_institucionais/lojas.html">Nossas Lojas</a></li>
-                    </ul>
+                <div class="col-md-4">
+                    <h5>Unidade Principal</h5>
+                    <p class="small mb-1"><i class="bi bi-geo-alt me-2 text-brand"></i>R. Luiz Fiorotti, 394 - SCS</p>
+                    <p class="small"><i class="bi bi-telephone me-2 text-brand"></i>(11) 97106-1329</p>
                 </div>
             </div>
-            <hr class="footer-hr">
-            <div class="text-center mt-3 small text-white-50">
-                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
-            </div>
+            <hr style="opacity: 0.1">
+            <p class="mb-0 small">© 2026 REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
         </div>
     </footer>
 

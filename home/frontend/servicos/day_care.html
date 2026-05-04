@@ -17,30 +17,30 @@
             --bg-light-pink: #fff5f6;
         }
         
-        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', sans-serif; }
         .text-brand { color: var(--brand-pink) !important; }
 
         /* --- Navbar --- */
         .navbar { background-color: var(--brand-pink) !important; padding: 0.8rem 1rem; }
-        .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
+        .navbar .btn-back { border-radius: 20px; border: 1px solid rgba(255,255,255,0.5); transition: 0.3s; }
+        .navbar .btn-back:hover { background: rgba(255,255,255,0.2); }
         
         /* --- Botão Customizado --- */
         .btn-brand { 
             background-color: var(--brand-pink); 
             color: #fff; 
-            border-radius: 25px; 
-            padding: 12px 30px; 
+            border-radius: 30px; 
+            padding: 15px 40px; 
             border: none; 
             font-weight: bold; 
             transition: 0.3s; 
-            display: inline-block; 
-            text-decoration: none; 
+            box-shadow: 0 4px 15px rgba(254, 134, 151, 0.3);
         }
         .btn-brand:hover { 
             background-color: var(--brand-pink-hover); 
             color: #fff; 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(254, 134, 151, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(254, 134, 151, 0.5);
         }
 
         /* --- Galeria --- */
@@ -48,227 +48,179 @@
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
             gap: 1.5rem; 
-            margin-top: 3rem; 
-            margin-bottom: 3rem; 
+            margin: 3rem 0; 
         }
         .gallery-grid .main-image { 
             grid-column: span 2; 
             grid-row: span 2; 
-            height: calc(400px + 1.5rem); 
+            height: 450px; 
         }
         .gallery-grid img { 
             width: 100%; 
-            height: 200px; 
+            height: 210px; 
             object-fit: cover; 
-            border-radius: 12px; 
-            transition: transform 0.3s ease; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            border-radius: 20px; 
+            transition: 0.4s; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
         }
-        .gallery-grid img:hover { transform: scale(1.05); }
+        .gallery-grid img:hover { transform: scale(1.03); }
         
-        /* --- Seção de Contato --- */
-        .contact-section { border-top: 2px solid var(--brand-pink); padding-top: 4rem; margin-top: 4rem; }
-        
-        .contact-form, .info-card { 
-            background-color: #fff; 
-            padding: 2.5rem; 
-            border-radius: 16px; 
-            border: none; 
-            height: 100%; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
-        }
+        /* --- Contato --- */
         .info-card { 
             background-color: var(--bg-light-pink); 
-            border: 1px solid var(--brand-pink); 
+            border: 1px solid #fec0c8; 
+            border-radius: 20px;
+            padding: 2rem;
         }
         .info-card ul { list-style: none; padding: 0; }
-        .info-card ul li { margin-bottom: 1.5rem; display: flex; align-items: center; }
-        .info-card ul li i { color: var(--brand-pink); font-size: 1.5rem; margin-right: 15px; flex-shrink: 0; }
-        .info-card ul li div { word-break: break-word; color: #555; }
-        .info-card a { color: var(--brand-pink); font-weight: bold; text-decoration: none; }
+        .info-card i { color: var(--brand-pink); font-size: 1.4rem; margin-right: 12px; }
         
-        .form-control:focus { border-color: var(--brand-pink); box-shadow: 0 0 0 0.25rem rgba(254, 134, 151, 0.25); }
-        
-        /* --- Lista de Tópicos (com patinhas) --- */
-        .text-content ul { list-style-type: none; padding-left: 0; }
-        .text-content ul li { 
-            padding-left: 2em; 
-            text-indent: -2em; 
-            margin-bottom: 1rem; 
-            color: #555;
-            font-size: 1.05rem;
-        }
-        .text-content ul li::before { 
+        /* --- Lista de Patinhas --- */
+        .list-paws { list-style: none; padding-left: 0; }
+        .list-paws li { position: relative; padding-left: 35px; margin-bottom: 15px; font-weight: 500; color: #555; }
+        .list-paws li::before { 
             content: '🐾'; 
-            margin-right: 12px; 
-            font-size: 1.1rem;
+            position: absolute; 
+            left: 0; 
+            color: var(--brand-pink);
         }
-        
-        /* --- Footer --- */
-        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--brand-pink); margin-bottom: 1rem; }
-        .main-footer a { color: #ccc; text-decoration: none; line-height: 2; transition: 0.3s; }
-        .main-footer a:hover { color: white; text-decoration: underline; }
-        .footer-cta { background-color: var(--brand-pink); border-radius: 12px; }
-        .footer-hr { border-color: #555; margin: 2rem 0; }
 
-        /* Media Queries */
-        @media (max-width: 992px) { .gallery-grid .main-image { grid-column: span 1; grid-row: span 1; height: 200px; } }
-        @media (max-width: 576px) { .gallery-grid { grid-template-columns: 1fr; } }
+        .main-footer { background-color: #2d3436; color: #dfe6e9; padding: 60px 0 30px; }
+        .main-footer h5 { color: var(--brand-pink); font-weight: bold; margin-bottom: 1.5rem; }
+        .main-footer a { color: #b2bec3; text-decoration: none; transition: 0.3s; }
+        .main-footer a:hover { color: white; }
+
+        @media (max-width: 992px) { .gallery-grid .main-image { grid-column: span 1; grid-row: span 1; height: 210px; } }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
         <div class="container">
-             <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html" style="text-decoration: none;">
-                 <i class="bi bi-arrow-left me-2"></i>
-                 <span class="d-none d-sm-inline">Início</span>
+             <a class="btn btn-back text-white fw-bold" href="../index.html">
+                 <i class="bi bi-arrow-left me-2"></i>Início
              </a>
-             <a class="navbar-brand fw-bold text-white d-flex align-items-center mx-auto" href="../index.html">
-                 <span class="d-none d-md-inline">DAY CARE / CRECHE</span>
-                 <span class="d-md-none">Day Care</span> 
-             </a>
-             <div style="width: 80px;"></div> 
+             <span class="navbar-brand fw-bold text-white mx-auto">DAY CARE & CRECHE</span>
+             <div style="width: 90px;"></div> 
         </div>
     </nav>
 
     <main class="container my-5">
         <div class="row align-items-center mb-5">
             <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="text-content">
+                <div class="pe-lg-4">
                     <h1 class="text-brand fw-bold display-5 mb-3">Diversão e Socialização!</h1>
-                    <p class="lead text-muted mb-3">O Day Care da Regia & Tinas Care é o lugar perfeito para seu cão gastar energia, fazer amigos e aprender enquanto você trabalha ou resolve seus compromissos.</p>
-                    <p class="text-secondary mb-4">Com monitores treinados e um ambiente seguro e estimulante, oferecemos:</p>
+                    <p class="lead text-muted mb-4">O Day Care da Regia & Tinas Care é o lugar perfeito para seu cão gastar energia, fazer amigos e aprender enquanto você resolve seus compromissos.</p>
                     
-                    <ul class="mt-3 fw-bold">
+                    <ul class="list-paws">
                         <li>Ampla área interna e externa para brincadeiras.</li>
                         <li>Atividades de enriquecimento ambiental.</li>
-                        <li>Socialização supervisionada com outros cães.</li>
-                        <li>Momentos de descanso em espaços super confortáveis.</li>
-                        <li>Opções flexíveis de meio período ou período integral.</li>
+                        <li>Socialização supervisionada por monitores.</li>
+                        <li>Momentos de descanso em pufes confortáveis.</li>
+                        <li>Opções de meio período ou integral.</li>
                     </ul>
                     
-                    <a href="agendamento-fluxo.html" class="btn btn-lg btn-brand mt-4"><i class="bi bi-calendar-check me-2"></i> Agende uma Diária</a>
+                    <a href="agendamento.html" class="btn btn-lg btn-brand mt-4">
+                        <i class="bi bi-calendar-heart me-2"></i> Agendar uma Diária
+                    </a>
                 </div>
             </div>
             <div class="col-lg-6 text-center">
-                 <img src="../img/day_care1.webp" class="img-fluid rounded-4 shadow-lg" alt="Cães brincando no Day Care" style="max-height: 450px; object-fit: cover;">
+                 <img src="../img/day_care1.webp" class="img-fluid rounded-5 shadow-lg" alt="Cães felizes" style="max-height: 480px; width: 100%; object-fit: cover;">
             </div>
         </div>
 
         <div class="gallery-grid">
-             <img class="main-image" src="../img/day_care2.webp" alt="Galeria Day Care">
-            <img src="../img/day_care3.webp" alt="Galeria Day Care">
-            <img src="../img/day_care4.webp" alt="Galeria Day Care">
-            <img src="../img/day_care5.webp" alt="Galeria Day Care">
-            <img src="../img/animal7.webp" alt="Cão feliz na creche"> 
+            <img class="main-image shadow-sm" src="../img/day_care2.webp" alt="Socialização">
+            <img src="../img/day_care3.webp" alt="Brincadeiras">
+            <img src="../img/day_care4.webp" alt="Piscina de bolinhas">
+            <img src="../img/day_care5.webp" alt="Descanso">
+            <img src="../img/animal7.webp" alt="Cão feliz"> 
         </div>
 
-        <section class="contact-section text-center">
-            <h2 class="mb-5 text-brand fw-bold">QUER SABER MAIS? ENTRE EM CONTATO!</h2>
-            <div class="row">
-                <div class="col-lg-7 text-start mb-4 mb-lg-0">
-                    <div class="contact-form">
-                        <h4 class="fw-bold mb-3">Tire suas dúvidas</h4>
-                        <p class="text-muted mb-4">Mande uma mensagem para saber mais sobre nossos pacotes, planos mensais e atividades recreativas.</p>
+        <section class="contact-section mt-5">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm p-4 p-md-5 rounded-4">
+                        <h3 class="fw-bold mb-3"><i class="bi bi-chat-dots text-brand me-2"></i>Dúvidas?</h3>
+                        <p class="text-muted mb-4">Mande uma mensagem para saber sobre nossos pacotes mensais e planos recreativos.</p>
                         
                         <form id="contact-form-daycare">
                             <div class="mb-3">
-                                <label for="nome-dc" class="form-label fw-bold text-secondary">Nome Completo</label>
-                                <input type="text" class="form-control bg-light" id="nome-dc" required>
+                                <label class="form-label fw-bold small text-secondary">Nome Completo</label>
+                                <input type="text" class="form-control form-control-lg border-0 bg-light" id="nome-dc" required>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="email-dc" class="form-label fw-bold text-secondary">E-mail</label>
-                                    <input type="email" class="form-control bg-light" id="email-dc" required>
+                                    <label class="form-label fw-bold small text-secondary">E-mail</label>
+                                    <input type="email" class="form-control form-control-lg border-0 bg-light" id="email-dc" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="telefone-dc" class="form-label fw-bold text-secondary">Telefone</label>
-                                    <input type="tel" class="form-control bg-light" id="telefone-dc">
+                                    <label class="form-label fw-bold small text-secondary">Telefone</label>
+                                    <input type="tel" class="form-control form-control-lg border-0 bg-light" id="telefone-dc">
                                 </div>
                             </div>
                             <div class="mb-4">
-                                <label for="mensagem-dc" class="form-label fw-bold text-secondary">Mensagem</label>
-                                <textarea class="form-control bg-light" id="mensagem-dc" rows="4" placeholder="Escreva sua dúvida aqui..." required></textarea>
+                                <label class="form-label fw-bold small text-secondary">Mensagem</label>
+                                <textarea class="form-control border-0 bg-light" id="mensagem-dc" rows="4" required></textarea>
                             </div>
-                            <button type="submit" class="btn btn-brand w-100 py-2">ENVIAR MENSAGEM</button>
+                            <button type="submit" class="btn btn-brand btn-lg w-100">ENVIAR AGORA</button>
                         </form>
                     </div>
                 </div>
                 
-                <div class="col-lg-5 text-start">
-                    <div class="info-card">
+                <div class="col-lg-5">
+                    <div class="info-card h-100">
                         <h4 class="fw-bold mb-4 text-brand">Contatos Rápidos</h4>
-                        <ul>
-                            <li>
+                        <ul class="mb-0">
+                            <li class="d-flex mb-4">
                                 <i class="bi bi-geo-alt-fill"></i>
-                                <div><strong>R. Luiz Fiorotti, 394 - Olímpico</strong><br><small class="text-muted">São Caetano do Sul</small></div>
+                                <div><strong>Unidade Vila Prudente</strong><br><small class="text-muted">R. Luiz Fiorotti, 394</small></div>
                             </li>
-                            <li>
+                            <li class="d-flex mb-4">
                                 <i class="bi bi-whatsapp"></i>
-                                <div><strong>WhatsApp</strong><br><a href="https://wa.me/5511971061329" target="_blank">(11) 97106-1329</a></div>
+                                <div><strong>WhatsApp</strong><br><a href="https://wa.me/5511971061329" class="text-dark" target="_blank">(11) 97106-1329</a></div>
                             </li>
-                            <li>
-                                <i class="bi bi-facebook"></i>
-                                <div><strong>Facebook</strong><br><a href="#" target="_blank">/regiaetinasscare</a></div>
-                            </li>
-                            <li>
+                            <li class="d-flex mb-4">
                                 <i class="bi bi-instagram"></i>
-                                <div><strong>Instagram</strong><br><a href="#" target="_blank">@regiaetinascare</a></div>
+                                <div><strong>Instagram</strong><br><a href="#" class="text-dark">@regiaetinascare</a></div>
                             </li>
-                            <li>
-                                <i class="bi bi-envelope-fill"></i>
-                                <div><strong>E-mail</strong><br><a href="mailto:contato@regiaetinas.com.br">contato@regiaetinas.com.br</a></div>
+                            <li class="d-flex">
+                                <i class="bi bi-envelope-heart-fill"></i>
+                                <div><strong>E-mail</strong><br><small>contato@regiaetinas.com.br</small></div>
                             </li>
                         </ul>
-                        <a href="../paginas_institucionais/contatos.html" class="btn w-100 btn-outline-brand mt-4 rounded-pill">Ver Todas as Lojas</a>
                     </div>
                 </div>
             </div>
         </section>
-
     </main>
 
     <footer class="main-footer">
-        <div class="container">
-            <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="footer-cta p-4 text-center">
-                        <h5 class="text-white mb-2">Como podemos ajudar?</h5>
-                        <p class="text-white-50 small mb-3">Conheça mais sobre nós.</p>
-                        <a href="../paginas_institucionais/contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
-                    </div>
+        <div class="container text-center">
+            <div class="row text-start mb-5">
+                <div class="col-md-4 mb-4">
+                    <h5>Regia & Tinas</h5>
+                    <p class="small">Cuidando do seu melhor amigo com amor e tecnologia desde 2010.</p>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Atendimento</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="../paginas_institucionais/contatos.html">Central de Ajuda/FAQ</a></li>
-                        <li><a href="#">Trocas e Devoluções</a></li>
+                <div class="col-md-4 mb-4">
+                    <h5>Serviços</h5>
+                    <ul class="list-unstyled small">
+                        <li><a href="veterinaria.html">Clínica Veterinária</a></li>
+                        <li><a href="servicos.html">Estética Canina</a></li>
+                        <li><a href="hotel.html">Hospedagem Pet</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Nossos Serviços</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="veterinaria.html">Veterinária 🐾</a></li>
-                        <li><a href="servicos.html">Banho & Tosa</a></li>
-                        <li><a href="hotel.html">Hotel Pet</a></li>
-                        <li><a href="day_care.html">Day Care</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Informações Legais</h5>
-                    <ul class="list-unstyled">
+                <div class="col-md-4">
+                    <h5>Institucional</h5>
+                    <ul class="list-unstyled small">
+                        <li><a href="#">Trabalhe Conosco</a></li>
                         <li><a href="#">Política de Privacidade</a></li>
-                        <li><a href="../paginas_institucionais/lojas.html">Nossas Lojas</a></li>
                     </ul>
                 </div>
             </div>
-            <hr class="footer-hr">
-            <div class="text-center mt-3 small text-white-50">
-                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
-            </div>
+            <hr style="opacity: 0.1">
+            <p class="mb-0 small">© 2026 REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
         </div>
     </footer>
 
@@ -278,10 +230,10 @@
          if (contactFormDaycare) {
              contactFormDaycare.addEventListener('submit', (e) => {
                  e.preventDefault();
-                 alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+                 alert('🐾 Zapata, sua mensagem foi enviada! Entraremos em contato em breve.');
                  contactFormDaycare.reset();
              });
          }
-      </script>
+    </script>
 </body>
 </html>

@@ -7,170 +7,122 @@
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
-    <style>
-        :root { 
-            --brand-pink: #FE8697; 
-            --brand-pink-hover: #e57585;
-            --bg-light: #f8f9fa; 
-        }
-        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; }
-        
-        .navbar { background-color: var(--brand-pink) !important; }
+    <link rel="stylesheet" href="../css/style.css"> <style>
+        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
+        body { background-color: var(--bg-light); }
         .text-brand { color: var(--brand-pink) !important; }
-        .bg-brand { background-color: var(--brand-pink) !important; }
-        
-        /* Wizard Steps */
         .step { display: none; }
-        .step.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .step.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .progress-bar { background-color: var(--brand-pink); transition: 0.5s; }
+        .card-agendamento { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background: white; }
+        
+        /* Calendário */
+        #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-day { padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; border: 1px solid #eee; font-size: 0.9rem; }
+        .calendar-day:hover:not(.disabled) { background-color: #ffeef0; color: var(--brand-pink); }
+        .calendar-day.selected { background-color: var(--brand-pink) !important; color: white !important; }
+        .calendar-day.disabled { color: #ccc; cursor: not-allowed; background-color: #fdfdfd; border-color: transparent; }
+        .calendar-day-name { font-size: 0.75rem; color: #999; text-transform: uppercase; text-align: center; font-weight: 800; padding-bottom: 5px; }
 
-        .progress { height: 10px; border-radius: 10px; background-color: #e9ecef; }
-        .progress-bar { background-color: var(--brand-pink); }
-
-        .card-agendamento { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-
-        .btn-brand { background-color: var(--brand-pink); color: white; border: none; border-radius: 25px; font-weight: bold; transition: 0.3s; padding: 10px 25px; }
-        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; transform: translateY(-2px); }
-        .btn-brand:disabled { background-color: #ccc; }
-
-        /* Calendário Customizado */
-        #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .calendar-day { padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; border: 1px solid #eee; }
-        .calendar-day:hover:not(.disabled) { background-color: var(--brand-pink); color: white; }
-        .calendar-day.selected { background-color: var(--brand-pink); color: white; }
-        .calendar-day.disabled { color: #ccc; cursor: not-allowed; border-color: transparent; }
-        .calendar-day-name { font-size: 0.8rem; color: #999; font-weight: bold; padding-bottom: 10px; }
-
-        .time-slot-btn { border-radius: 20px; font-weight: bold; transition: 0.2s; }
+        .time-slot { width: 100%; margin-bottom: 8px; border-radius: 12px; font-weight: 600; }
+        .btn-brand { background-color: var(--brand-pink); color: white; border: none; border-radius: 25px; transition: 0.3s; }
+        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm">
-         <div class="container">
-              <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html"><i class="bi bi-arrow-left me-2"></i>Início</a>
-              <span class="navbar-brand fw-bold text-white mx-auto">Regia & Tina's Care</span>
-              <div style="width: 80px;"></div>
-         </div>
-     </nav>
+    <nav class="navbar shadow-sm p-3 mb-4" style="background-color: var(--brand-pink);">
+        <div class="container">
+            <a class="btn btn-sm btn-outline-light rounded-pill" href="../index.html"><i class="bi bi-arrow-left me-1"></i>Sair</a>
+            <span class="navbar-brand fw-bold text-white mx-auto">Regia & Tina's Care</span>
+        </div>
+    </nav>
 
     <main class="container my-5">
-        <h1 class="text-center mb-4 text-brand fw-bold">Agendamento Online</h1>
-        
-        <div class="progress mb-4 mx-auto" style="max-width: 600px;">
-            <div class="progress-bar" role="progressbar" style="width: 20%" id="step-progressbar"></div>
+        <div class="progress mb-4 mx-auto" style="max-width: 600px; height: 8px;">
+            <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
         </div>
 
-        <div id="agendamento-wizard" class="card card-agendamento p-4 p-md-5 mx-auto" style="max-width: 800px;">
-
+        <div id="agendamento-wizard" class="card card-agendamento p-4 p-md-5 mx-auto" style="max-width: 900px;">
+            
             <div id="step-1" class="step active">
                 <h3 class="fw-bold mb-4">1. O que vamos fazer hoje?</h3>
-                <div class="mb-4">
-                    <label class="form-label text-muted fw-bold">Selecione o serviço:</label>
-                    <select class="form-select form-select-lg rounded-4 border-2" id="service-select">
-                        <option value="" disabled selected>Carregando serviços...</option>
-                    </select>
-                </div>
-                <div class="text-end">
-                    <button id="nextButtonStep1" class="btn btn-brand btn-lg" disabled>Próximo <i class="bi bi-arrow-right"></i></button>
+                <div class="row g-3" id="services-container">
+                    </div>
+                <div class="text-end mt-4">
+                    <button id="btn-next-1" class="btn btn-brand btn-lg px-5" disabled>Próximo</button>
                 </div>
             </div>
 
             <div id="step-2" class="step">
-                <h3 class="fw-bold mb-4">2. Onde seu pet será atendido?</h3>
+                <h3 class="fw-bold mb-4">2. Onde será o atendimento?</h3>
                 <div class="mb-4">
-                    <label class="form-label text-muted fw-bold">Selecione a unidade:</label>
-                    <select class="form-select form-select-lg rounded-4 border-2" id="store-select">
-                        <option value="" disabled selected>Carregando unidades...</option>
+                    <select class="form-select form-select-lg" id="store-select">
+                        <option value="" selected disabled>Escolha a unidade...</option>
                     </select>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <button class="btn btn-outline-secondary rounded-pill px-4 btn-back">Voltar</button>
-                    <button id="nextButtonStep2" class="btn btn-brand btn-lg" disabled>Próximo <i class="bi bi-arrow-right"></i></button>
+                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
+                    <button id="btn-next-2" class="btn btn-brand btn-lg px-5" disabled>Próximo</button>
                 </div>
             </div>
 
             <div id="step-3" class="step">
-                 <h3 class="fw-bold mb-4">3. Quando será o atendimento?</h3>
-                 <div class="row">
-                     <div class="col-md-7 mb-4">
-                         <div class="d-flex justify-content-between align-items-center mb-3">
-                             <button id="prevMonthButton" class="btn btn-sm btn-light rounded-circle"><i class="bi bi-chevron-left"></i></button>
-                             <h5 id="calendar-month-year" class="mb-0 fw-bold text-brand"></h5>
-                             <button id="nextMonthButton" class="btn btn-sm btn-light rounded-circle"><i class="bi bi-chevron-right"></i></button>
-                         </div>
-                         <div id="calendar-grid"></div>
-                     </div>
-                     <div class="col-md-5">
-                         <div id="time-slots-container" class="p-3 bg-white border rounded-4" style="min-height: 250px;">
-                             <p class="text-muted text-center mt-5">Selecione um dia no calendário.</p>
-                         </div>
-                     </div>
-                 </div>
-                 <div class="d-flex justify-content-between mt-4">
-                     <button class="btn btn-outline-secondary rounded-pill px-4 btn-back">Voltar</button>
-                     <button id="nextButtonStep3" class="btn btn-brand btn-lg" disabled>Próximo <i class="bi bi-arrow-right"></i></button>
-                 </div>
+                <h3 class="fw-bold mb-4">3. Escolha o melhor momento</h3>
+                <div class="row">
+                    <div class="col-md-7 border-end">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <button id="prevMonth" class="btn btn-sm btn-light rounded-circle"><i class="bi bi-chevron-left"></i></button>
+                            <h5 id="calendar-title" class="mb-0 fw-bold text-brand">Maio 2026</h5>
+                            <button id="nextMonth" class="btn btn-sm btn-light rounded-circle"><i class="bi bi-chevron-right"></i></button>
+                        </div>
+                        <div id="calendar-header" class="calendar-day-name row m-0">
+                            <div class="col p-0 text-center">Dom</div><div class="col p-0 text-center">Seg</div>
+                            <div class="col p-0 text-center">Ter</div><div class="col p-0 text-center">Qua</div>
+                            <div class="col p-0 text-center">Qui</div><div class="col p-0 text-center">Sex</div>
+                            <div class="col p-0 text-center">Sáb</div>
+                        </div>
+                        <div id="calendar-grid"></div>
+                    </div>
+                    <div class="col-md-5 ps-md-4">
+                        <h6 class="fw-bold mb-3">Horários Disponíveis</h6>
+                        <div id="time-slots-container" class="overflow-auto" style="max-height: 300px;">
+                            <p class="text-muted small text-center mt-5">Selecione uma data para ver os horários.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
+                    <button id="btn-next-3" class="btn btn-brand btn-lg px-5" disabled>Próximo</button>
+                </div>
             </div>
 
             <div id="step-4" class="step">
-                <h3 class="fw-bold mb-4">4. Quem é o fofinho da vez?</h3>
-                <form id="pet-info-form">
-                    <div class="mb-4">
-                        <label class="form-label text-muted fw-bold">Selecione o Pet:</label>
-                        <select class="form-select form-select-lg rounded-4 border-2" id="select-pet">
-                            <option value="NEW">-- Cadastrar Novo Pet --</option>
-                        </select>
-                    </div>
-                    <div id="new-pet-fields" class="p-3 bg-light rounded-4">
-                         <h6 class="fw-bold text-brand mb-3">Dados do Novo Pet</h6>
-                         <div class="mb-3">
-                             <label class="form-label small fw-bold">Nome do Pet *</label>
-                             <input type="text" class="form-control" id="nome_pet">
-                         </div>
-                         <div class="row">
-                             <div class="col-md-6 mb-3">
-                                 <label class="form-label small fw-bold">Raça *</label>
-                                 <input type="text" class="form-control" id="especie_raca">
-                             </div>
-                             <div class="col-md-6 mb-3">
-                                 <label class="form-label small fw-bold">Porte</label>
-                                 <select class="form-select" id="porte">
-                                     <option value="Pequeno">Pequeno</option>
-                                     <option value="Médio">Médio</option>
-                                     <option value="Grande">Grande</option>
-                                 </select>
-                             </div>
-                         </div>
-                    </div>
-                    <div class="mb-3 mt-3">
-                        <label class="form-label small fw-bold text-muted">Observações (Alergias, etc.)</label>
-                        <textarea class="form-control" id="observacoes" rows="2"></textarea>
-                    </div>
-                    <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 btn-back">Voltar</button>
-                        <button type="submit" class="btn btn-brand btn-lg">Revisar <i class="bi bi-arrow-right"></i></button>
-                    </div>
-                </form>
+                <h3 class="fw-bold mb-4">4. Quem é o fofinho?</h3>
+                <select class="form-select form-select-lg mb-4" id="pet-select"></select>
+                <div id="new-pet-form" style="display: none;" class="bg-light p-3 rounded mb-4">
+                    <input type="text" id="new-pet-name" class="form-control mb-2" placeholder="Nome do Pet">
+                    <input type="text" id="new-pet-raca" class="form-control" placeholder="Raça (ex: Poodle, SRD)">
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
+                    <button id="btn-next-4" class="btn btn-brand btn-lg px-5">Revisar</button>
+                </div>
             </div>
 
             <div id="step-5" class="step">
-                 <h3 class="fw-bold mb-4 text-brand">5. Tudo certinho?</h3>
-                 <div id="confirmation-summary" class="bg-light p-4 rounded-4 border mb-4">
-                 </div>
-                 <div class="d-flex justify-content-between mt-4">
-                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4 btn-back">Voltar</button>
-                     <button id="confirmButton" type="button" class="btn btn-success btn-lg rounded-pill px-5 fw-bold">Confirmar Agora!</button>
-                 </div>
+                <h3 class="fw-bold mb-4 text-success">Quase lá!</h3>
+                <div id="summary-content" class="p-4 rounded-4 border bg-light mb-4"></div>
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
+                    <button id="final-confirm" class="btn btn-success btn-lg px-5 fw-bold rounded-pill shadow">Confirmar Agendamento</button>
+                </div>
             </div>
         </div>
     </main>
 
-    <footer class="main-footer pt-5 pb-4 mt-5 text-center text-muted small">
-        <p>© 2026 REGIA & TINA'S CARE - Todos os direitos reservados</p>
-    </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/agendamento.js" type="module"></script>
+    <script type="module" src="../js/agendamento.js"></script>
 </body>
 </html>
