@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor Visual - Regia & Tinas Care</title>
+    
+    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../css/admin.css">
@@ -61,7 +64,6 @@
             border-bottom: none;
         }
 
-        /* Destaque para a janela de Preview do site */
         .preview-container {
             border: 4px solid white;
             border-radius: 12px;
@@ -82,13 +84,19 @@
         <ul class="nav flex-column">
             <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-grid-1x2-fill me-2"></i>Dashboard</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
+            <li class="nav-item"><a class="nav-link" href="gestao_usuarios.html"><i class="bi bi-people-fill me-2"></i>Gestão de Usuários</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_horarios.html"><i class="bi bi-clock-history me-2"></i>Agenda e Horários</a></li>
             <li class="nav-item"><a class="nav-link active" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Editor Visual</a></li>
         </ul>
-        <div class="mt-auto">
-            <a class="nav-link logout-link text-white mb-2" href="../index.html" target="_blank"><i class="bi bi-box-arrow-left me-2"></i>Ver site</a>
-            <button id="logout-button" class="btn btn-danger btn-sm w-100"><i class="bi bi-box-arrow-right me-2"></i>Encerrar Sessão</button>
+        
+        <div class="logout-btn-container p-3 mt-auto">
+            <a class="btn btn-outline-light w-100 mb-2 btn-sm border-0" href="../index.html" target="_blank">
+                <i class="bi bi-globe me-2"></i>Ver o Site
+            </a>
+            <button id="logout-button" class="btn btn-danger btn-sm w-100 fw-bold">
+                <i class="bi bi-box-arrow-right me-2"></i>Encerrar Sessão
+            </button>
         </div>
     </aside>
 
