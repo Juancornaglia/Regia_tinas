@@ -698,6 +698,58 @@ def bloquear_dia():
         print(f"Erro ao bloquear dia: {e}")
         return jsonify({"error": "Falha ao salvar bloqueio"}), 500
 
+@app.route('/api/admin/usuarios/busca', methods=['GET'])
+def buscar_usuarios_admin():
+    try:
+        termo = request.args.get('q', '')
+        # ILIKE faz a busca ignorar se é maiúsculo ou minúsculo
+        sql = """
+            SELECT id, nome_completo, email, role 
+            FROM public.perfis 
+            WHERE (nome_completo ILIKE %s OR email ILIKE %s)
+            AND ativo = true
+            LIMIT 10
+        """
+        params = (f"%{termo}%", f"%{termo}%")
+        usuarios = executar_query(sql, params)
+        return jsonify(usuarios), 200
+    except Exception as e:
+        print(f"Erro na busca de usuários: {e}")
+        return jsonify({"error": "Falha ao buscar usuários"}), 500
+
+@app.route('/api/admin/usuarios/alterar-role', methods=['PUT'])
+def alterar_role_usuario():
+    try:
+        dados = request.get_json()
+        id_usuario = dados.get('id_usuario')
+        novo_role = dados.get('novo_role')
+
+        # Segurança: impede que o sistema fique sem nenhum admin por acidente
+        if novo_role not in ['admin', 'funcionario', 'cliente']:
+            return jsonify({"error": "Cargo inválido"}), 400
+
+        sql = "UPDATE public.perfis SET role = %s WHERE id = %s"
+        executar_query(sql, (novo_role, id_usuario))
+        
+        return jsonify({"status": "sucesso", "mensagem": f"Usuário agora é {novo_role}"}), 200
+    except Exception as e:
+        print(f"Erro ao alterar cargo: {e}")
+        return jsonify({"error": "Falha ao atualizar cargo"}), 500
+
+@app.route('/api/auth/verificar-admin/<id_usuario>', methods=['GET'])
+def verificar_admin_db(id_usuario):
+    try:
+        sql = "SELECT role FROM public.perfis WHERE id = %s"
+        resultado = executar_query(sql, (id_usuario,))
+        
+        if resultado and resultado[0]['role'] == 'admin':
+            return jsonify({"isAdmin": True}), 200
+        else:
+            return jsonify({"isAdmin": False}), 403
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
 @app.route('/api/admin/dias-bloqueados', methods=['GET'])
 def listar_bloqueios():
     try:

@@ -8,7 +8,6 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
@@ -25,6 +24,7 @@
             <li class="nav-item"><a class="nav-link" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_horarios.html"><i class="bi bi-clock-history me-2"></i>Horários</a></li>
             <li class="nav-item"><a class="nav-link" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Editor Visual</a></li>
+            <li class="nav-item"><a class="nav-link" href="#secao-usuarios"><i class="bi bi-people-fill me-2"></i>Gestão de Usuários</a></li>
         </ul>
         
         <div class="logout-btn-container">
@@ -99,12 +99,43 @@
             </div>
         </div>
 
+        <div class="row g-4 mb-4" id="secao-usuarios">
+            <div class="col-12">
+                <div class="dashboard-panel shadow-sm">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-gear me-2" style="color: #FE8697;"></i>Gestão de Cargos</h5>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" id="input-busca-usuario" class="form-control" placeholder="Buscar por e-mail do funcionário ou cliente...">
+                                <button class="btn btn-dark" type="button" id="btn-buscar-usuario">Pesquisar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Cargo</th>
+                                    <th class="text-end">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-gestao-usuarios">
+                                <tr><td colspan="4" class="text-center text-muted">Aguardando pesquisa...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="dashboard-panel h-100">
+                <div class="dashboard-panel h-100 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-task me-2" style="color: #FE8697;"></i>Próximos Agendamentos</h5>
-                        <a href="gestao_agendamentos.html" class="btn btn-sm btn-light">Ver Todos</a>
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-task me-2" style="color: #FE8697;"></i>Agenda Recente</h5>
+                        <a href="gestao_agendamentos.html" class="btn btn-sm btn-light">Ver Tudo</a>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
@@ -119,34 +150,30 @@
                                 </tr>
                             </thead>
                             <tbody id="tabela-agendamentos-admin">
-                                <tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-secondary"></div></td></tr>
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-4">
-                <div class="dashboard-panel mb-4">
-                    <h5 class="panel-title"><i class="bi bi-bar-chart-fill me-2" style="color: #FE8697;"></i>Receita por Serviço</h5>
-                    <canvas id="graficoFaturamento" height="200"></canvas>
+                <div class="dashboard-panel mb-4 shadow-sm">
+                    <h5 class="panel-title mb-3"><i class="bi bi-bar-chart-fill me-2" style="color: #FE8697;"></i>Receita por Categoria</h5>
+                    <canvas id="graficoFaturamento" height="220"></canvas>
                 </div>
 
-                <div class="dashboard-panel">
-                    <h5 class="panel-title"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Estoque Crítico</h5>
+                <div class="dashboard-panel shadow-sm">
+                    <h5 class="panel-title mb-3"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Estoque Crítico</h5>
                     <div id="lista-estoque-critico">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
     </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="../js/utils.js"></script>
-    
     <script type="module" src="../js/admin_dashboard.js"></script>
 </body>
 </html>
