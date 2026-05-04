@@ -748,7 +748,13 @@ def verificar_admin_db(id_usuario):
             return jsonify({"isAdmin": False}), 403
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+@app.route('/api/admin/usuarios/listar-completo', methods=['GET'])
+def listar_todos_usuarios():
+    # Busca todos os dados necessários para a gestão, incluindo endereço e telefone
+    sql = "SELECT id, nome_completo, email, role, telefone, cpf, ativo FROM public.perfis ORDER BY nome_completo ASC"
+    usuarios = executar_query(sql)
+    return jsonify(usuarios), 200    
 
 @app.route('/api/admin/dias-bloqueados', methods=['GET'])
 def listar_bloqueios():
