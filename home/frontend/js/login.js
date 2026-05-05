@@ -13,25 +13,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('senha');
     const emailInput = document.getElementById('email');
     const rememberCheckbox = document.getElementById('remember');
+    
+    // Verificação de segurança para o botão
     const submitButton = loginForm?.querySelector('button[type="submit"]');
 
-    // 1. LEMBRAR DE MIM (Preenche o e-mail se foi salvo antes)
-    if (localStorage.getItem('lembrar_email')) {
+    // 1. LEMBRAR DE MIM
+    if (localStorage.getItem('lembrar_email') && emailInput) {
         emailInput.value = localStorage.getItem('lembrar_email');
-        rememberCheckbox.checked = true;
+        if (rememberCheckbox) rememberCheckbox.checked = true;
     }
 
-    // 2. LÓGICA DO OLHINHO DE SENHA (VISIBILIDADE)
+    // 2. LÓGICA DO OLHINHO DE SENHA
     if (togglePassword && passwordInput) {
         togglePassword.addEventListener('click', function () {
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
-            
-            // Alterna ícones do Bootstrap Icons
             this.classList.toggle('bi-eye-slash-fill');
             this.classList.toggle('bi-eye-fill');
-            
-            // Feedback visual
             this.style.color = isPassword ? '#FE8697' : '#888';
         });
     }
@@ -44,14 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = emailInput.value.trim();
             const password = passwordInput.value;
 
-            // Gerencia o "Lembrar de mim"
-            if (rememberCheckbox.checked) {
+            if (rememberCheckbox && rememberCheckbox.checked) {
                 localStorage.setItem('lembrar_email', email);
             } else {
                 localStorage.removeItem('lembrar_email');
             }
 
-            // Bloqueio visual para evitar cliques múltiplos
+            // Bloqueio visual
             submitButton.disabled = true;
             submitButton.textContent = 'VALIDANDO...';
 
@@ -68,29 +65,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error((data && (data.error || data.mensagem)) || "Credenciais inválidas.");
                 }
 
-                // --- SUCESSO: GRAVA A SESSÃO NO NAVEGADOR ---
+                // --- SUCESSO: GRAVA A SESSÃO ---
+                // Salvamos também o ID do perfil para usar nas consultas do dashboard
                 localStorage.setItem('usuario_id', data.id);
                 localStorage.setItem('usuario_nome', data.nome);
-                localStorage.setItem('usuario_role', data.role);
+                
+                // Convertemos para minúsculo para evitar erro de digitação no banco (Ex: Admin vs admin)
+                const userRole = data.role ? data.role.toLowerCase() : 'cliente';
+                localStorage.setItem('usuario_role', userRole);
 
-                console.log("Login realizado com sucesso! Cargo:", data.role);
+                console.log("Login realizado! Cargo detectado:", userRole);
 
                 // --- 4. REDIRECIONAMENTO POR CARGO ---
-                if (data.role === 'admin') {
+                // Adicionei logs para você ver no F12 o que está acontecendo
+                if (userRole === 'admin') {
+                    console.log("Redirecionando para Dashboard Admin...");
                     window.location.href = '../admin/dashboard.html';
                 } 
-                else if (data.role === 'funcionario') {
+                else if (userRole === 'funcionario') {
+                    console.log("Redirecionando para Área do Funcionário...");
                     window.location.href = '../admin/funcionario.html';
                 } 
                 else {
+                    console.log("Redirecionando para Perfil Cliente...");
                     window.location.href = 'perfil.html';
                 }
 
             } catch (error) {
                 console.error('Erro de Autenticação:', error.message);
                 alert(`Ops! ${error.message}`);
-            } finally {
-                // Libera o botão se algo der errado
                 submitButton.disabled = false;
                 submitButton.textContent = 'ENTRAR';
             }
