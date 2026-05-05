@@ -44,8 +44,6 @@ HORA_INICIO_PADRAO = time(9, 0)
 HORA_FIM_PADRAO = time(18, 0)
 INTERVALO_SLOT_MINUTOS = 30 
 
-# --- SERVIDOR DE ARQUIVOS (FRONTEND) ---
-
 @app.route('/')
 def index():
     return send_from_directory(FRONTEND_DIR, 'index.html')
@@ -65,8 +63,6 @@ def servir_usuario(path):
 @app.route('/<path:path>')
 def servir_paginas(path):
     return send_from_directory(FRONTEND_DIR, path)
-
-# --- ROTAS DE API (CONTEÚDO GERAL E USUÁRIO) ---
 
 # Ajustado para aceitar UUID (String) em vez de apenas Inteiro
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
@@ -99,8 +95,6 @@ def get_agendamentos_usuario(id_usuario):
         if cur: cur.close()
         if conn: conn.close()
 
-# --- ROTAS DE DADOS DO USUÁRIO E PETS ---
-
 @app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
 def get_usuario_dados(id_usuario):
     try:
@@ -114,18 +108,6 @@ def get_usuario_dados(id_usuario):
     except Exception as e:
         print(f"Erro ao buscar dados do usuário: {e}")
         return jsonify({"error": str(e)}), 500
-
-@app.route('/api/meus-pets/<id_tutor>', methods=['GET'])
-def get_meus_pets(id_tutor):
-    try:
-        sql = "SELECT id_pet, nome_pet, especie, raca, porte FROM public.pets WHERE id_tutor = %s"
-        pets = executar_query(sql, (id_tutor,))
-        return jsonify(pets), 200
-    except Exception as e:
-        print(f"Erro ao buscar pets: {e}")
-        return jsonify({"error": str(e)}), 500
-
-# --- LISTAGENS PÚBLICAS (AGENDAMENTO E LOJA) ---
 
 @app.route('/api/lojas', methods=['GET'])
 def listar_lojas_publico():
@@ -151,8 +133,6 @@ def listar_produtos():
         return jsonify(produtos), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-# --- ROTAS ADMIN E DASHBOARD (ESTATÍSTICAS) ---
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
@@ -237,9 +217,6 @@ def dashboard_completo():
     except Exception as e:
         print(f"Erro Crítico no Dashboard Completo: {e}")
         return jsonify({"error": "Falha ao processar dados do painel administrativo"}), 500
-    
-# --- 4. ROTA ADMIN: TODOS OS AGENDAMENTOS ---
-# --- ROTAS DE GESTÃO ADMINISTRATIVA (AGENDAMENTOS, LOJAS E PEDIDOS) ---
 
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
@@ -323,10 +300,6 @@ def listar_todos_pedidos():
         print(f"Erro na listagem de pedidos: {e}")
         return jsonify({"error": "Falha ao carregar histórico de vendas"}), 500
 
-# --- ROTAS DE GESTÃO DE PRODUTOS (ADMIN) ---
-
-# --- GESTÃO DE PRODUTOS (ADMIN) ---
-
 @app.route('/api/admin/produtos', methods=['GET'])
 def listar_produtos_admin():
     try:
@@ -389,8 +362,6 @@ def editar_produto(id_produto):
         print(f"Erro ao editar produto {id_produto}: {e}")
         return jsonify({"error": "Falha ao atualizar os dados do produto"}), 500
 
-# --- EDITOR VISUAL / CMS ---
-
 @app.route('/api/cms/content', methods=['GET'])
 def get_cms_content():
     try:
@@ -400,9 +371,6 @@ def get_cms_content():
     except Exception as e:
         print(f"Erro ao carregar conteúdo CMS: {e}")
         return jsonify({"error": "Falha ao carregar textos do site"}), 500
-# --- BUSCA DINÂMICA (E-COMMERCE) ---
-
-# --- SISTEMA DE BUSCA AVANÇADA ---
 
 @app.route('/api/busca', methods=['GET'])
 def buscar_produtos():
@@ -449,8 +417,6 @@ def buscar_produtos():
     except Exception as e:
         print(f"Erro na busca de produtos: {e}")
         return jsonify({"error": "Falha ao processar a busca"}), 500
-
-# --- FINALIZAÇÃO DE PEDIDOS (CHECKOUT COM TRANSAÇÃO) ---
 
 @app.route('/api/finalizar-pedido', methods=['POST'])
 def finalizar_pedido():
@@ -523,39 +489,6 @@ def verificar_admin_api(id_usuario):
         print(f"Erro na verificação de admin: {e}")
         return jsonify({"error": "Erro interno", "isAdmin": False}), 500 
 
-# --- CADASTRO DE NOVOS CLIENTES ---
-
-# --- GESTÃO DE CONTA E SEGURANÇA ---
-
-@app.route('/api/usuario/cadastrar', methods=['POST'])
-def cadastrar_usuario():
-    try:
-        dados = request.get_json()
-        nome = dados.get('nome')
-        email = dados.get('email')
-        senha = dados.get('senha')
-
-        # 1. Verifica se o e-mail já existe na tabela perfis
-        usuario_existente = executar_query('SELECT id FROM public.perfis WHERE email = %s', (email,))
-        if usuario_existente:
-            return jsonify({"status": "erro", "mensagem": "Este e-mail já está cadastrado."}), 400
-
-        # 2. Criptografa a senha antes de salvar (Segurança máxima)
-        senha_hash = generate_password_hash(senha)
-
-        # 3. Insere o novo cliente com role padrão 'cliente'
-        sql_insert = '''
-            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo)
-            VALUES (%s, %s, %s, 'cliente', true)
-        '''
-        executar_query(sql_insert, (nome, email, senha_hash))
-        
-        return jsonify({"status": "sucesso", "mensagem": "Conta criada com sucesso!"}), 201
-
-    except Exception as e:
-        print(f"Erro no cadastro: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha ao criar conta"}), 500
-
 @app.route('/api/usuario/redefinir-senha', methods=['POST'])
 def redefinir_senha():
     try:
@@ -599,8 +532,6 @@ def atualizar_perfil(id_usuario):
         print(f"Erro ao atualizar perfil {id_usuario}: {e}")
         return jsonify({"status": "erro", "mensagem": "Falha ao atualizar os dados do perfil"}), 500
 
-# --- SISTEMA DE FILTROS E BUSCA ---
-
 @app.route('/api/filtros', methods=['GET'])
 def get_filtros():
     try:
@@ -615,8 +546,6 @@ def get_filtros():
     except Exception as e:
         print(f"Erro ao carregar filtros: {e}")
         return jsonify({"error": "Falha ao carregar opções de filtro"}), 500
-
-# --- GERENCIAMENTO DE CONTEÚDO (CMS) ---
 
 @app.route('/api/cms/update', methods=['POST'])
 def update_cms_content():
@@ -637,8 +566,6 @@ def update_cms_content():
     except Exception as e:
         print(f"Erro ao atualizar CMS: {e}")
         return jsonify({"error": "Falha ao salvar alterações do site"}), 500
-
-# --- GESTÃO ADMINISTRATIVA (PRODUTOS E PEDIDOS) ---
 
 @app.route('/api/admin/produtos/<id_produto>', methods=['DELETE'])
 def excluir_produto(id_produto):
@@ -664,10 +591,6 @@ def atualizar_status_pedido(id_pedido):
     except Exception as e:
         print(f"Erro ao atualizar pedido {id_pedido}: {e}")
         return jsonify({"error": "Falha ao atualizar o status do pedido"}), 500
-    
-# --- GESTÃO DE BLOQUEIOS DE CALENDÁRIO ---
-
-# --- GESTÃO DE BLOQUEIOS (FERIADOS E MANUTENÇÃO) ---
 
 @app.route('/api/admin/remover-bloqueio/<id_bloqueio>', methods=['DELETE'])
 def remover_bloqueio(id_bloqueio):
@@ -761,40 +684,6 @@ def alterar_role_usuario():
         print(f"ERRO AO ALTERAR ROLE: {str(e)}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
-@app.route('/api/pets/usuario/<id_usuario>', methods=['GET'])
-def listar_pets_usuario(id_usuario):
-    sql = "SELECT id_pet, nome_pet, especie, raca, porte, observacoes FROM public.pets WHERE id_tutor = %s"
-    return jsonify(executar_query(sql, (id_usuario,))), 200
-
-@app.route('/api/pets', methods=['POST'])
-def cadastrar_pet():
-    dados = request.json
-    sql = """
-        INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes) 
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """
-    executar_query(sql, (dados['id_tutor'], dados['nome_pet'], dados['especie'], dados['raca'], dados['porte'], dados['observacoes']))
-    return jsonify({"message": "Pet cadastrado!"}), 201
-
-@app.route('/api/pets/<id_pet>', methods=['DELETE'])
-def deletar_pet(id_pet):
-    sql = "DELETE FROM public.pets WHERE id_pet = %s"
-    executar_query(sql, (id_pet,))
-    return jsonify({"message": "Pet removido"}), 200
-
-# ==========================================
-# GESTÃO DE PERFIL E FIDELIDADE
-# ==========================================
-
-@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
-def buscar_dados_usuario(id_usuario):
-    """Busca nome, email e telefone para preencher o formulário de perfil"""
-    sql = "SELECT nome_completo, email, telefone FROM public.perfis WHERE id = %s"
-    resultado = executar_query(sql, (id_usuario,))
-    if resultado:
-        return jsonify(resultado[0]), 200
-    return jsonify({"error": "Usuário não encontrado"}), 404
-
 @app.route('/api/fidelidade/<id_cliente>', methods=['GET'])
 def buscar_pontos_fidelidade(id_cliente):
     """Soma todos os pontos do histórico do cliente"""
@@ -810,38 +699,12 @@ def atualizar_dados_perfil():
     executar_query(sql, (dados['nome_completo'], dados['telefone'], dados['id']))
     return jsonify({"message": "Perfil atualizado!"}), 200
 
-# ==========================================
-# GESTÃO DE PETS (CLIENTE)
-# ==========================================
-
 @app.route('/api/pets/usuario/<id_usuario>', methods=['GET'])
 def listar_pets_por_tutor(id_usuario):
     """Lista todos os pets de um cliente específico"""
     sql = "SELECT id_pet, nome_pet, especie, raca, porte, observacoes FROM public.pets WHERE id_tutor = %s"
     pets = executar_query(sql, (id_usuario,))
     return jsonify(pets), 200
-
-@app.route('/api/pets', methods=['POST'])
-def cadastrar_novo_pet():
-    """Insere um novo pet no banco Neon"""
-    d = request.json
-    sql = """
-        INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes) 
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """
-    executar_query(sql, (d['id_tutor'], d['nome_pet'], d['especie'], d['raca'], d['porte'], d['observacoes']))
-    return jsonify({"message": "Pet cadastrado com sucesso"}), 201
-
-@app.route('/api/pets/<id_pet>', methods=['DELETE'])
-def remover_pet_cliente(id_pet):
-    """Exclui um pet (Cuidado: agendamentos vinculados podem dar erro de FK se não tratados)"""
-    sql = "DELETE FROM public.pets WHERE id_pet = %s"
-    executar_query(sql, (id_pet,))
-    return jsonify({"message": "Pet removido"}), 200
-
-# ==========================================
-# AGENDAMENTOS (HISTÓRICO DO CLIENTE)
-# ==========================================
 
 @app.route('/api/agendamentos/cliente/<id_cliente>', methods=['GET'])
 def listar_agenda_cliente(id_cliente):
@@ -858,19 +721,6 @@ def listar_agenda_cliente(id_cliente):
     """
     agenda = executar_query(sql, (id_cliente,))
     return jsonify(agenda), 200
-
-@app.route('/api/auth/verificar-admin/<id_usuario>', methods=['GET'])
-def verificar_admin_db(id_usuario):
-    try:
-        sql = "SELECT role FROM public.perfis WHERE id = %s"
-        resultado = executar_query(sql, (id_usuario,))
-        
-        if resultado and resultado[0]['role'] == 'admin':
-            return jsonify({"isAdmin": True}), 200
-        else:
-            return jsonify({"isAdmin": False}), 403
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
     
 @app.route('/api/admin/usuarios/listar-tudo', methods=['GET'])
 def listar_usuarios_final():
@@ -902,8 +752,6 @@ def listar_bloqueios():
         return jsonify(bloqueios if bloqueios else []), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-# --- GESTÃO DE AGENDAMENTOS (AÇÕES) ---
 
 @app.route('/api/admin/cancelar-agendamento/<id_agendamento>', methods=['POST'])
 def cancelar_agendamento(id_agendamento):
@@ -945,9 +793,7 @@ def cadastrar_pet():
     except Exception as e:
         print(f"Erro ao cadastrar pet: {e}")
         return jsonify({"error": "Falha ao salvar dados do pet"}), 500
-    
-# --- 7. GESTÃO DE PETS (EXCLUSÃO) ---
-
+  
 @app.route('/api/pet/excluir/<id_pet>', methods=['DELETE'])
 def excluir_pet(id_pet):
     try:
@@ -957,8 +803,6 @@ def excluir_pet(id_pet):
     except Exception as e:
         print(f"Erro ao excluir pet: {e}")
         return jsonify({"error": "Não foi possível excluir o pet. Verifique se ele possui agendamentos históricos."}), 500
-
-# --- 8. CÁLCULO DE HORÁRIOS DISPONÍVEIS (LÓGICA CORE) ---
 
 @app.route('/api/horarios-disponiveis', methods=['GET'])
 def get_available_slots():
@@ -1002,7 +846,6 @@ def get_available_slots():
             WHERE id_loja = %s AND CAST(data_hora_inicio AS DATE) = %s AND status != 'cancelado'
         ''', (loja_id, data_str))
 
-        # 4. Geração Dinâmica de Slots
         slots_disponiveis = []
         
         # Combinamos a data com a hora de início e fim padrão da Regia & Tinas
@@ -1051,51 +894,35 @@ def listar_produtos_loja():
 # --- 10. CRIAÇÃO DE AGENDAMENTO (CONFIRMAÇÃO) ---
 
 @app.route('/api/agendar', methods=['POST'])
-def create_appointment():
+def post_agendamento():
     try:
-        data = request.get_json()
+        d = request.json
+        # 1. Busca o preço atual e a duração do serviço no banco
+        serv = executar_query('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (d['id_servico'],))
         
-        # 1. Busca a duração do serviço para calcular o fim
-        res_servico = executar_query('SELECT duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (data['id_servico'],))
-        
-        if not res_servico:
+        if not serv:
             return jsonify({"error": "Serviço não encontrado"}), 404
             
-        duracao = res_servico[0]['duracao_media_minutos'] or 30
-        
-        # 2. Tratamento da Data e Hora
-        # Removemos o 'Z' ou offsets para garantir compatibilidade com o banco
-        inicio_str = data['data_hora_inicio'].replace('Z', '').split('+')[0]
-        inicio = datetime.fromisoformat(inicio_str)
-        fim = inicio + timedelta(minutes=duracao)
+        preco = serv[0]['preco_servico']
+        dur = serv[0]['duracao_media_minutos'] or 30
 
-        # 3. Insere o agendamento no banco
-        # CORREÇÃO: data_hora_fim em vez de data_hora_fundo
+        # 2. Tratamento da Data e cálculo do fim do atendimento
+        inicio_str = d['data_hora_inicio'].replace('Z', '').split('+')[0]
+        inicio = datetime.fromisoformat(inicio_str)
+        fim = inicio + timedelta(minutes=dur)
+
+        # 3. Insere incluindo o VALOR_COBRADO
         sql = '''
             INSERT INTO public.agendamentos 
-            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, observacoes_cliente)
-            VALUES (%s, %s, %s, %s, %s, %s, 'confirmado', %s)
-            RETURNING id_agendamento
+            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
+            VALUES (%s, %s, %s, %s, %s, %s, 'confirmado', %s, %s)
         '''
-        params = (
-            data['id_cliente'], 
-            data.get('id_pet'), 
-            data['id_loja'], 
-            data['id_servico'], 
-            inicio, 
-            fim, 
-            data.get('observacoes_cliente')
-        )
         
-        resultado = executar_query(sql, params)
-        id_novo = resultado[0]['id_agendamento'] if resultado else None
-        
-        return jsonify({"message": "Agendamento realizado com sucesso!", "id": id_novo}), 201
+        executar_query(sql, (d['id_cliente'], d.get('id_pet'), d['id_loja'], d['id_servico'], inicio, fim, preco, d.get('observacoes_cliente')))
+        return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except Exception as e:
         print(f"Erro ao criar agendamento: {e}")
         return jsonify({"error": "Falha ao processar o agendamento"}), 500
-
-# --- 11. SISTEMA DE LOGIN (HÍBRIDO) ---
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -1135,40 +962,33 @@ def login():
     except Exception as e:
         print(f"ERRO CRÍTICO NO LOGIN: {str(e)}") 
         return jsonify({"status": "erro", "mensagem": "Erro interno no servidor"}), 500
+    
 @app.route('/api/auth/cadastro', methods=['POST'])
 def criar_conta():
     try:
-        dados = request.json
-        nome = dados.get('nome_completo')
-        email = dados.get('email')
-        senha = dados.get('senha')
-
-        if not nome or not email or not senha:
-            return jsonify({"mensagem": "Preencha todos os campos."}), 400
-
+        d = request.json
         # 1. Verifica se o e-mail já existe no banco
-        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (email,))
+        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (d['email'],))
         if existe:
             return jsonify({"mensagem": "Este e-mail já está cadastrado. Tente fazer login."}), 409
 
-        # 2. Criptografa a senha para segurança máxima
-        senha_hash = generate_password_hash(senha)
+        # 2. Criptografa a senha para segurança
+        hash_senha = generate_password_hash(d['senha'])
 
-        # 3. Insere o novo cliente na nossa tabela limpa (role sempre será 'cliente' por padrão)
+        # 3. Insere o novo cliente
         sql = """
             INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
             VALUES (%s, %s, %s, 'cliente', true)
         """
-        executar_query(sql, (nome, email, senha_hash))
+        executar_query(sql, (d['nome_completo'], d['email'], hash_senha))
         
         return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
 
     except Exception as e:
         print(f"ERRO NO CADASTRO: {str(e)}")
         return jsonify({"mensagem": "Erro interno no servidor ao criar conta."}), 500
-    
 
-# --- 12. EXECUÇÃO DO SERVIDOR ---
+# --- INICIALIZAÇÃO DO SERVIDOR ---
 
 if __name__ == '__main__':
     # Configuração vital para o Render (PORT) e escuta em 0.0.0.0
