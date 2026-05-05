@@ -719,22 +719,47 @@ def buscar_usuarios_admin():
 
 @app.route('/api/admin/usuarios/alterar-role', methods=['PUT'])
 def alterar_role_usuario():
+    dados = request.json
+    id_usuario = dados.get('id_usuario')
+    novo_role = dados.get('novo_role')
+    
+    # Dados opcionais que vêm do Modal
+    especialidade = dados.get('especialidade')
+    salario = dados.get('salario')
+
+    if not id_usuario or not novo_role:
+        return jsonify({"error": "Dados incompletos"}), 400
+
     try:
-        dados = request.get_json()
-        id_usuario = dados.get('id_usuario')
-        novo_role = dados.get('novo_role')
+        # 1. Muda o poder de acesso na tabela PERFIS
+        sql_perfil = "UPDATE public.perfis SET role = %s WHERE id = %s"
+        executar_query(sql_perfil, (novo_role, id_usuario))
 
-        # Segurança: impede que o sistema fique sem nenhum admin por acidente
-        if novo_role not in ['admin', 'funcionario', 'cliente']:
-            return jsonify({"error": "Cargo inválido"}), 400
+        # 2. Se foi promovido para a Equipe, insere na tabela FUNCIONARIO
+        if novo_role in ['funcionario', 'admin']:
+            # Verifica se ele já estava no RH antes (para evitar erro de chave duplicada)
+            existe_rh = executar_query("SELECT id_funcionario FROM public.funcionario WHERE id_perfil = %s", (id_usuario,))
+            
+            if not existe_rh and especialidade and salario:
+                # Busca o nome dele na tabela perfis para preencher o RH
+                perfil = executar_query("SELECT nome_completo FROM public.perfis WHERE id = %s", (id_usuario,))
+                nome = perfil[0]['nome_completo'] if perfil else 'Sem Nome'
+                
+                sql_rh = """
+                    INSERT INTO public.funcionario (id_perfil, nome, especialidade, salario) 
+                    VALUES (%s, %s, %s, %s)
+                """
+                executar_query(sql_rh, (id_usuario, nome, especialidade, salario))
+                
+        # 3. Se foi "rebaixado" para Cliente, tira os privilégios do RH
+        elif novo_role == 'cliente':
+            executar_query("DELETE FROM public.funcionario WHERE id_perfil = %s", (id_usuario,))
 
-        sql = "UPDATE public.perfis SET role = %s WHERE id = %s"
-        executar_query(sql, (novo_role, id_usuario))
-        
-        return jsonify({"status": "sucesso", "mensagem": f"Usuário agora é {novo_role}"}), 200
+        return jsonify({"message": "Permissões atualizadas com sucesso!"}), 200
+
     except Exception as e:
-        print(f"Erro ao alterar cargo: {e}")
-        return jsonify({"error": "Falha ao atualizar cargo"}), 500
+        print(f"ERRO AO ALTERAR ROLE: {str(e)}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
 
 @app.route('/api/pets/usuario/<id_usuario>', methods=['GET'])
 def listar_pets_usuario(id_usuario):
@@ -1011,26 +1036,18 @@ def get_available_slots():
     except Exception as e:
         print(f"Erro no motor de horários: {e}")
         return jsonify({"error": "Falha ao calcular disponibilidade"}), 500
-# --- 9. E-COMMERCE (NOVIDADES) ---
 
-# --- 9. E-COMMERCE: PRODUTOS RECENTES (NOVIDADES) ---
-
-@app.route('/api/ecommerce/novidades', methods=['GET'])
-def get_novidades():
-    try:
-        # Busca os 8 produtos mais recentes cadastrados
-        sql = '''
-            SELECT id_produto, nome_produto, url_imagem, preco, preco_promocional 
-            FROM public.produtos 
-            WHERE status_produto = 'Ativo'
-            ORDER BY id_produto DESC LIMIT 8
-        '''
-        produtos = executar_query(sql)
-        return jsonify(produtos if produtos else []), 200
-    except Exception as e:
-        print(f"Erro ao buscar novidades: {e}")
-        return jsonify({"error": "Falha ao carregar novidades"}), 500
-
+@app.route('/api/produtos', methods=['GET'])
+def listar_produtos_loja():
+    """Retorna todos os produtos ativos do banco de dados"""
+    sql = """
+        SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
+               marca, preco, preco_promocional, quantidade_estoque 
+        FROM public.produtos 
+        WHERE ativo = true AND quantidade_estoque > 0
+    """
+    produtos = executar_query(sql)
+    return jsonify(produtos), 200
 # --- 10. CRIAÇÃO DE AGENDAMENTO (CONFIRMAÇÃO) ---
 
 @app.route('/api/agendar', methods=['POST'])
@@ -1118,6 +1135,38 @@ def login():
     except Exception as e:
         print(f"ERRO CRÍTICO NO LOGIN: {str(e)}") 
         return jsonify({"status": "erro", "mensagem": "Erro interno no servidor"}), 500
+@app.route('/api/auth/cadastro', methods=['POST'])
+def criar_conta():
+    try:
+        dados = request.json
+        nome = dados.get('nome_completo')
+        email = dados.get('email')
+        senha = dados.get('senha')
+
+        if not nome or not email or not senha:
+            return jsonify({"mensagem": "Preencha todos os campos."}), 400
+
+        # 1. Verifica se o e-mail já existe no banco
+        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (email,))
+        if existe:
+            return jsonify({"mensagem": "Este e-mail já está cadastrado. Tente fazer login."}), 409
+
+        # 2. Criptografa a senha para segurança máxima
+        senha_hash = generate_password_hash(senha)
+
+        # 3. Insere o novo cliente na nossa tabela limpa (role sempre será 'cliente' por padrão)
+        sql = """
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
+            VALUES (%s, %s, %s, 'cliente', true)
+        """
+        executar_query(sql, (nome, email, senha_hash))
+        
+        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
+
+    except Exception as e:
+        print(f"ERRO NO CADASTRO: {str(e)}")
+        return jsonify({"mensagem": "Erro interno no servidor ao criar conta."}), 500
+    
 
 # --- 12. EXECUÇÃO DO SERVIDOR ---
 

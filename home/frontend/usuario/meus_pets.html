@@ -5,128 +5,180 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meus Pets - Regia & Tinas Care</title>
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root { 
             --brand-pink: #FE8697; 
-            --brand-pink-hover: #e57585;
-            --bg-light: #f8f9fa; 
+            --brand-pink-hover: #fc6c81;
+            --bg-light: #f4f7f6; 
+            --text-main: #2c3e50;
         }
-        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; }
+        body { 
+            background-color: var(--bg-light); 
+            font-family: 'Poppins', sans-serif; 
+            color: var(--text-main);
+        }
         
-        .navbar { background-color: var(--brand-pink) !important; }
-        .text-brand { color: var(--brand-pink) !important; }
+        /* Navbar */
+        .navbar { background-color: var(--brand-pink) !important; padding: 1rem 0; }
+        .btn-voltar { border: 1px solid rgba(255,255,255,0.4); border-radius: 20px; transition: 0.3s; }
+        .btn-voltar:hover { background: rgba(255,255,255,0.2); color: white; }
         
-        .nav-tabs .nav-link { color: #666; font-weight: 500; border: none; }
-        .nav-tabs .nav-link.active { color: var(--brand-pink); border-bottom: 3px solid var(--brand-pink); background: none; }
-
-        .pet-card { 
+        /* Abas de Navegação (Tabs Premium) */
+        .nav-tabs { border-bottom: 2px solid #eaeaea; gap: 10px; }
+        .nav-tabs .nav-link { 
+            color: #888; 
+            font-weight: 500; 
             border: none; 
-            border-radius: 15px; 
-            transition: 0.3s; 
-            background: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 12px 20px; 
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
         }
-        .pet-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-        
+        .nav-tabs .nav-link:hover { color: var(--brand-pink); background: #fff5f6; }
+        .nav-tabs .nav-link.active { 
+            color: var(--brand-pink); 
+            font-weight: 600;
+            border-bottom: 3px solid var(--brand-pink); 
+            background: transparent; 
+        }
+
+        /* Botões */
         .btn-brand { 
             background-color: var(--brand-pink); 
             color: white; 
-            border-radius: 25px; 
-            font-weight: bold; 
+            border-radius: 30px; 
+            font-weight: 600; 
             border: none;
-            padding: 10px 20px;
+            padding: 12px 25px;
+            box-shadow: 0 4px 15px rgba(254, 134, 151, 0.3);
+            transition: 0.3s;
         }
-        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; }
+        .btn-brand:hover { 
+            background-color: var(--brand-pink-hover); 
+            color: white; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(254, 134, 151, 0.4);
+        }
+
+        /* Cards de Pets (Preparados para o JS) */
+        .pet-card { 
+            border: none; 
+            border-radius: 20px; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            background: white;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .pet-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08); 
+        }
+
+        /* Modal Customizado */
+        .modal-content { border-radius: 20px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .modal-header { background: linear-gradient(135deg, #fff5f6 0%, #ffffff 100%); border-bottom: 1px solid #f0f0f0; border-radius: 20px 20px 0 0; padding: 1.5rem; }
+        .form-control, .form-select { 
+            border-radius: 12px; 
+            border: 1px solid #e0e0e0; 
+            padding: 12px 15px; 
+            background-color: #fcfcfc;
+            transition: 0.3s;
+        }
+        .form-control:focus, .form-select:focus { 
+            border-color: var(--brand-pink); 
+            box-shadow: 0 0 0 4px rgba(254, 134, 151, 0.1); 
+            background-color: #ffffff;
+        }
+        .form-label { font-weight: 600; color: #555; margin-bottom: 8px; }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg shadow-sm">
         <div class="container">
-            <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html">
+            <a class="btn btn-voltar text-white d-flex align-items-center fw-bold px-3 py-2" href="../index.html">
                 <i class="bi bi-arrow-left me-2"></i>Início
             </a>
-            <span class="navbar-brand fw-bold text-white mx-auto">Minha Conta</span>
-            <div style="width: 80px;"></div>
-        </div>
+            <span class="navbar-brand fw-bold text-white mx-auto fs-4">Área do Tutor</span>
+            <div style="width: 100px;"></div> </div>
     </nav>
 
     <main class="container my-5">
-        <ul class="nav nav-tabs mb-5">
-            <li class="nav-item"><a class="nav-link" href="perfil.html"><i class="bi bi-person me-2"></i>Perfil</a></li>
-            <li class="nav-item"><a class="nav-link active" href="meus_pets.html"><i class="bi bi-dog me-2"></i>Meus Pets</a></li>
-            <li class="nav-item"><a class="nav-link" href="meus_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
-            <li class="nav-item"><a class="nav-link" href="meus_pedidos.html"><i class="bi bi-bag me-2"></i>Pedidos</a></li>
+        <ul class="nav nav-tabs mb-5 justify-content-center">
+            <li class="nav-item"><a class="nav-link" href="perfil.html"><i class="bi bi-person-circle me-2"></i>Meu Perfil</a></li>
+            <li class="nav-item"><a class="nav-link active" href="meus_pets.html"><i class="bi bi-balloon-heart-fill me-2"></i>Meus Pets</a></li>
+            <li class="nav-item"><a class="nav-link" href="meus_agendamentos.html"><i class="bi bi-calendar2-check-fill me-2"></i>Agendamentos</a></li>
         </ul>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="fw-bold text-dark">Meus Pets</h2>
-                <p class="text-muted">Gerencie os amiguinhos que fazem parte da nossa família.</p>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 bg-white p-4 rounded-4 shadow-sm">
+            <div class="mb-3 mb-md-0 text-center text-md-start">
+                <h2 class="fw-bold text-dark mb-1">Meus Pets 🐾</h2>
+                <p class="text-muted mb-0">Cadastre e gerencie os amiguinhos que fazem parte da nossa família.</p>
             </div>
             <button class="btn btn-brand" data-bs-toggle="modal" data-bs-target="#petModal">
-                <i class="bi bi-plus-circle me-2"></i>Adicionar Pet
+                <i class="bi bi-plus-lg me-2"></i>Novo Pet
             </button>
         </div>
 
         <div id="lista-pets" class="row g-4">
             <div class="col-12 text-center py-5">
-                <div class="spinner-border text-brand" role="status"></div>
-                <p class="mt-2 text-muted">Carregando seus pets...</p>
+                <div class="spinner-border text-brand mb-3" role="status"></div>
+                <h5 class="text-muted fw-bold">Buscando seus pets...</h5>
             </div>
         </div>
     </main>
 
     <div class="modal fade" id="petModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content border-0 rounded-4">
-                <div class="modal-header bg-light border-0">
-                    <h5 class="modal-title fw-bold text-brand">Novo Pet</h5>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-brand"><i class="bi bi-stars me-2"></i>Cadastrar Novo Pet</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="formCadastroPet">
                     <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Nome do Pet *</label>
-                            <input type="text" id="nome_pet" class="form-control rounded-3" placeholder="Ex: Bob" required>
+                        <div class="mb-4">
+                            <label class="form-label small">Qual o nome do fofinho(a)? *</label>
+                            <input type="text" id="nome_pet" class="form-control" placeholder="Ex: Bob, Mel, Thor..." required>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small">Espécie *</label>
-                                <input type="text" id="especie" class="form-control rounded-3" placeholder="Ex: Cão" required>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small">Espécie *</label>
+                                <input type="text" id="especie" class="form-control" placeholder="Ex: Cão, Gato" required>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small">Raça</label>
-                                <input type="text" id="raca" class="form-control rounded-3" placeholder="Ex: Golden">
+                            <div class="col-md-6">
+                                <label class="form-label small">Raça</label>
+                                <input type="text" id="raca" class="form-control" placeholder="Ex: Golden, SRD">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Porte</label>
-                            <select id="porte" class="form-select rounded-3">
-                                <option value="Pequeno">Pequeno</option>
-                                <option value="Médio" selected>Médio</option>
-                                <option value="Grande">Grande</option>
+                        <div class="mb-4">
+                            <label class="form-label small">Porte do Pet</label>
+                            <select id="porte" class="form-select">
+                                <option value="Pequeno">Pequeno (Até 10kg)</option>
+                                <option value="Médio" selected>Médio (11kg a 25kg)</option>
+                                <option value="Grande">Grande (Acima de 25kg)</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Observações</label>
-                            <textarea id="observacoes" class="form-control rounded-3" rows="3" placeholder="Alergias ou comportamento..."></textarea>
+                        <div class="mb-2">
+                            <label class="form-label small">Observações Importantes</label>
+                            <textarea id="observacoes" class="form-control" rows="3" placeholder="Possui alguma alergia? Como é o comportamento dele?"></textarea>
                         </div>
                     </div>
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-brand px-4">Salvar Pet</button>
+                    <div class="modal-footer border-0 p-4 pt-0 bg-white rounded-bottom-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-brand px-5">Salvar Pet</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <footer class="main-footer pt-5 pb-4 mt-5 border-top bg-white text-center">
+    <footer class="pt-5 pb-4 mt-5 border-top text-center" style="background-color: #fdfdfd;">
         <p class="mb-1 fw-bold text-brand">REGIA & TINA'S CARE</p>
-        <p class="small text-muted mb-0">© 2026 - Todos os direitos reservados</p>
+        <p class="small text-muted mb-0">© 2026 - Feito com amor para o seu pet 🐾</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

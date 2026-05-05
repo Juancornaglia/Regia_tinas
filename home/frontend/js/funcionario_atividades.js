@@ -1,54 +1,139 @@
-// js/funcionario_atividades.js
-const API_BASE_URL = "https://regia-tinas.onrender.com";
+/**
+ * js/funcionario.js - Lógica do Painel Operacional da Equipe
+ */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Preenche a data atual no topo
-    const dataDisplay = document.getElementById('data-atual');
-    if(dataDisplay) dataDisplay.innerText = new Date().toLocaleDateString('pt-BR', { dateStyle: 'full' });
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000" 
+    : "https://regia-tinas.onrender.com";
 
-    // 2. Carregar produtos para o modal de estoque
-    carregarProdutosParaConsumo();
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Verificação de Acesso
+    const userId = localStorage.getItem('usuario_id');
+    const userRole = localStorage.getItem('usuario_role');
 
-    // 3. Lógica de busca de prontuário
-    document.getElementById('btn-buscar-prontuario')?.addEventListener('click', buscarProntuarioPet);
+    if (!userId || (userRole !== 'funcionario' && userRole !== 'admin')) {
+        alert("Acesso restrito à equipe.");
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // 2. Personalização do Cabeçalho
+    const nomeFunc = localStorage.getItem('usuario_nome');
+    if (nomeFunc) {
+        document.getElementById('nome-funcionario').innerText = nomeFunc.split(' ')[0];
+    }
+    document.getElementById('data-atual').innerText = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    // 3. Inicialização dos Dados
+    await carregarFilaAtendimento();
+    await carregarResumoKPIs();
+    await carregarAlertasVacinas();
+
+    // 4. Logout
+    document.getElementById('logout-button')?.addEventListener('click', () => {
+        if(confirm("Encerrar o turno e sair?")) {
+            localStorage.clear();
+            window.location.href = '../index.html';
+        }
+    });
 });
 
-async function carregarProdutosParaConsumo() {
-    const select = document.getElementById('select-produto-estoque');
-    if(!select) return;
+async function carregarFilaAtendimento() {
+    const tbody = document.getElementById('tabela-fila-trabalho');
+    
     try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/produtos`);
-        const produtos = await res.json();
-        produtos.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id_produto;
-            opt.textContent = `${p.nome_produto} (${p.quantidade_estoque} un)`;
-            select.appendChild(opt);
-        });
-    } catch (e) { console.error("Erro estoque:", e); }
+        // Busca agendamentos gerais para a equipe trabalhar (focando em status não concluídos)
+        const res = await fetch(`${API_BASE_URL}/api/admin/agendamentos`);
+        const agendamentos = await res.json();
+
+        // Filtra para mostrar apenas o que interessa hoje (Pendente ou Em Andamento)
+        const filaHoje = agendamentos.filter(a => a.status === 'pendente' || a.status === 'em_andamento');
+
+        if (filaHoje.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pet na fila no momento. Trabalho concluído! 🎉</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filaHoje.map(ag => `
+            <tr>
+                <td><strong>${new Date(ag.data_hora_inicio).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</strong></td>
+                <td>
+                    <span class="d-block fw-bold">${ag.nome_pet}</span>
+                    <small class="text-muted">${ag.nome_cliente}</small>
+                </td>
+                <td>${ag.nome_servico}</td>
+                <td><span class="badge ${ag.status === 'em_andamento' ? 'bg-info text-dark' : 'bg-warning text-dark'} text-uppercase">${ag.status}</span></td>
+                <td class="text-end">
+                    ${ag.status === 'pendente' 
+                        ? `<button class="btn btn-sm btn-dark" onclick="window.atualizarStatusTarefa('${ag.id_agendamento}', 'em_andamento')">Iniciar</button>`
+                        : `<button class="btn btn-sm btn-success" onclick="window.atualizarStatusTarefa('${ag.id_agendamento}', 'concluido')"><i class="bi bi-check2-all"></i> Concluir</button>`
+                    }
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Erro ao carregar a fila de trabalho.</td></tr>';
+    }
 }
 
-async function buscarProntuarioPet() {
-    const termo = document.getElementById('busca-pet-prontuario').value;
-    const resDiv = document.getElementById('resultado-prontuario');
-    
-    resDiv.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
-    
+// Atualização de Status que a equipe clica
+window.atualizarStatusTarefa = async (idAgendamento, novoStatus) => {
     try {
-        // Rota fictícia, você precisará criar no app.py para buscar observações dos pets
-        const res = await fetch(`${API_BASE_URL}/api/admin/prontuario?pet=${termo}`);
-        const data = await res.json();
-        
-        if(data.length > 0) {
-            resDiv.innerHTML = data.map(p => `
-                <div class="mb-3 border-bottom pb-2">
-                    <h6 class="fw-bold">${p.nome_pet} - ${p.especie}</h6>
-                    <p class="mb-1"><strong>Observações:</strong> ${p.observacoes || 'Sem notas.'}</p>
-                    <small class="text-muted">Última atualização: ${new Date(p.data_atualizacao).toLocaleDateString()}</small>
-                </div>
-            `).join('');
+        const res = await fetch(`${API_BASE_URL}/api/admin/agendamentos/status`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id_agendamento: idAgendamento, novo_status: novoStatus })
+        });
+        if(res.ok) {
+            carregarFilaAtendimento();
+            carregarResumoKPIs();
         } else {
-            resDiv.innerHTML = '<p class="text-center text-danger">Nenhum registro encontrado.</p>';
+            alert("Falha ao atualizar a tarefa.");
         }
-    } catch (e) { resDiv.innerHTML = 'Erro na busca.'; }
+    } catch(e) {
+        alert("Erro de conexão.");
+    }
+};
+
+async function carregarResumoKPIs() {
+    try {
+        // Aproveitamos a mesma rota para montar os contadores
+        const res = await fetch(`${API_BASE_URL}/api/admin/agendamentos`);
+        const agendamentos = await res.json();
+        
+        const hoje = new Date().toLocaleDateString('pt-BR');
+        
+        // Filtra apenas os de hoje (opcional, dependendo de como sua API devolve as datas)
+        const total = agendamentos.length;
+        const andamento = agendamentos.filter(a => a.status === 'em_andamento').length;
+        const pendentes = agendamentos.filter(a => a.status === 'pendente').length;
+
+        document.getElementById('kpi-atendimentos').innerText = total;
+        document.getElementById('kpi-em-andamento').innerText = andamento;
+        document.getElementById('kpi-avisos').innerText = pendentes;
+    } catch(e) {
+        console.error("Erro KPIs", e);
+    }
+}
+
+async function carregarAlertasVacinas() {
+    const lista = document.getElementById('lista-alertas-vacinas');
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/alertas-vacina`);
+        const alertas = await res.json();
+        
+        if (alertas.length === 0) {
+            lista.innerHTML = '<li class="list-group-item text-muted">Sem alertas médicos para hoje.</li>';
+            return;
+        }
+
+        lista.innerHTML = alertas.map(al => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span><strong>${al.nome_pet}</strong> - ${al.vacina}</span>
+                <span class="badge bg-danger rounded-pill">Vencendo</span>
+            </li>
+        `).join('');
+    } catch (e) {
+        lista.innerHTML = '<li class="list-group-item text-danger">Falha ao buscar alertas.</li>';
+    }
 }

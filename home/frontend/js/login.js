@@ -3,7 +3,6 @@
  * Gerencia o acesso diferenciado por cargos (Admin, Funcionário, Cliente)
  */
 
-// 1. CONFIGURAÇÃO DA URL DINÂMICA
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
@@ -12,7 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('senha');
+    const emailInput = document.getElementById('email');
+    const rememberCheckbox = document.getElementById('remember');
     const submitButton = loginForm?.querySelector('button[type="submit"]');
+
+    // 1. LEMBRAR DE MIM (Preenche o e-mail se foi salvo antes)
+    if (localStorage.getItem('lembrar_email')) {
+        emailInput.value = localStorage.getItem('lembrar_email');
+        rememberCheckbox.checked = true;
+    }
 
     // 2. LÓGICA DO OLHINHO DE SENHA (VISIBILIDADE)
     if (togglePassword && passwordInput) {
@@ -34,8 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = document.getElementById('email').value.trim();
+            const email = emailInput.value.trim();
             const password = passwordInput.value;
+
+            // Gerencia o "Lembrar de mim"
+            if (rememberCheckbox.checked) {
+                localStorage.setItem('lembrar_email', email);
+            } else {
+                localStorage.removeItem('lembrar_email');
+            }
 
             // Bloqueio visual para evitar cliques múltiplos
             submitButton.disabled = true;
@@ -48,14 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email: email, senha: password })
                 });
 
-                const data = await response.json();
+                const data = await response.json().catch(() => null);
 
                 if (!response.ok) {
-                    throw new Error(data.mensagem || "Erro ao fazer login.");
+                    throw new Error((data && (data.error || data.mensagem)) || "Credenciais inválidas.");
                 }
 
                 // --- SUCESSO: GRAVA A SESSÃO NO NAVEGADOR ---
-                // Importante: Estes nomes devem ser os mesmos que você usa no funcionario.js
                 localStorage.setItem('usuario_id', data.id);
                 localStorage.setItem('usuario_nome', data.nome);
                 localStorage.setItem('usuario_role', data.role);
@@ -67,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '../admin/dashboard.html';
                 } 
                 else if (data.role === 'funcionario') {
-                    // Aqui é onde o Carlos será enviado
                     window.location.href = '../admin/funcionario.html';
                 } 
                 else {

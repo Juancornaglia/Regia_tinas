@@ -38,6 +38,7 @@
             border: none;
             outline: none;
             box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
 
         /* Estilo para os ícones de olho */
@@ -54,7 +55,7 @@
             align-items: center;
         }
 
-        input[type="password"], input[type="email"] {
+        input[type="password"], input[type="email"], input[type="text"] {
             padding-right: 45px;
         }
 
@@ -75,6 +76,7 @@
         .btn-solid:hover {
             background-color: #f8f9fa;
             transform: scale(1.02);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .step-text {
@@ -121,13 +123,13 @@
                     <a href="login.html" class="back-button"><i class="bi bi-arrow-left"></i></a>
                     <h1>Esqueceu a senha?</h1>
                 </div>
-                <p class="step-text">Não se preocupe! Digite seu e-mail para receber o link de recuperação.</p>
+                <p class="step-text">Não se preocupe! Digite seu e-mail para receber o código de recuperação.</p>
                 
                 <form id="sendCodeForm">
                     <div class="input-group">
                         <input type="email" id="email" placeholder="Digite seu e-mail" required>
                     </div>
-                    <button type="submit" class="btn btn-solid">ENVIAR LINK</button>
+                    <button type="submit" class="btn btn-solid" id="btnSendCode">ENVIAR CÓDIGO</button>
                 </form>
             </div>
 
@@ -136,9 +138,13 @@
                     <a href="#" id="back-to-step1" class="back-button"><i class="bi bi-arrow-left"></i></a>
                     <h1>Redefinir senha</h1>
                 </div>
-                <p class="step-text">Defina sua nova senha abaixo para recuperar o acesso.</p>
+                <p class="step-text">Insira o código de 6 dígitos que geramos e defina sua nova senha.</p>
                 
                 <form id="resetPasswordForm">
+                    <div class="input-group">
+                        <input type="text" id="verification_code" placeholder="Código de 6 dígitos (Ex: 123456)" maxlength="6" required style="text-align: center; letter-spacing: 2px; font-weight: bold;">
+                    </div>
+
                     <div class="input-group">
                         <input type="password" id="new_password" placeholder="Nova senha" required>
                         <i class="bi bi-eye-fill eye-icon toggle-password" data-target="new_password"></i>
@@ -147,7 +153,7 @@
                         <input type="password" id="confirm_new_password" placeholder="Confirme a nova senha" required>
                         <i class="bi bi-eye-fill eye-icon toggle-password" data-target="confirm_new_password"></i>
                     </div>
-                    <button type="submit" class="btn btn-solid">SALVAR SENHA</button>
+                    <button type="submit" class="btn btn-solid" id="btnResetPass">SALVAR NOVA SENHA</button>
                 </form>
             </div>
 

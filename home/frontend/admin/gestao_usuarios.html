@@ -45,12 +45,38 @@
         </div>
 
         <h4 class="section-title"><i class="bi bi-shield-shaded me-2 text-primary"></i>Equipe (Admin & Funcionários)</h4>
-        <div class="row g-3" id="lista-equipe">
-            </div>
+        <div class="row g-3" id="lista-equipe"></div>
 
         <h4 class="section-title"><i class="bi bi-person-heart me-2 text-pink" style="color: #FE8697;"></i>Base de Clientes</h4>
-        <div class="row g-3" id="lista-clientes">
+        <div class="row g-3" id="lista-clientes"></div>
+
+        <div class="modal fade" id="modalPromover" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content border-0 rounded-4">
+                    <div class="modal-header bg-light border-0">
+                        <h5 class="modal-title fw-bold text-dark"><i class="bi bi-briefcase me-2"></i>Dados do Novo Funcionário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form id="formPromover">
+                        <div class="modal-body p-4">
+                            <p class="text-muted small mb-4">Para promover este cliente à equipe, precisamos dos dados contratuais.</p>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Especialidade / Cargo *</label>
+                                <input type="text" id="promover_especialidade" class="form-control" required placeholder="Ex: Esteticista Pet">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Salário Base (R$) *</label>
+                                <input type="number" id="promover_salario" class="form-control" required placeholder="2500.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal" onclick="carregarUsuarios()">Cancelar</button>
+                            <button type="submit" class="btn btn-dark rounded-pill px-4">Confirmar Promoção</button>
+                        </div>
+                    </form>
+                </div>
             </div>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

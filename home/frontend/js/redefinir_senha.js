@@ -9,12 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendCodeForm = document.getElementById('sendCodeForm');
     const resetPasswordForm = document.getElementById('resetPasswordForm');
 
-    // Variável para simular o fluxo sem precisar abrir e-mail real no TCC
     let emailSolicitado = "";
 
-    // ETAPA 1: Solicitar Recuperação
+    // ETAPA 1: Solicitar Código (Conecta ao Python)
     if (sendCodeForm) {
-        sendCodeForm.addEventListener('submit', (e) => {
+        sendCodeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             emailSolicitado = document.getElementById('email').value.trim();
             
@@ -22,21 +21,38 @@ document.addEventListener('DOMContentLoaded', () => {
             button.disabled = true;
             button.textContent = 'VERIFICANDO...';
 
-            // Simulação de envio para o TCC (1 segundo e meio de espera)
-            setTimeout(() => {
-                alert(`Link de recuperação enviado para ${emailSolicitado} (Simulação TCC). Redirecionando para definir nova senha...`);
-                section1.style.display = 'none';
-                section2.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/recuperar-senha`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailSolicitado })
+                });
+
+                if (response.ok) {
+                    alert("✨ Código gerado! (Para o TCC, olhe o terminal do seu VS Code para pegar os 6 dígitos).");
+                    section1.style.display = 'none';
+                    section2.style.display = 'block';
+                } else {
+                    const data = await response.json();
+                    alert(data.error || "Erro: E-mail não encontrado na base de dados.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao conectar com o servidor.");
+            } finally {
                 button.disabled = false;
-                button.textContent = 'ENVIAR LINK';
-            }, 1500);
+                button.textContent = 'ENVIAR CÓDIGO';
+            }
         });
     }
 
-    // ETAPA 2: Definir Nova Senha (Conecta ao Neon via Python)
+    // ETAPA 2: Definir Nova Senha (Usa o Código de 6 dígitos)
     if (resetPasswordForm) {
         resetPasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Pega os dados da tela (lembre-se que adicionamos o campo do código no HTML)
+            const codigo = document.getElementById('verification_code').value.trim();
             const nova_senha = document.getElementById('new_password').value;
             const confirmar = document.getElementById('confirm_new_password').value;
 
@@ -55,34 +71,30 @@ document.addEventListener('DOMContentLoaded', () => {
             button.textContent = 'SALVANDO...';
 
             try {
-                // CORREÇÃO 1: Rota ajustada para bater exatamente com o app.py
-                const response = await fetch(`${API_BASE_URL}/api/usuario/redefinir-senha`, {
+                const response = await fetch(`${API_BASE_URL}/api/redefinir-senha`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         email: emailSolicitado, 
+                        codigo: codigo,
                         nova_senha: nova_senha 
                     })
                 });
 
-                // CORREÇÃO 2: Verificamos o "ok" ANTES de tentar ler o JSON.
-                // Isso mata o erro do "<" de uma vez por todas.
+                // Excelente sacada sua de verificar o "ok" antes do json()
                 if (response.ok) {
-                    const result = await response.json();
                     alert("Senha redefinida com sucesso! Use sua nova senha para entrar.");
                     window.location.href = 'login.html';
                 } else {
-                    // Se der erro, tentamos ler como texto para não quebrar o JS
-                    const erroTexto = await response.text();
-                    console.error("Erro do servidor:", erroTexto);
-                    alert("Erro ao redefinir. O e-mail informado não foi encontrado ou houve falha no servidor.");
+                    const data = await response.json().catch(() => null);
+                    alert((data && data.error) ? data.error : "Código inválido ou expirado.");
                 }
             } catch (error) {
                 console.error(error);
                 alert("Erro ao conectar com o servidor.");
             } finally {
                 button.disabled = false;
-                button.textContent = 'SALVAR SENHA';
+                button.textContent = 'SALVAR NOVA SENHA';
             }
         });
     }
@@ -92,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         section1.style.display = 'block';
         section2.style.display = 'none';
+        
+        // Limpa os campos se o usuário desistir e voltar
+        if(document.getElementById('verification_code')) document.getElementById('verification_code').value = '';
         document.getElementById('new_password').value = '';
         document.getElementById('confirm_new_password').value = '';
     });
