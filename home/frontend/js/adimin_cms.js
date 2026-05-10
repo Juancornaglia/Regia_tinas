@@ -1,4 +1,7 @@
-// js/admin_cms.js - CONECTADO À API REAL EM PYTHON
+/**
+ * js/admin_cms.js - Motor de Gestão de Conteúdo
+ * Conectado ao Backend Python + Neon
+ */
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
@@ -11,54 +14,63 @@ const modalFormContent = document.getElementById('modal-form-content');
 const bannerImgUrlInput = document.getElementById('banner_img_url');
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Quando abrir o modal, busca os dados reais do banco
-    if (editBannerModal) editBannerModal.addEventListener('show.bs.modal', loadBannerData);
+    // 1. CARREGAMENTO INICIAL
+    if (editBannerModal) {
+        editBannerModal.addEventListener('show.bs.modal', loadBannerData);
+    }
     
-    // Quando clicar em salvar, envia os dados para o banco
-    if (saveBannerButton) saveBannerButton.addEventListener('click', saveBannerData);
+    if (saveBannerButton) {
+        saveBannerButton.addEventListener('click', saveBannerData);
+    }
+
+    // 2. PREVIEW EM TEMPO REAL (Para não salvar link quebrado)
+    bannerImgUrlInput?.addEventListener('input', (e) => {
+        const url = e.target.value;
+        updateLivePreview(url);
+    });
 });
 
-// 1. CARREGAR OS DADOS DO BANCO (GET)
+// --- FUNÇÃO: BUSCAR DADOS DO NEON ---
 async function loadBannerData() {
     if (modalLoadingSpinner) modalLoadingSpinner.style.display = 'block';
     if (modalFormContent) modalFormContent.style.display = 'none';
 
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/cms/content`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Buscamos todo o conteúdo do CMS de uma vez
+        const response = await fetch(`${API_BASE_URL}/api/cms/content`);
 
         if (response.ok) {
-            const data = await response.json(); // Array de objetos do banco
+            const data = await response.json();
             
-            // Procura o item específico do banner
+            // Localiza a configuração do banner principal
             const bannerItem = data.find(item => item.element_id === 'banner_principal_img');
             
             if (bannerItem && bannerImgUrlInput) {
                 bannerImgUrlInput.value = bannerItem.content_value;
-            } else if (bannerImgUrlInput) {
-                bannerImgUrlInput.value = ''; // Fica vazio se não achar nada
+                updateLivePreview(bannerItem.content_value); // Mostra a imagem atual
             }
         } else {
-            console.warn("Erro ao buscar dados do CMS no servidor.");
+            console.error("Erro ao carregar dados do CMS.");
         }
     } catch (error) {
-        console.error("Erro de conexão:", error);
+        console.error("Erro de conexão com a API:", error);
     } finally {
         if (modalLoadingSpinner) modalLoadingSpinner.style.display = 'none';
         if (modalFormContent) modalFormContent.style.display = 'block';
     }
 }
 
-// 2. SALVAR OS DADOS NO BANCO (POST)
+// --- FUNÇÃO: SALVAR NO BANCO (POST) ---
 async function saveBannerData() {
-    if (!saveBannerButton) return;
-    
-    saveBannerButton.disabled = true;
-    saveBannerButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Salvando...';
+    if (!bannerImgUrlInput.value.startsWith('http')) {
+        alert("Por favor, insira uma URL válida (começando com http ou https).");
+        return;
+    }
 
-    // Monta o payload exatamente como o seu Python espera (uma lista de dicionários)
+    saveBannerButton.disabled = true;
+    saveBannerButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Publicando...';
+
+    // Payload em formato de lista (padrão do seu CMS)
     const payload = [
         {
             element_id: 'banner_principal_img',
@@ -67,35 +79,60 @@ async function saveBannerData() {
     ];
 
     try {
-        const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/api/cms/update`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${localStorage.getItem('token')}` // Caso use JWT
             },
             body: JSON.stringify(payload)
         });
 
         if (response.ok) {
-            alert('Banner atualizado com sucesso!');
+            alert('🚀 Sucesso! O novo banner já está no ar.');
             
-            // Fecha o Modal
+            // Fecha o modal do Bootstrap
             const modalInstance = bootstrap.Modal.getInstance(editBannerModal);
-            if(modalInstance) modalInstance.hide();
+            modalInstance?.hide();
             
-            // Atualiza o iFrame para ver a mudança ao vivo
-            const iframe = document.querySelector('iframe');
-            if (iframe) iframe.src = iframe.src;
+            // Atualiza o iFrame de preview do painel
+            refreshSitePreview();
         } else {
-            const erro = await response.json();
-            alert("Erro ao salvar: " + (erro.error || erro.mensagem || "Erro desconhecido"));
+            const errorData = await response.json();
+            alert("Erro ao salvar: " + (errorData.error || "Tente novamente."));
         }
     } catch (error) {
-        console.error("Erro de conexão:", error);
-        alert("Erro ao conectar com o servidor Python. Verifique se ele está rodando.");
+        alert("Falha na comunicação com o servidor Render.");
     } finally {
         saveBannerButton.disabled = false;
         saveBannerButton.textContent = 'Salvar Alterações';
+    }
+}
+
+// --- HELPERS (AUXILIARES) ---
+
+function updateLivePreview(url) {
+    let previewContainer = document.getElementById('banner-preview-box');
+    
+    // Se não existir o box de preview, cria um abaixo do input
+    if (!previewContainer) {
+        previewContainer = document.createElement('div');
+        previewContainer.id = 'banner-preview-box';
+        previewContainer.className = 'mt-3 text-center border rounded-3 p-2 bg-white';
+        bannerImgUrlInput.parentNode.appendChild(previewContainer);
+    }
+
+    if (url && url.startsWith('http')) {
+        previewContainer.innerHTML = `<img src="${url}" class="img-fluid rounded" style="max-height: 150px;" onerror="this.src='../img/placeholder-error.png'">`;
+    } else {
+        previewContainer.innerHTML = '<small class="text-muted">Aguardando link de imagem válido...</small>';
+    }
+}
+
+function refreshSitePreview() {
+    const iframe = document.querySelector('.preview-browser iframe');
+    if (iframe) {
+        // Truque para forçar o recarregamento do iframe
+        iframe.src = iframe.src;
     }
 }

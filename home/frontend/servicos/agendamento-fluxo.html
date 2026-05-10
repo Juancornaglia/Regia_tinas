@@ -3,79 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendamento - Regia & Tinas Care</title>
+    <title>Agendamento | Regia & Tinas Care</title>
+    
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../css/style.css"> <style>
-        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
-        body { background-color: var(--bg-light); }
-        .text-brand { color: var(--brand-pink) !important; }
-        .step { display: none; }
-        .step.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .progress-bar { background-color: var(--brand-pink); transition: 0.5s; }
-        .card-agendamento { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background: white; }
-        
-        /* Calendário */
-        #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .calendar-day { padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; border: 1px solid #eee; font-size: 0.9rem; }
-        .calendar-day:hover:not(.disabled) { background-color: #ffeef0; color: var(--brand-pink); }
-        .calendar-day.selected { background-color: var(--brand-pink) !important; color: white !important; }
-        .calendar-day.disabled { color: #ccc; cursor: not-allowed; background-color: #fdfdfd; border-color: transparent; }
-        .calendar-day-name { font-size: 0.75rem; color: #999; text-transform: uppercase; text-align: center; font-weight: 800; padding-bottom: 5px; }
+    
+    <style>
+        :root { 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585;
+            --bg-light: #f8f9fa; 
+            --bg-light-pink: #fff5f6;
+            --text-dark: #2d3436;
+        }
 
-        .time-slot { width: 100%; margin-bottom: 8px; border-radius: 12px; font-weight: 600; }
-        .btn-brand { background-color: var(--brand-pink); color: white; border: none; border-radius: 25px; transition: 0.3s; }
-        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; }
+        body { 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            font-family: 'Poppins', sans-serif; 
+        }
+
+        .text-brand { color: var(--brand-pink) !important; }
+
+        /* --- Navbar Unificada --- */
+        .navbar { 
+            background-color: var(--brand-pink) !important; 
+            padding: 0.8rem 1rem; 
+        }
+        .btn-back { 
+            border-radius: 20px; 
+            border: 1px solid rgba(255,255,255,0.5); 
+            transition: 0.3s;
+            background: rgba(255,255,255,0.1);
+            color: white !important;
+            text-decoration: none;
+        }
+        .btn-back:hover { background: white !important; color: var(--brand-pink) !important; }
+
+        /* --- Wizard de Agendamento --- */
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .progress { height: 10px; border-radius: 10px; background-color: #eee; }
+        .progress-bar { background-color: var(--brand-pink); transition: 0.5s; border-radius: 10px; }
+        
+        .card-agendamento { 
+            border: none; 
+            border-radius: 25px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.06); 
+            background: white; 
+            overflow: hidden;
+        }
+
+        /* Calendário Customizado */
+        #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .calendar-day { 
+            padding: 12px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            text-align: center; 
+            font-weight: 600; 
+            border: 1px solid #f1f1f1; 
+            font-size: 0.9rem; 
+            transition: 0.2s;
+        }
+        .calendar-day:hover:not(.disabled) { background-color: var(--bg-light-pink); color: var(--brand-pink); border-color: var(--brand-pink); }
+        .calendar-day.selected { background-color: var(--brand-pink) !important; color: white !important; border-color: var(--brand-pink); }
+        .calendar-day.disabled { color: #ccc; cursor: not-allowed; background-color: #fafafa; border-color: transparent; opacity: 0.5; }
+        .calendar-day-name { font-size: 0.7rem; color: #aaa; text-transform: uppercase; text-align: center; font-weight: 800; padding-bottom: 10px; }
+
+        /* Slots de Horário */
+        .time-slot { 
+            width: 100%; 
+            margin-bottom: 10px; 
+            border-radius: 15px; 
+            font-weight: 600; 
+            padding: 10px;
+            border: 2px solid #f1f1f1;
+            background: white;
+            transition: 0.3s;
+        }
+        .time-slot:hover:not(:disabled) { border-color: var(--brand-pink); color: var(--brand-pink); }
+        .btn-check:checked + .time-slot { background-color: var(--brand-pink); color: white; border-color: var(--brand-pink); }
+
+        .btn-brand { 
+            background-color: var(--brand-pink); 
+            color: white; 
+            border: none; 
+            border-radius: 30px; 
+            padding: 12px 35px;
+            font-weight: 600;
+            transition: 0.3s; 
+        }
+        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; transform: translateY(-2px); }
+        .btn-brand:disabled { background-color: #ccc; }
+
+        .summary-box { 
+            background-color: var(--bg-light-pink); 
+            border: 1px dashed var(--brand-pink); 
+            border-radius: 20px;
+        }
+
+        .main-footer { background-color: #1e272e; color: #dfe6e9; padding: 40px 0 20px; margin-top: 5rem; }
     </style>
 </head>
 <body>
-    <nav class="navbar shadow-sm p-3 mb-4" style="background-color: var(--brand-pink);">
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
         <div class="container">
-            <a class="btn btn-sm btn-outline-light rounded-pill" href="../index.html"><i class="bi bi-arrow-left me-1"></i>Sair</a>
-            <span class="navbar-brand fw-bold text-white mx-auto">Regia & Tina's Care</span>
+            <a class="btn btn-back fw-bold d-flex align-items-center" href="../index.html">
+                <i class="bi bi-house-door me-2"></i> Início
+            </a>
+            <span class="navbar-brand fw-bold mx-auto d-none d-md-block">CENTRO DE AGENDAMENTO</span>
+            <div style="width: 100px;" class="d-none d-md-block"></div>
         </div>
     </nav>
 
     <main class="container my-5">
-        <div class="progress mb-4 mx-auto" style="max-width: 600px; height: 8px;">
-            <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
+        <div class="text-center mb-4">
+            <p class="small text-muted fw-bold text-uppercase mb-2">Sua reserva está quase pronta</p>
+            <div class="progress mx-auto" style="max-width: 600px;">
+                <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
+            </div>
         </div>
 
         <div id="agendamento-wizard" class="card card-agendamento p-4 p-md-5 mx-auto" style="max-width: 900px;">
             
             <div id="step-1" class="step active">
-                <h3 class="fw-bold mb-4">1. O que vamos fazer hoje?</h3>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-light-pink p-2 rounded-circle me-3"><i class="bi bi-scissors text-brand fs-4"></i></div>
+                    <h3 class="fw-bold mb-0">1. O que vamos fazer hoje?</h3>
+                </div>
                 <div class="row g-3" id="services-container">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-brand" role="status"></div>
+                        <p class="mt-2 text-muted">Carregando serviços...</p>
                     </div>
-                <div class="text-end mt-4">
-                    <button id="btn-next-1" class="btn btn-brand btn-lg px-5" disabled>Próximo</button>
+                </div>
+                <div class="text-end mt-5">
+                    <button id="btn-next-1" class="btn btn-brand btn-lg px-5 shadow-sm" disabled>Próximo Passo <i class="bi bi-arrow-right ms-2"></i></button>
                 </div>
             </div>
 
             <div id="step-2" class="step">
-                <h3 class="fw-bold mb-4">2. Onde será o atendimento?</h3>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-light-pink p-2 rounded-circle me-3"><i class="bi bi-geo-alt text-brand fs-4"></i></div>
+                    <h3 class="fw-bold mb-0">2. Onde será o atendimento?</h3>
+                </div>
                 <div class="mb-4">
-                    <select class="form-select form-select-lg" id="store-select">
-                        <option value="" selected disabled>Escolha a unidade...</option>
+                    <select class="form-select form-select-lg border-0 bg-light rounded-4 p-3" id="store-select">
+                        <option value="" selected disabled>Selecione a unidade mais próxima...</option>
                     </select>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
-                    <button id="btn-next-2" class="btn btn-brand btn-lg px-5" disabled>Próximo</button>
+                <div class="d-flex justify-content-between mt-5">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev fw-bold text-muted">Voltar</button>
+                    <button id="btn-next-2" class="btn btn-brand btn-lg px-5 shadow-sm" disabled>Ver Datas <i class="bi bi-calendar-date ms-2"></i></button>
                 </div>
             </div>
 
             <div id="step-3" class="step">
-                <h3 class="fw-bold mb-4">3. Escolha o melhor momento</h3>
-                <div class="row">
-                    <div class="col-md-7 border-end">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-light-pink p-2 rounded-circle me-3"><i class="bi bi-clock-history text-brand fs-4"></i></div>
+                    <h3 class="fw-bold mb-0">3. Escolha o melhor momento</h3>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-7">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <button id="prevMonth" class="btn btn-sm btn-light rounded-circle"><i class="bi bi-chevron-left"></i></button>
+                            <button id="prevMonth" class="btn btn-sm btn-outline-secondary rounded-circle"><i class="bi bi-chevron-left"></i></button>
                             <h5 id="calendar-title" class="mb-0 fw-bold text-brand">Maio 2026</h5>
-                            <button id="nextMonth" class="btn btn-sm btn-light rounded-circle"><i class="bi bi-chevron-right"></i></button>
+                            <button id="nextMonth" class="btn btn-sm btn-outline-secondary rounded-circle"><i class="bi bi-chevron-right"></i></button>
                         </div>
                         <div id="calendar-header" class="calendar-day-name row m-0">
                             <div class="col p-0 text-center">Dom</div><div class="col p-0 text-center">Seg</div>
@@ -83,44 +182,73 @@
                             <div class="col p-0 text-center">Qui</div><div class="col p-0 text-center">Sex</div>
                             <div class="col p-0 text-center">Sáb</div>
                         </div>
-                        <div id="calendar-grid"></div>
+                        <div id="calendar-grid" class="mt-2"></div>
                     </div>
-                    <div class="col-md-5 ps-md-4">
-                        <h6 class="fw-bold mb-3">Horários Disponíveis</h6>
-                        <div id="time-slots-container" class="overflow-auto" style="max-height: 300px;">
-                            <p class="text-muted small text-center mt-5">Selecione uma data para ver os horários.</p>
+                    <div class="col-md-5 ps-md-4 border-start">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-check2-circle text-success me-2"></i>Horários Disponíveis</h6>
+                        <div id="time-slots-container" class="overflow-auto pe-2" style="max-height: 320px;">
+                            <div class="text-center mt-5 opacity-50">
+                                <i class="bi bi-calendar-event fs-1 d-block mb-2"></i>
+                                <p class="small">Selecione uma data no calendário ao lado.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between mt-4">
-                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
-                    <button id="btn-next-3" class="btn btn-brand btn-lg px-5" disabled>Próximo</button>
+                <div class="d-flex justify-content-between mt-5">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev fw-bold text-muted">Voltar</button>
+                    <button id="btn-next-3" class="btn btn-brand btn-lg px-5 shadow-sm" disabled>Quem é o Pet? <i class="bi bi-paw-fill ms-2"></i></button>
                 </div>
             </div>
 
             <div id="step-4" class="step">
-                <h3 class="fw-bold mb-4">4. Quem é o fofinho?</h3>
-                <select class="form-select form-select-lg mb-4" id="pet-select"></select>
-                <div id="new-pet-form" style="display: none;" class="bg-light p-3 rounded mb-4">
-                    <input type="text" id="new-pet-name" class="form-control mb-2" placeholder="Nome do Pet">
-                    <input type="text" id="new-pet-raca" class="form-control" placeholder="Raça (ex: Poodle, SRD)">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-light-pink p-2 rounded-circle me-3"><i class="bi bi-heart-fill text-brand fs-4"></i></div>
+                    <h3 class="fw-bold mb-0">4. Quem é o fofinho?</h3>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
-                    <button id="btn-next-4" class="btn btn-brand btn-lg px-5">Revisar</button>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">Selecione um pet já cadastrado</label>
+                    <select class="form-select form-select-lg border-0 bg-light rounded-4 p-3" id="pet-select"></select>
+                </div>
+                
+                <div id="new-pet-form" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
+                    <h6 class="fw-bold mb-3">Cadastrar Novo Pet</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6"><input type="text" id="new-pet-name" class="form-control rounded-pill border-0 p-3" placeholder="Nome do Pet"></div>
+                        <div class="col-md-6"><input type="text" id="new-pet-raca" class="form-control rounded-pill border-0 p-3" placeholder="Raça (ex: Poodle, SRD)"></div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-5">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev fw-bold text-muted">Voltar</button>
+                    <button id="btn-next-4" class="btn btn-brand btn-lg px-5 shadow-sm">Revisar Agendamento <i class="bi bi-search ms-2"></i></button>
                 </div>
             </div>
 
             <div id="step-5" class="step">
-                <h3 class="fw-bold mb-4 text-success">Quase lá!</h3>
-                <div id="summary-content" class="p-4 rounded-4 border bg-light mb-4"></div>
-                <div class="d-flex justify-content-between">
-                    <button class="btn btn-light rounded-pill px-4 btn-prev">Voltar</button>
-                    <button id="final-confirm" class="btn btn-success btn-lg px-5 fw-bold rounded-pill shadow">Confirmar Agendamento</button>
+                <div class="text-center mb-4">
+                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    <h3 class="fw-bold mt-2">Tudo Certo!</h3>
+                    <p class="text-muted">Confira os detalhes da sua reserva abaixo.</p>
+                </div>
+                
+                <div id="summary-content" class="p-4 summary-box mb-4">
+                    </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn btn-light rounded-pill px-4 btn-prev fw-bold text-muted">Corrigir algo</button>
+                    <button id="final-confirm" class="btn btn-success btn-lg px-5 fw-bold rounded-pill shadow-lg py-3">
+                        FINALIZAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </main>
+
+    <footer class="main-footer">
+        <div class="container text-center">
+            <p class="mb-0 small opacity-50">© 2026 REGIA & TINA'S CARE | Seu agendamento é seguro e criptografado.</p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="../js/agendamento.js"></script>

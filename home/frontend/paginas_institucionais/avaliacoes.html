@@ -6,6 +6,7 @@
     <title>Avaliações dos Clientes | Regia & Tinas Care</title>
     
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
@@ -15,146 +16,175 @@
             --brand-pink-hover: #e57585;
             --bg-light: #f8f9fa; 
             --bg-light-pink: #fff5f6;
+            --text-dark: #2d3436;
         }
 
-        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        body { 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            font-family: 'Poppins', sans-serif; 
+        }
+
         .text-brand { color: var(--brand-pink) !important; }
 
-        /* --- Navbar --- */
-        .navbar { background-color: var(--brand-pink) !important; padding: 0.8rem 1rem; }
-        .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
-        .navbar-brand { font-weight: bold !important; }
+        /* --- Navbar Unificada --- */
+        .navbar { 
+            background-color: var(--brand-pink) !important; 
+            padding: 0.8rem 1rem; 
+        }
         
-        /* --- Card de Avaliação --- */
+        .btn-back { 
+            border-radius: 20px; 
+            border: 1px solid rgba(255,255,255,0.5); 
+            transition: 0.3s;
+            background: rgba(255,255,255,0.1);
+            color: white !important;
+            text-decoration: none;
+        }
+        .btn-back:hover { background: white !important; color: var(--brand-pink) !important; }
+        
+        /* --- Card de Avaliação Premium --- */
         .review-card {
             background-color: #fff;
             border: none;
-            border-radius: 16px;
-            padding: 25px;
+            border-radius: 20px;
+            padding: 30px;
             margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            transition: 0.3s;
+            transition: 0.3s ease;
         }
-        .review-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .review-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(254, 134, 151, 0.1); }
         
         .review-card p {
             font-style: italic;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             color: #555;
-            line-height: 1.6;
+            line-height: 1.7;
+            font-size: 0.95rem;
         }
         
         .review-author {
             display: flex;
             align-items: center;
-            border-top: 1px solid #f1f1f1;
-            padding-top: 15px;
+            margin-top: auto;
+            border-top: 1px solid #f8f9fa;
+            padding-top: 20px;
         }
         .review-author img {
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
             object-fit: cover;
             margin-right: 15px;
-            border: 2px solid var(--brand-pink);
+            border: 3px solid var(--bg-light-pink);
         }
-        .review-author .name { font-weight: bold; color: #333; font-size: 0.95rem; }
-        .review-author .stars { color: #FFC107; font-size: 0.85rem; }
+        .review-author .name { font-weight: 700; color: #333; font-size: 1rem; margin-bottom: 2px; }
+        .review-author .stars { color: #FFC107; font-size: 0.9rem; }
         
         /* --- Galerias --- */
         .friend-gallery-img {
             width: 100%;
             height: 250px;
             object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
+            border-radius: 18px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+            transition: 0.4s ease;
         }
-        .friend-gallery-img:hover { transform: scale(1.05); }
+        .friend-gallery-img:hover { transform: scale(1.03); filter: brightness(1.1); }
 
         /* --- Seção CTA --- */
         .call-to-action-review {
             background-color: var(--bg-light-pink);
-            padding: 50px 20px;
-            border-radius: 20px;
+            padding: 60px 20px;
+            border-radius: 25px;
             text-align: center;
-            margin: 40px 0;
-            border: 1px solid var(--brand-pink);
-            box-shadow: 0 10px 30px rgba(254, 134, 151, 0.1);
+            margin: 50px 0;
+            border: 2px dashed var(--brand-pink);
         }
-        .call-to-action-review h2 { color: var(--brand-pink); font-weight: bold; }
-
+        
         .btn-brand { 
             background-color: var(--brand-pink); 
             color: #fff; 
-            border-radius: 25px; 
-            padding: 12px 35px; 
+            border-radius: 30px; 
+            padding: 15px 40px; 
             border: none; 
-            font-weight: bold; 
+            font-weight: 600; 
             transition: 0.3s; 
+            box-shadow: 0 4px 15px rgba(254, 134, 151, 0.3);
         }
         .btn-brand:hover { background-color: var(--brand-pink-hover); color: #fff; transform: translateY(-2px); }
 
-        /* --- Footer --- */
-        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--brand-pink); margin-bottom: 1rem; }
-        .main-footer a { color: #ccc; text-decoration: none; line-height: 2; transition: 0.3s; }
-        .main-footer a:hover { color: white; text-decoration: underline; }
-        .footer-cta { background-color: var(--brand-pink); border-radius: 12px; }
-        .footer-hr { border-color: #555; margin: 2rem 0; }
+        .main-footer { background-color: #1e272e; color: #dfe6e9; padding: 60px 0 30px; margin-top: 5rem; }
+        .main-footer h5 { color: var(--brand-pink); font-weight: bold; margin-bottom: 1.5rem; }
+        .main-footer a { color: #b2bec3; text-decoration: none; transition: 0.3s; }
+        .main-footer a:hover { color: white; padding-left: 5px; }
+
+        @media (max-width: 768px) {
+            .navbar-brand { font-size: 0.9rem; }
+            .display-5 { font-size: 2.2rem; }
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
         <div class="container">
-             <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html" style="text-decoration: none;">
-                 <i class="bi bi-arrow-left me-2"></i>
-                 <span>Início</span>
+             <a class="btn btn-back fw-bold d-flex align-items-center" href="../index.html">
+                 <i class="bi bi-house-door me-2"></i> Início
              </a>
-             <a class="navbar-brand fw-bold text-white mx-auto" href="../index.html">
-                 <span class="d-none d-md-inline">AVALIAÇÕES DE CLIENTES</span>
-                 <span class="d-md-none">Avaliações</span>
-             </a>
-             <div style="width: 80px;"></div> 
+             
+             <span class="navbar-brand fw-bold mx-auto d-none d-md-block">O QUE DIZEM NOSSOS CLIENTES</span>
+
+             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navReviews">
+                <span class="navbar-toggler-icon"></span>
+             </button>
+
+             <div class="collapse navbar-collapse flex-grow-0" id="navReviews">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link text-white" href="../servicos/servicos.html">Serviços</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="contatos.html">Contato</a></li>
+                </ul>
+             </div>
         </div>
     </nav>
 
     <main class="container my-5">
         <div class="text-center mb-5">
-            <h1 class="text-brand fw-bold display-5">O que nossos clientes dizem</h1>
-            <p class="lead text-muted">A satisfação de quem confia na Regia & Tinas Care.</p>
+            <h1 class="text-brand fw-bold display-5 mb-3">Histórias de Carinho</h1>
+            <p class="lead text-muted mx-auto" style="max-width: 700px;">Confira a experiência de quem confia a saúde e a diversão dos seus melhores amigos à equipe Regia & Tinas Care.</p>
         </div>
         
-        <div class="row" id="reviews-container">
+        <div class="row g-4" id="reviews-container">
             <div class="col-lg-6">
                 <div class="review-card">
-                    <p>"O lugar é maravilhoso, vale muito a pena conhecer com o seu pet. São vários ambientes e o atendimento para o nosso filho de 4 patas é impecável."</p>
+                    <p>"O lugar é maravilhoso, vale muito a pena conhecer com o seu pet. São vários ambientes e o atendimento para o nosso filho de 4 patas é impecável. O banho e tosa é o melhor da região!"</p>
                     <div class="review-author">
-                        <img src="../img/animal1.webp" alt="Cliente">
+                        <img src="../img/animal1.webp" alt="Valéria">
                         <div>
                             <div class="name">Valéria Ferreira</div>
                             <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
                         </div>
                     </div>
                 </div>
+                
                 <div class="review-card">
-                    <p>"Lugar fantástico, espaçoso e muito agradável. Atendimento 5 estrelas do início ao fim. Meu pet saiu super feliz!"</p>
+                    <p>"Lugar fantástico, espaçoso e muito agradável. Atendimento 5 estrelas do início ao fim. Meu pet saiu super feliz e cheiroso! Com certeza voltaremos mais vezes."</p>
                     <div class="review-author">
-                        <img src="../img/animal2.webp" alt="Cliente">
+                        <img src="../img/animal2.webp" alt="Paulo">
                         <div>
                             <div class="name">Paulo R. do C. Santos</div>
                             <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
                         </div>
                     </div>
                 </div>
+
                 <div class="review-card">
-                    <p>"Deixo meu Tobby no Day Care toda semana. Ele volta exausto e feliz! A equipe é incrível e manda fotos o dia todo. Confiança total."</p>
+                    <p>"Deixo meu Tobby no Day Care toda semana. Ele volta exausto e muito mais sociável! A equipe é incrível e manda vídeos o dia todo pelo WhatsApp. Confiança total no trabalho deles."</p>
                     <div class="review-author">
-                        <img src="../img/animal5.webp" alt="Cliente">
+                        <img src="../img/animal5.webp" alt="Carla">
                         <div>
                             <div class="name">Carla Mendes</div>
                             <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
@@ -165,29 +195,31 @@
 
             <div class="col-lg-6">
                 <div class="review-card">
-                    <p>"Excelente clínica para quem realmente ama seu pet. Vale a pena conhecer, tanto os serviços quanto os profissionais são ótimos. Parabéns!"</p>
+                    <p>"Excelente clínica para quem realmente ama seu pet. Estrutura de primeiro mundo e profissionais extremamente atenciosos e técnicos. Salvaguardaram meu pet em uma emergência."</p>
                     <div class="review-author">
-                        <img src="../img/animal3.webp" alt="Cliente">
+                        <img src="../img/animal3.webp" alt="Daniels">
                         <div>
                             <div class="name">Daniels Souza</div>
                             <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
                         </div>
                     </div>
                 </div>
+
                 <div class="review-card">
-                    <p>"Melhor Pet que já conheci. Estrutura super diferenciada, espaço limpo e profissionais capacitados. Cuidam com muito amor."</p>
+                    <p>"Melhor Pet Shop que já conheci. A parte do Hotel é muito limpa e segura. Fiquei viajando 10 dias e recebi notícias diárias. Recomendo para todos os donos de pets exigentes."</p>
                     <div class="review-author">
-                        <img src="../img/animal4.webp" alt="Cliente">
+                        <img src="../img/animal4.webp" alt="Beatriz">
                         <div>
                             <div class="name">Beatriz Macieira</div>
                             <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
                         </div>
                     </div>
                 </div>
+
                 <div class="review-card">
-                    <p>"Minha cachorrinha sempre volta impecável do banho e tosa. Os profissionais são pacientes e o cheirinho dura muito tempo! Recomendo."</p>
+                    <p>"Minha cachorrinha sempre volta impecável do banho. Eles usam produtos de alta qualidade e o cheirinho dura muito! Além disso, o cuidado com pets idosos é nota 10."</p>
                     <div class="review-author">
-                        <img src="../img/animal7.webp" alt="Cliente">
+                        <img src="../img/animal7.webp" alt="Juliana">
                         <div>
                             <div class="name">Juliana Costa</div>
                             <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
@@ -198,13 +230,13 @@
         </div>
 
         <section class="call-to-action-review">
-            <h2 class="mb-3">Sua Opinião é Muito Importante!</h2>
-            <p class="lead text-muted mb-4">Compartilhe sua experiência e ajude outros amantes de pets a conhecerem nosso trabalho.</p>
-            <button class="btn btn-brand btn-lg rounded-pill" onclick="alert('Obrigado! Em breve você poderá avaliar diretamente por aqui.')">Deixar minha Avaliação</button>
+            <h2 class="mb-3">Sua Opinião Vale Ouro! ⭐</h2>
+            <p class="lead text-muted mb-4">Compartilhe sua experiência. No final de cada agendamento, você pode deixar sua nota!</p>
+            <a href="../usuario/meus_agendamentos.html" class="btn btn-brand btn-lg shadow-sm">AVALIAR MEU ÚLTIMO ATENDIMENTO</a>
         </section>
 
         <div class="my-5">
-            <h2 class="text-center text-brand fw-bold mb-4">Momentos em Nossa Clínica</h2>
+            <h2 class="text-center text-brand fw-bold mb-4">Pets Felizes em Nossa Unidade</h2>
             <div class="row g-3">
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/veteri_1.webp" alt="Atendimento" class="friend-gallery-img"></div>
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/day_care1.webp" alt="Creche" class="friend-gallery-img"></div>
@@ -212,55 +244,32 @@
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/day_care2.webp" alt="Diversão" class="friend-gallery-img"></div>
             </div>
         </div>
-
-        <div class="my-5">
-            <h2 class="text-center text-brand fw-bold mb-4">Nossos Pequenos Clientes</h2>
-            <div class="row g-3">
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal1.webp" alt="Pet 1" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal2.webp" alt="Pet 2" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal8.webp" alt="Pet 8" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal6.webp" alt="Pet 6" class="friend-gallery-img"></div>
-            </div>
-        </div>
     </main>
 
     <footer class="main-footer">
         <div class="container">
-            <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="footer-cta p-4 text-center">
-                        <h5 class="text-white mb-2">Dúvidas?</h5>
-                        <p class="text-white-50 small mb-3">Conheça mais sobre nós.</p>
-                        <a href="contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
-                    </div>
+            <div class="row text-start mb-4">
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3">Regia & Tinas Care</h5>
+                    <p class="small opacity-75">Transparência e amor em cada atendimento. Sua avaliação nos ajuda a crescer todos os dias.</p>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Atendimento</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="contatos.html">Ajuda e FAQ</a></li>
-                        <li><a href="../usuario/login.html">Minha Conta</a></li>
+                <div class="col-md-4 mb-4 text-md-center">
+                    <h5 class="mb-3">Explorar</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="../servicos/veterinaria.html">Clínica 🐾</a></li>
+                        <li class="mb-2"><a href="../servicos/servicos.html">Banho e Tosa</a></li>
+                        <li class="mb-2"><a href="../servicos/hotel.html">Hospedagem</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Serviços</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="../servicos/veterinaria.html">Clínica 🐾</a></li>
-                        <li><a href="../servicos/servicos.html">Banho e Tosa</a></li>
-                        <li><a href="../servicos/hotel.html">Hospedagem</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Unidades</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#">Privacidade</a></li>
-                        <li><a href="lojas.html">Nossas Lojas</a></li>
-                    </ul>
+                <div class="col-md-4 mb-4 text-md-end">
+                    <h5 class="mb-3">Fale Conosco</h5>
+                    <p class="small mb-1">Dúvidas? <a href="contatos.html" class="text-brand fw-bold">Clique aqui</a></p>
+                    <p class="small">(11) 97106-1329</p>
                 </div>
             </div>
-            <hr class="footer-hr">
-            <div class="text-center mt-3 small text-white-50">
-                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
+            <hr class="border-secondary opacity-25">
+            <div class="text-center small opacity-50">
+                <p class="mb-0">© 2026 REGIA & TINA'S CARE | Todos os direitos reservados.</p>
             </div>
         </div>
     </footer>

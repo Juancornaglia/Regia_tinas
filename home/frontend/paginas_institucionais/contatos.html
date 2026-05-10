@@ -6,6 +6,7 @@
     <title>Contatos e Localização | Regia & Tinas Care</title>
     
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
@@ -15,69 +16,106 @@
             --brand-pink-hover: #e57585;
             --bg-light: #f8f9fa; 
             --bg-light-pink: #fff5f6;
+            --text-dark: #2d3436;
         }
         
-        body { background-color: var(--bg-light); color: #333; font-family: 'Poppins', Arial, sans-serif; }
+        body { 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            font-family: 'Poppins', sans-serif; 
+        }
+
         .text-brand { color: var(--brand-pink) !important; }
 
-        /* --- Navbar --- */
-        .navbar { background-color: var(--brand-pink) !important; padding: 0.8rem 1rem; }
-        .navbar .btn, .navbar .navbar-brand { color: #fff !important; }
-        .navbar-brand { font-weight: bold !important; }
+        /* --- Navbar Unificada --- */
+        .navbar { 
+            background-color: var(--brand-pink) !important; 
+            padding: 0.8rem 1rem; 
+        }
+        
+        .btn-back { 
+            border-radius: 20px; 
+            border: 1px solid rgba(255,255,255,0.5); 
+            transition: 0.3s;
+            background: rgba(255,255,255,0.1);
+            color: white !important;
+            text-decoration: none;
+        }
+        .btn-back:hover { background: white !important; color: var(--brand-pink) !important; }
 
         /* --- Cards de Unidade --- */
         .store-card {
             background-color: #fff;
-            padding: 2rem;
-            border-radius: 16px;
+            padding: 2.5rem;
+            border-radius: 20px;
             border: none;
             margin-bottom: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            border-left: 6px solid var(--brand-pink);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border-top: 5px solid var(--brand-pink);
         }
-        .store-card h5 { color: var(--brand-pink); font-weight: bold; margin-bottom: 1rem; }
-        .store-card h6 { font-weight: bold; margin-top: 15px; color: #555; }
+        .store-card h5 { color: var(--brand-pink); font-weight: 700; }
 
-        /* --- Lista de Atendimento --- */
-        .list-group-item { border: none; padding: 1.2rem; transition: 0.3s; margin-bottom: 5px; border-radius: 12px !important; }
+        /* --- Lista de Canais Digitais --- */
+        .list-group-item { 
+            border: none; 
+            padding: 1.2rem; 
+            transition: 0.3s; 
+            margin-bottom: 8px; 
+            border-radius: 15px !important; 
+            background-color: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
         .list-group-item-action:hover {
-            background-color: var(--bg-light-pink);
-            transform: translateX(5px);
+            background-color: var(--bg-light-pink) !important;
+            transform: translateX(8px);
+            color: var(--brand-pink);
         }
 
-        /* --- Galeria --- */
+        /* --- Mapa e Galeria --- */
+        .map-container {
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+        }
+
         .friend-gallery-img {
             width: 100%;
-            height: 250px;
+            height: 200px;
             object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
+            border-radius: 15px;
+            transition: 0.4s ease;
         }
-        .friend-gallery-img:hover { transform: scale(1.05); }
+        .friend-gallery-img:hover { transform: scale(1.05); filter: brightness(1.1); }
 
-        /* --- Footer --- */
-        .main-footer { background-color: #343a40; padding: 4rem 0 2rem; color: white; margin-top: 5rem; }
-        .main-footer h5 { font-size: 1.1rem; font-weight: bold; color: var(--brand-pink); margin-bottom: 1rem; }
-        .main-footer a { color: #ccc; text-decoration: none; line-height: 2; transition: 0.3s; }
-        .main-footer a:hover { color: white; text-decoration: underline; }
-        .footer-cta { background-color: var(--brand-pink); border-radius: 12px; }
-        .footer-hr { border-color: #555; margin: 2rem 0; }
-
+        .main-footer { background-color: #1e272e; color: #dfe6e9; padding: 60px 0 30px; margin-top: 5rem; }
+        
+        @media (max-width: 768px) {
+            .display-5 { font-size: 2.2rem; }
+            .store-card { padding: 1.5rem; }
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
         <div class="container">
-             <a class="btn text-white d-flex align-items-center fw-bold" href="../index.html" style="text-decoration: none;">
-                 <i class="bi bi-arrow-left me-2"></i>
-                 <span>Início</span>
+             <a class="btn btn-back fw-bold d-flex align-items-center" href="../index.html">
+                 <i class="bi bi-house-door me-2"></i> Início
              </a>
-             <a class="navbar-brand fw-bold text-white d-flex align-items-center mx-auto" href="../index.html">
-                 <span class="d-none d-md-inline">CONTATOS E LOCALIZAÇÃO</span>
-                 <span class="d-md-none">Contatos</span>
-             </a>
-             <div style="width: 80px;"></div>
+             
+             <span class="navbar-brand fw-bold mx-auto d-none d-md-block">CONTATOS E LOCALIZAÇÃO</span>
+
+             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContacts">
+                <span class="navbar-toggler-icon"></span>
+             </button>
+
+             <div class="collapse navbar-collapse flex-grow-0" id="navContacts">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link text-white" href="../servicos/servicos.html">Serviços</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="avaliacoes.html">Depoimentos</a></li>
+                </ul>
+             </div>
         </div>
     </nav>
 
@@ -86,125 +124,113 @@
         
         <div class="row g-5">
             <div class="col-lg-6">
-                <h3 class="fw-bold mb-4 text-secondary"><i class="bi bi-geo-alt me-2"></i>Nossa Unidade</h3>
+                <h3 class="fw-bold mb-4 text-secondary"><i class="bi bi-geo-alt-fill me-2 text-brand"></i>Nossa Unidade</h3>
                 
                 <div class="store-card">
-                    <h5>Unidade São Caetano do Sul (Principal)</h5>
-                    <p class="mb-2"><strong>Endereço:</strong> R. Luiz Fiorotti, 394 - Olímpico, São Caetano do Sul - SP</p>
-                    <p class="mb-3"><strong>Telefone:</strong> (11) 97106-1329</p>
+                    <h5>Unidade São Caetano do Sul (Matriz)</h5>
+                    <p class="mb-2 text-muted"><strong>Endereço:</strong><br>R. Luiz Fiorotti, 394 - Olímpico<br>São Caetano do Sul - SP, 09540-140</p>
+                    <p class="mb-4"><strong>Telefone Central:</strong> (11) 97106-1329</p>
                     
-                    <h6>Horário de Funcionamento:</h6>
-                    <ul class="list-unstyled text-muted">
-                        <li><i class="bi bi-clock me-2"></i>Terça a Sábado: 09:00 – 18:00</li>
-                        <li><i class="bi bi-x-circle me-2"></i>Domingo e Segunda: Fechado</li>
-                    </ul>
-                    <a href="https://wa.me/5511971061329" target="_blank" class="btn btn-outline-success btn-sm mt-3 rounded-pill">
-                        <i class="bi bi-whatsapp me-2"></i>Falar com esta unidade
+                    <div class="p-3 rounded-4 bg-light">
+                        <h6 class="fw-bold small text-uppercase text-muted mb-2">Horário de Funcionamento:</h6>
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-1"><i class="bi bi-check2-circle text-success me-2"></i>Terça a Sábado: 09h às 18h</li>
+                            <li><i class="bi bi-x-circle text-danger me-2"></i>Domingo e Segunda: Fechado</li>
+                        </ul>
+                    </div>
+
+                    <a href="https://wa.me/5511971061329" target="_blank" class="btn btn-success w-100 mt-4 rounded-pill py-2 fw-bold shadow-sm">
+                        <i class="bi bi-whatsapp me-2"></i>CHAMAR NO WHATSAPP
                     </a>
                 </div>
 
-                <div class="alert alert-info border-0 rounded-4 shadow-sm p-4">
-                    <h6 class="fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Atendimento em Domicílio</h6>
-                    <p class="small mb-0 text-muted">Oferecemos o serviço de <strong>Taxi Dog</strong> para toda a região. Buscamos e levamos seu pet com segurança e conforto!</p>
+                <div class="alert alert-warning border-0 rounded-4 shadow-sm p-4 d-flex align-items-center">
+                    <i class="bi bi-truck fs-1 me-4 text-brand"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">Serviço de Taxi Dog</h6>
+                        <p class="small mb-0 opacity-75">Buscamos seu pet em toda a região do ABC e arredores com total segurança.</p>
+                    </div>
                 </div>
             </div>
             
             <div class="col-lg-6">
-                 <h3 class="fw-bold mb-4 text-secondary"><i class="bi bi-chat-dots me-2"></i>Canais Digitais</h3>
-                 <div class="list-group shadow-sm rounded-4 overflow-hidden">
-                      <a href="https://wa.me/5511971061329" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
-                          <i class="bi bi-whatsapp fs-3 me-3" style="color: #25D366;"></i>
-                          <div><strong>WhatsApp Oficial</strong><br><small class="text-muted">(11) 97106-1329</small></div>
+                 <h3 class="fw-bold mb-4 text-secondary"><i class="bi bi-chat-heart-fill me-2 text-brand"></i>Canais Digitais</h3>
+                 <div class="list-group">
+                      <a href="https://wa.me/5511971061329" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                          <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                              <i class="bi bi-whatsapp fs-4 text-success"></i>
+                          </div>
+                          <div><strong>WhatsApp Oficial</strong><br><small class="text-muted">Respostas em até 15 minutos</small></div>
                       </a>
                       
-                      <a href="#" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
-                          <i class="bi bi-instagram fs-3 me-3" style="color: #E4405F;"></i>
-                          <div><strong>Instagram</strong><br><small class="text-muted">@regiaetinascare</small></div>
+                      <a href="#" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                          <div class="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+                              <i class="bi bi-instagram fs-4 text-danger"></i>
+                          </div>
+                          <div><strong>Instagram</strong><br><small class="text-muted">Siga @regiaetinascare</small></div>
                       </a>
 
-                      <a href="#" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
-                          <i class="bi bi-facebook fs-3 me-3" style="color: #1877F2;"></i>
-                          <div><strong>Facebook</strong><br><small class="text-muted">/regiaetinasscare</small></div>
-                      </a>
-                      
-                      <a href="mailto:contato@regiaetinas.com.br" class="list-group-item list-group-item-action d-flex align-items-center">
-                          <i class="bi bi-envelope-at-fill fs-3 me-3 text-brand"></i>
-                          <div><strong>E-mail de Contato</strong><br><small class="text-muted">contato@regiaetinas.com.br</small></div>
+                      <a href="mailto:contato@regiaetinas.com.br" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                          <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                              <i class="bi bi-envelope-heart fs-4 text-primary"></i>
+                          </div>
+                          <div><strong>E-mail de Suporte</strong><br><small class="text-muted">contato@regiaetinas.com.br</small></div>
                       </a>
                  </div>
 
-                 <div class="mt-4 p-4 bg-white rounded-4 shadow-sm border">
-                    <h6 class="fw-bold mb-2">Trabalhe Conosco</h6>
-                    <p class="small text-muted">É apaixonado por animais? Envie seu currículo para nosso e-mail e venha fazer parte da nossa equipe!</p>
+                 <div class="mt-4 p-4 bg-white rounded-4 shadow-sm border-start border-4 border-info">
+                    <h6 class="fw-bold mb-2"><i class="bi bi-briefcase me-2"></i>Trabalhe Conosco</h6>
+                    <p class="small text-muted mb-0">Envie seu currículo e portfólio para o nosso e-mail. Estamos sempre em busca de talentos que amam os animais!</p>
                  </div>
             </div>
         </div>
         
         <div class="row mt-5">
             <div class="col-12">
-                 <h3 class="fw-bold mb-4 text-center text-secondary">Localização no Mapa</h3>
-                 <div class="ratio ratio-21x9 rounded-4 overflow-hidden shadow-lg border">
+                 <h3 class="fw-bold mb-4 text-center text-secondary">Onde nos encontrar</h3>
+                 <div class="map-container">
                       <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3654.5424750275815!2d-46.5647576!3d-23.651199!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce4327429188d3%3A0xc0787e914561066!2sR.%20Luiz%20Fiorotti%2C%20394%20-%20Ol%C3%ADmpico%2C%20S%C3%A3o%20Caetano%20do%20Sul%20-%20SP%2C%2009571-010!5e0!3m2!1spt-BR!2sbr!4v1711750000000!5m2!1spt-BR!2sbr" 
-                        style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                      </iframe>
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3654.857643501708!2d-46.55160862466687!3d-23.645229378742886!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce42d744b8296d%3A0x673994c65369766!2sR.%20Luiz%20Fiorotti%2C%20394%20-%20Ol%C3%ADmpico%2C%20S%C3%A3o%20Caetano%20do%20Sul%20-%20SP%2C%2009540-140!5e0!3m2!1spt-BR!2sbr!4v1715345000000!5m2!1spt-BR!2sbr" 
+                        width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                  </div>
             </div>
         </div>
 
-        <div class="container my-5">
+        <div class="mt-5">
             <h2 class="text-center text-brand fw-bold mb-5 display-6">Nossos Clientes e Amigos</h2>
-            <div class="row g-4">
+            <div class="row g-3">
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal1.webp" alt="Pet 1" class="friend-gallery-img"></div>
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal2.webp" alt="Pet 2" class="friend-gallery-img"></div>
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal3.webp" alt="Pet 3" class="friend-gallery-img"></div>
                 <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal4.webp" alt="Pet 4" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal5.webp" alt="Pet 5" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal6.webp" alt="Pet 6" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal7.webp" alt="Pet 7" class="friend-gallery-img"></div>
-                <div class="col-lg-3 col-md-4 col-6"><img src="../img/animal8.webp" alt="Pet 8" class="friend-gallery-img"></div>
             </div>
         </div>
     </main>
 
     <footer class="main-footer">
         <div class="container">
-            <div class="row footer-links mb-4">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="footer-cta p-4 text-center">
-                        <h5 class="text-white fw-bold mb-2">Dúvidas?</h5>
-                        <p class="text-white-50 small mb-3">Estamos aqui para ajudar você e seu pet.</p>
-                        <a href="contatos.html" class="btn btn-light btn-sm fw-bold rounded-pill px-4">Fale Conosco</a>
-                    </div>
+            <div class="row text-start mb-4">
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3 text-white">Regia & Tinas Care</h5>
+                    <p class="small opacity-75">Sua família pet em boas mãos. Tecnologia e amor unidos pelo bem-estar animal.</p>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Atendimento</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="contatos.html">Ajuda e FAQ</a></li>
-                        <li><a href="../usuario/login.html">Minha Conta</a></li>
+                <div class="col-md-4 mb-4 text-md-center">
+                    <h5 class="mb-3">Acesso Rápido</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="../servicos/veterinaria.html">Clínica 24h</a></li>
+                        <li class="mb-2"><a href="../servicos/hotel.html">Hospedagem VIP</a></li>
+                        <li class="mb-2"><a href="avaliacoes.html">Ver Avaliações</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Nossos Serviços</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="../servicos/veterinaria.html">Veterinária 🐾</a></li>
-                        <li><a href="../servicos/servicos.html">Banho & Tosa</a></li>
-                        <li><a href="../servicos/hotel.html">Hotel Pet</a></li>
-                        <li><a href="../servicos/day_care.html">Day Care</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <h5>Informações Legais</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#">Política de Privacidade</a></li>
-                        <li><a href="lojas.html">Nossas Lojas</a></li>
-                    </ul>
+                <div class="col-md-4 mb-4 text-md-end">
+                    <h5 class="mb-3">Atendimento ABC</h5>
+                    <p class="small mb-1">Unidade São Caetano</p>
+                    <p class="small fw-bold text-brand">(11) 97106-1329</p>
                 </div>
             </div>
-            <hr class="footer-hr">
-            <div class="text-center mt-3 small text-white-50">
-                <p class="mb-1 fw-bold text-white">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
+            <hr class="border-secondary opacity-25">
+            <div class="text-center small opacity-50">
+                <p class="mb-0">© 2026 REGIA & TINA'S CARE | Todos os direitos reservados.</p>
             </div>
         </div>
     </footer>
