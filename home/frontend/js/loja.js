@@ -1,75 +1,77 @@
 /**
- * REGIA & TINAS STORE - Motor do E-commerce
- * Funcionalidades: Vitrine Dinâmica, Busca, Carrinho e LocalStorage
+ * js/loja.js - Localizador de Unidades (Versão Instantânea)
  */
 
-// 1. CONFIGURAÇÃO DE ENDEREÇO DA API
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000" 
-    : "https://regia-tinas.onrender.com";
-
-// 2. ESTADO GLOBAL DA LOJA
-let todosProdutos = [];
-let carrinho = JSON.parse(localStorage.getItem('carrinho_regia')) || [];
-
-document.addEventListener('DOMContentLoaded', () => {
-    carregarProdutos();
-    atualizarBadgeCarrinho();
-    configurarBusca();
-    renderizarCarrinhoLateral();
-});
-
-// --- 3. BUSCA DE DADOS ---
-async function carregarProdutos() {
-    const vitrine = document.getElementById('vitrine-produtos');
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        todosProdutos = await response.json();
-        
-        renderizarVitrine(todosProdutos);
-    } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
-        vitrine.innerHTML = `
-            <div class="text-center p-5">
-                <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
-                <p class="mt-3">Não conseguimos carregar os produtos. Tente novamente mais tarde.</p>
-            </div>`;
+const unidades = [
+    {
+        nome: "Mooca",
+        endereco: "R. do Oratório, 426 - Mooca, São Paulo - SP",
+        telefone: "(11) 99177-0311",
+        mapa: "https://maps.google.com/maps?q=R.%20do%20Orat%C3%B3rio,%20426%20-%20Mooca,%20S%C3%A3o%20Paulo%20-%20SP&t=&z=15&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+        nome: "Tatuapé",
+        endereco: "R. Coelho Lisboa, 739 - Tatuapé, São Paulo - SP",
+        telefone: "(11) 94527-7207",
+        mapa: "https://maps.google.com/maps?q=R.%20Coelho%20Lisboa,%20739%20-%20Tatuap%C3%A9,%20S%C3%A3o%20Paulo%20-%20SP&t=&z=15&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+        nome: "Ipiranga",
+        endereco: "R. Srg. Mor João de Souza, 39 - Ipiranga, São Paulo - SP",
+        telefone: "(11) 2925-3884",
+        mapa: "https://maps.google.com/maps?q=R.%20Srg.%20Mor%20Jo%C3%A3o%20de%20Souza,%2039%20-%20Ipiranga,%20S%C3%A3o%20Paulo%20-%20SP&t=&z=15&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+        nome: "Santos",
+        endereco: "Av. Pres. Wilson, 180 - José Menino, Santos - SP",
+        telefone: "(13) 97424-2956",
+        mapa: "https://maps.google.com/maps?q=Av.%20Pres.%20Wilson,%20180%20-%20Jos%C3%A9%20Menino,%20Santos%20-%20SP&t=&z=15&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+        nome: "Mega Pet Curitiba",
+        endereco: "R. das Araucárias, 70 - Curitiba, PR",
+        telefone: "(41) 9876-54321",
+        mapa: "https://maps.google.com/maps?q=R.%20das%20Arauc%C3%A1rias,%2070%20-%20Curitiba,%20PR&t=&z=15&ie=UTF8&iwloc=&output=embed"
     }
-}
+];
 
-// --- 4. RENDERIZAÇÃO DA VITRINE ---
-function renderizarVitrine(lista) {
-    const vitrine = document.getElementById('vitrine-produtos');
-    
-    if (lista.length === 0) {
-        vitrine.innerHTML = '<div class="text-center p-5"><p class="text-muted">Nenhum produto encontrado.</p></div>';
-        return;
-    }
+function renderizarLojas() {
+    const container = document.getElementById('lista-unidades');
+    if (!container) return;
 
-    vitrine.innerHTML = lista.map(p => {
-        // Lógica de Preço Promocional
-        const temPromo = p.preco_promocional && p.preco_promocional < p.preco;
-        const precoExibicao = temPromo ? p.preco_promocional : p.preco;
+    container.innerHTML = unidades.map(loja => {
+        // Link real para abrir o aplicativo do Google Maps ou Waze
+        const linkDiretoMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loja.endereco)}`;
 
         return `
-            <div class="col-6 col-md-4 col-lg-3 mb-4">
-                <div class="product-card shadow-sm">
-                    <div class="card-img-container">
-                        <img src="${p.url_imagem || 'img/placeholder-pet.png'}" alt="${p.nome_produto}">
-                    </div>
-                    <div class="p-3">
-                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">${p.marca || 'Regia & Tinas'}</small>
-                        <h6 class="fw-bold mb-2 text-truncate">${p.nome_produto}</h6>
-                        
-                        <div class="mb-3">
-                            ${temPromo ? `<span class="text-decoration-line-through text-muted small">R$ ${p.preco}</span>` : ''}
-                            <div class="fs-5 fw-bold text-brand">R$ ${precoExibicao.toFixed(2)}</div>
+            <div class="col-lg-11 mb-4">
+                <div class="store-card">
+                    <div class="row g-0">
+                        <div class="col-md-6 info-unidade d-flex flex-column justify-content-center">
+                            <h2 class="fw-bold text-brand mb-3">Unidade ${loja.nome}</h2>
+                            
+                            <p class="fs-5 text-muted mb-4">
+                                <i class="bi bi-geo-alt-fill me-2 text-brand"></i>${loja.endereco}
+                            </p>
+                            
+                            <div class="mb-4">
+                                <span class="small fw-bold text-secondary text-uppercase d-block mb-1">Fale Conosco:</span>
+                                <span class="fs-4 fw-bold">${loja.telefone}</span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="${linkDiretoMaps}" target="_blank" class="btn-maps">
+                                    <i class="bi bi-cursor-fill me-2"></i>COMO CHEGAR
+                                </a>
+                                <a href="https://wa.me/55${loja.telefone.replace(/\D/g, '')}" target="_blank" class="btn btn-outline-success rounded-pill px-4 fw-bold">
+                                    <i class="bi bi-whatsapp me-2"></i>WHATSAPP
+                                </a>
+                            </div>
                         </div>
-
-                        <button class="btn btn-brand w-100 btn-sm" onclick="adicionarAoCarrinho(${p.id_produto})">
-                            <i class="bi bi-plus-lg me-1"></i> Comprar
-                        </button>
+                        
+                        <div class="col-md-6">
+                            <iframe class="map-container" src="${loja.mapa}" allowfullscreen loading="lazy"></iframe>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -77,111 +79,5 @@ function renderizarVitrine(lista) {
     }).join('');
 }
 
-// --- 5. LÓGICA DO CARRINHO (LocalStorage) ---
-window.adicionarAoCarrinho = (id) => {
-    const produto = todosProdutos.find(p => p.id_produto === id);
-    if (!produto) return;
-
-    const itemExistente = carrinho.find(item => item.id_produto === id);
-
-    if (itemExistente) {
-        itemExistente.quantidade += 1;
-    } else {
-        carrinho.push({
-            id_produto: produto.id_produto,
-            nome: produto.nome_produto,
-            preco: produto.preco_promocional || produto.preco,
-            imagem: produto.url_imagem,
-            quantidade: 1
-        });
-    }
-
-    salvarCarrinho();
-    mostrarToast(`${produto.nome_produto} adicionado!`);
-};
-
-function salvarCarrinho() {
-    localStorage.setItem('carrinho_regia', JSON.stringify(carrinho));
-    atualizarBadgeCarrinho();
-    renderizarCarrinhoLateral();
-}
-
-function atualizarBadgeCarrinho() {
-    const badge = document.getElementById('carrinho-count');
-    const totalItens = carrinho.reduce((sum, item) => sum + item.quantidade, 0);
-    badge.innerText = totalItens;
-    badge.style.display = totalItens > 0 ? 'block' : 'none';
-}
-
-// --- 6. RENDERIZAR CARRINHO LATERAL (OFFCANVAS) ---
-function renderizarCarrinhoLateral() {
-    const container = document.getElementById('itens-carrinho');
-    const totalEl = document.getElementById('carrinho-total');
-
-    if (carrinho.length === 0) {
-        container.innerHTML = '<p class="text-center text-muted mt-5">Seu carrinho está vazio.</p>';
-        totalEl.innerText = 'R$ 0,00';
-        return;
-    }
-
-    let totalGeral = 0;
-
-    container.innerHTML = carrinho.map(item => {
-        const subtotal = item.preco * item.quantidade;
-        totalGeral += subtotal;
-
-        return `
-            <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
-                <img src="${item.imagem}" width="50" height="50" class="rounded me-3" style="object-fit: cover;">
-                <div class="flex-grow-1">
-                    <h6 class="mb-0 small fw-bold">${item.nome}</h6>
-                    <small class="text-muted">${item.quantidade}x R$ ${item.preco.toFixed(2)}</small>
-                </div>
-                <div class="text-end">
-                    <button class="btn btn-sm text-danger" onclick="removerItem(${item.id_produto})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    totalEl.innerText = `R$ ${totalGeral.toFixed(2)}`;
-}
-
-window.removerItem = (id) => {
-    carrinho = carrinho.filter(item => item.id_produto !== id);
-    salvarCarrinho();
-};
-
-// --- 7. BUSCA E FILTROS ---
-function configurarBusca() {
-    const inputBusca = document.getElementById('input-busca-loja');
-    inputBusca.addEventListener('input', (e) => {
-        const termo = e.target.value.toLowerCase();
-        const filtrados = todosProdutos.filter(p => 
-            p.nome_produto.toLowerCase().includes(termo) || 
-            (p.marca && p.marca.toLowerCase().includes(termo))
-        );
-        renderizarVitrine(filtrados);
-    });
-}
-
-// --- 8. FINALIZAÇÃO ---
-window.finalizarCompra = () => {
-    if (carrinho.length === 0) {
-        alert("O carrinho está vazio!");
-        return;
-    }
-    // Redireciona para a página de checkout (que faremos a seguir)
-    window.location.href = 'checkout.html';
-};
-
-// Utilitário para Feedback
-function mostrarToast(msg) {
-    const toastEl = document.getElementById('liveToast');
-    const toastMsg = document.getElementById('toast-mensagem');
-    toastMsg.innerText = msg;
-    const toast = new bootstrap.Toast(toastEl);
-    toast.show();
-}
+// Dispara a renderização assim que o script carregar
+renderizarLojas();

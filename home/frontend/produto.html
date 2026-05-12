@@ -14,8 +14,71 @@
             --brand-pink-hover: #e57585;
             --bg-light: #f8f9fa;
         }
-        body { background-color: var(--bg-light); }
-        .bg-brand { background-color: var(--brand-pink) !important; }
+        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; }
+
+        /* --- NAVBAR CENTRALIZADA (ESTILO APP) --- */
+        .navbar-custom {
+            background-color: var(--brand-pink);
+            height: 65px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 0 15px;
+        }
+
+        /* Título no Centro Exato */
+        .brand-title {
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-decoration: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+        .brand-title:hover { color: white; }
+
+        /* Seta na Esquerda */
+        .back-arrow-left {
+            color: white;
+            font-size: 2.5rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            transition: 0.3s;
+        }
+        .back-arrow-left:hover {
+            color: #f8f9fa;
+            transform: translateX(-3px);
+        }
+
+        /* --- ELEMENTOS DA PÁGINA --- */
+        .product-main-img {
+            max-width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: white;
+            padding: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
         .text-brand { color: var(--brand-pink) !important; }
         
         .btn-brand {
@@ -23,6 +86,8 @@
             color: white;
             font-weight: bold;
             border: none;
+            border-radius: 30px;
+            padding: 15px;
             transition: 0.3s;
         }
         .btn-brand:hover {
@@ -33,39 +98,32 @@
 
         .btn-outline-brand {
             color: var(--brand-pink);
-            border-color: var(--brand-pink);
+            border: 2px solid var(--brand-pink);
+            border-radius: 30px;
+            font-weight: bold;
         }
         .btn-outline-brand:hover {
             background-color: var(--brand-pink);
             color: white;
         }
-
-        .product-main-img {
-            max-width: 100%;
-            height: auto;
-            max-height: 400px;
-            object-fit: contain;
-            border-radius: 12px;
-            background: white;
-            padding: 1rem;
-        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg bg-brand shadow-sm">
-        <div class="container">
-            <a class="btn text-white d-flex align-items-center fw-bold" href="javascript:history.back()">
-                <i class="bi bi-arrow-left me-2"></i>Voltar
+
+    <header class="navbar-custom">
+        <div class="container navbar-container">
+            <a href="index.html" class="back-arrow-left">
+                <i class="bi bi-arrow-left-short"></i>
             </a>
-            <a class="navbar-brand fw-bold text-white mx-auto" href="index.html">Detalhes do Produto</a>
-            <div style="width: 80px;"></div> </div>
-    </nav>
+            <a href="index.html" class="brand-title">REGIA & TINAS CARE</a>
+        </div>
+    </header>
 
     <main class="container my-5">
-        <div id="product-detail-container" class="row bg-white p-4 rounded-4 shadow-sm align-items-center">
+        <div id="product-detail-container" class="row bg-white p-4 p-md-5 rounded-4 shadow-sm align-items-center">
             <div class="col-12 text-center py-5">
                 <div class="spinner-border text-brand" role="status" style="width: 3rem; height: 3rem;"></div>
-                <p class="mt-3 text-muted fw-bold">Buscando produto...</p>
+                <p class="mt-3 text-muted fw-bold">Localizando produto no estoque...</p>
             </div>
         </div>
 
@@ -78,16 +136,16 @@
     </main>
 
     <section class="container my-5">
-        <h3 class="mb-4 fw-bold text-secondary border-bottom pb-2">Produtos Relacionados</h3>
+        <h3 class="mb-4 fw-bold text-secondary border-bottom pb-2">Quem viu este, também amou:</h3>
         <div id="related-products-container" class="row row-cols-2 row-cols-md-4 g-4">
             </div>
     </section>
 
     <footer class="main-footer pt-5 pb-4 bg-dark text-white mt-5">
-        <div class="container">
-            <div class="text-center small text-white-50">
-                <p class="mb-1">REGIA & TINA'S CARE | CNPJ: 10.864.846/0001-23</p>
-                <p class="mb-0">© Copyright 2026 - Todos os direitos reservados.</p>
+        <div class="container text-center">
+            <div class="small text-white-50">
+                <p class="mb-1 fw-bold">REGIA & TINA'S CARE</p>
+                <p class="mb-0">© 2026 - Qualidade em cada detalhe para seu pet.</p>
             </div>
         </div>
     </footer>

@@ -64,7 +64,6 @@
 
         #senha { padding-right: 45px; }
 
-        /* O OLHINHO MÁGICO */
         .eye-icon {
             position: absolute;
             right: 15px;
@@ -82,7 +81,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px; /* Aumentei um pouco o espaço aqui */
             color: white;
             font-size: 0.9rem;
         }
@@ -118,49 +117,6 @@
             cursor: pointer;
         }
         .btn-solid:hover { background-color: #f8f9fa; transform: scale(1.05); }
-
-        /* Redes Sociais */
-        .divider {
-            text-align: center;
-            margin: 25px 0 15px;
-            position: relative;
-        }
-        .divider::before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            border-top: 1px solid rgba(255,255,255,0.3);
-            z-index: 1;
-        }
-        .divider span {
-            color: #ffffff;
-            background-color: var(--brand-pink);
-            padding: 0 15px;
-            position: relative;
-            z-index: 2;
-            font-size: 0.9rem;
-        }
-
-        .social-login {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        .social-login a {
-            background: white;
-            padding: 10px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.3s;
-            width: 45px;
-            height: 45px;
-        }
-        .social-login a:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .social-login img { width: 25px; height: 25px; object-fit: contain; }
     </style>
 </head>
 <body>
@@ -193,17 +149,6 @@
                     <button type="submit" class="btn-solid">ENTRAR</button>
                 </div>
             </form>
-
-            <div class="divider"><span>Ou acesse com</span></div>
-
-            <div class="social-login">
-                <a href="#" title="Login com Google" onclick="alert('Função em desenvolvimento!')">
-                    <img src="../img/google.png" alt="G" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2991/2991148.png'">
-                </a>
-                <a href="#" title="Login com Facebook" onclick="alert('Função em desenvolvimento!')">
-                    <img src="../img/facebook.png" alt="F" onerror="this.src='https://cdn-icons-png.flaticon.com/512/124/124010.png'">
-                </a>
-            </div>
 
         </div> 
     </div>

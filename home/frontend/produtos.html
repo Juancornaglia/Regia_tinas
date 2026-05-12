@@ -21,26 +21,69 @@
             font-family: 'Poppins', sans-serif;
         }
 
-        .bg-brand { background-color: var(--brand-pink) !important; }
-        .text-brand { color: var(--brand-pink) !important; }
-
-        .btn-brand {
+        /* --- NAVBAR CENTRALIZADA (ESTILO APP) --- */
+        .navbar-custom {
             background-color: var(--brand-pink);
+            height: 65px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 0 15px;
+        }
+
+        /* Título no Centro Exato */
+        .brand-title {
             color: white;
             font-weight: bold;
-            border: none;
+            font-size: 1.2rem;
+            text-decoration: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+        .brand-title:hover { color: white; }
+
+        /* Seta na Esquerda */
+        .back-arrow-left {
+            color: white;
+            font-size: 2.5rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            z-index: 10;
             transition: 0.3s;
         }
-        .btn-brand:hover {
-            background-color: var(--brand-pink-hover);
-            color: white;
-            transform: translateY(-2px);
+        .back-arrow-left:hover {
+            color: #f8f9fa;
+            transform: translateX(-3px);
         }
 
+        .text-brand { color: var(--brand-pink) !important; }
+
+        /* Estilo dos Cards */
         .product-card-hover {
             transition: all 0.3s ease-in-out;
             text-decoration: none;
             color: inherit;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            background: white;
+            display: block;
         }
         .product-card-hover:hover {
             transform: translateY(-5px);
@@ -50,23 +93,19 @@
 </head>
 <body>
 
-    <header class="bg-brand p-3 shadow-sm">
-        <div class="container d-flex justify-content-between align-items-center">
-            <a href="index.html" class="h4 text-white text-decoration-none fw-bold mb-0">
-                <img src="img/logo_pequena4.png" alt="Logo" style="height: 35px; margin-right: 10px;">
-                Regia & Tinas Care
+    <header class="navbar-custom">
+        <div class="container navbar-container">
+            <a href="index.html" class="back-arrow-left">
+                <i class="bi bi-arrow-left-short"></i>
             </a>
-            <nav>
-                <a href="index.html" class="nav-link text-white d-inline me-3">Home</a>
-                <a href="produtos.html" class="nav-link text-white d-inline fw-bold me-3">Produtos</a>
-            </nav>
+            <a href="index.html" class="brand-title">REGIA & TINAS CARE</a>
         </div>
     </header>
 
     <main class="container my-5">
         <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
             <h1 class="text-brand fw-bold mb-0">Catálogo de Produtos</h1>
-            <span class="text-muted small">Encontre o melhor para o seu pet!</span>
+            <span class="text-muted small d-none d-md-inline">O melhor para o seu pet está aqui!</span>
         </div>
         
         <div id="product-list-container" class="row g-4">
@@ -75,17 +114,21 @@
                 <div class="spinner-border text-brand" style="width: 3rem; height: 3rem;" role="status">
                     <span class="visually-hidden">Carregando...</span>
                 </div>
-                <p class="mt-3 text-muted fw-bold">Buscando produtos...</p>
+                <p class="mt-3 text-muted fw-bold">Buscando produtos no estoque...</p>
             </div>
 
             <div id="no-products" class="col-12 text-center p-5 text-muted" style="display: none;">
                 <i class="bi bi-box-seam" style="font-size: 4rem; color: #FE8697;"></i>
-                <h4 class="mt-3 fw-bold">Nenhum produto encontrado.</h4>
-                <p>Volte novamente mais tarde para conferir as novidades.</p>
+                <h4 class="mt-3 fw-bold">Nenhum produto disponível.</h4>
+                <p>Verifique a conexão ou volte mais tarde.</p>
             </div>
 
         </div>
     </main>
+
+    <footer class="text-center py-5 text-muted small border-top bg-white mt-5">
+        <p>© 2026 Regia & Tinas Care - Qualidade e Carinho.</p>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/produtos.js" type="module"></script>
