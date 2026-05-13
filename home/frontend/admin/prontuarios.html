@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prontuários | Regia & Tinas Care</title>
+    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <style>
+        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f4f6f9; }
+        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; }
+        .brand-pink { color: var(--brand-pink); }
+        .bg-brand-pink { background-color: var(--brand-pink) !important; color: white; }
+        
+        /* Layout Sidebar */
+        .admin-sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: #1e272e; display: flex; flex-direction: column; z-index: 1000; }
+        .admin-main-content { margin-left: 260px; padding: 40px; min-height: 100vh; }
+        
+        .mascote-header { font-size: 1.8rem; }
+        .nav-link { border-radius: 10px; margin: 2px 10px; transition: 0.3s; color: #a4b0be; }
+        .nav-link.active { background: var(--brand-pink) !important; color: white !important; }
+        .nav-link:hover:not(.active) { background: rgba(254, 134, 151, 0.1); color: var(--brand-pink); }
+        .nav-section-title { font-size: 0.75rem; letter-spacing: 1px; color: #747d8c; margin-top: 1.5rem; padding: 0 1.5rem; }
+
+        /* Prontuario Styles */
+        .search-container { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; }
+        .pet-header { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .pet-header::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background-color: var(--brand-pink); }
+        
+        .timeline { position: relative; padding-left: 30px; margin-top: 20px; }
+        .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #dfe6e9; }
+        
+        .timeline-item { position: relative; margin-bottom: 25px; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .timeline-icon { position: absolute; left: -42px; top: 15px; width: 26px; height: 26px; border-radius: 50%; background: var(--brand-pink); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; z-index: 1; border: 3px solid #f4f6f9; }
+        
+        .icon-vacina { background-color: #198754; }
+        .icon-consulta { background-color: #0d6efd; }
+        .icon-alergia { background-color: #dc3545; }
+        
+        .btn-brand { background-color: var(--brand-pink); color: white; border-radius: 25px; padding: 10px 25px; font-weight: bold; border: none; }
+        .btn-brand:hover { background-color: var(--brand-pink-hover); color: white; }
+    </style>
+</head>
+<body>
+
+    <aside class="admin-sidebar shadow-lg">
+        <div class="sidebar-header text-center p-4">
+            <div class="mascote-header mb-2">👑</div>
+            <h4 class="fw-bold text-white mb-0">Regia & Tinas</h4>
+            <small class="text-white-50">ADMIN MASTER</small>
+        </div>
+        
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-grid-1x2-fill me-2"></i>Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link text-white-50" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
+            
+            <li class="nav-section-title text-uppercase fw-bold">Operacional (Equipe)</li>
+            <li class="nav-item"><a class="nav-link text-white-50" href="operacional_atendimento.html"><i class="bi bi-person-badge me-2"></i>Fila de Atendimento</a></li>
+            <li class="nav-item"><a class="nav-link active" href="prontuarios.html"><i class="bi bi-journal-medical me-2"></i>Prontuários / Vet</a></li>
+            
+            <li class="nav-section-title text-uppercase fw-bold">Administrativo</li>
+            <li class="nav-item"><a class="nav-link text-white-50" href="gestao_usuarios.html"><i class="bi bi-people-fill me-2"></i>Usuários e RH</a></li>
+            <li class="nav-item"><a class="nav-link text-white-50" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
+            <li class="nav-item"><a class="nav-link text-white-50" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Marketing</a></li>
+        </ul>
+
+        <div class="p-3 mt-auto">
+            <button class="btn btn-outline-danger w-100 rounded-pill btn-sm fw-bold shadow-sm" onclick="location.href='../usuario/login.html'"><i class="bi bi-box-arrow-right me-2"></i>Sair do Turno</button>
+        </div>
+    </aside>
+
+    <main class="admin-main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-0">Prontuário Médico 🩺</h2>
+                <p class="text-muted">Busque o histórico de saúde, vacinas e consultas dos pets.</p>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container d-flex gap-3">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-0 bg-light" placeholder="Buscar por Nome do Pet, CPF ou Nome do Tutor...">
+            </div>
+            <button class="btn btn-brand">Buscar</button>
+        </div>
+
+        <!-- Perfil do Pet Encontrado (Mock) -->
+        <div class="pet-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-4">
+                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="bi bi-bandaid fs-1 text-brand"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1">Thor</h3>
+                    <p class="text-muted mb-0">Golden Retriever • Macho • 32.5 kg • Nasc: 10/05/2021</p>
+                    <div class="mt-2">
+                        <span class="badge bg-light text-dark border me-2"><i class="bi bi-person me-1"></i> Tutor: Ricardo Alves</span>
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Alergia a shampoo coco</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-brand" data-bs-toggle="modal" data-bs-target="#modalNovoRegistro">
+                    <i class="bi bi-plus-lg me-2"></i>Novo Registro
+                </button>
+            </div>
+        </div>
+
+        <!-- Histórico Clínico -->
+        <div class="row mt-4">
+            <div class="col-lg-8">
+                <h5 class="fw-bold mb-3">Histórico de Atendimentos</h5>
+                
+                <div class="timeline">
+                    <!-- Consulta -->
+                    <div class="timeline-item">
+                        <div class="timeline-icon icon-consulta"><i class="bi bi-stethoscope"></i></div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">Consulta Clínica de Rotina</h6>
+                            <small class="text-muted fw-bold">15/05/2026</small>
+                        </div>
+                        <p class="text-muted small mb-2">Check-up anual. Coração e pulmões normais. Peso mantido.</p>
+                        <small class="text-secondary"><i class="bi bi-person-badge me-1"></i>Dra. Ana Paula Silva (CRMV/SP)</small>
+                    </div>
+
+                    <!-- Vacina -->
+                    <div class="timeline-item">
+                        <div class="timeline-icon icon-vacina"><i class="bi bi-hypnotize"></i></div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">Vacinação - V10</h6>
+                            <small class="text-muted fw-bold">10/05/2025</small>
+                        </div>
+                        <p class="text-muted small mb-2">Aplicação de reforço anual da vacina V10 importada. Sem reações adversas na aplicação.</p>
+                        <span class="badge bg-warning text-dark"><i class="bi bi-calendar-event me-1"></i>Próximo Vencimento: 10/05/2026</span>
+                    </div>
+
+                    <!-- Alergia/Incidente -->
+                    <div class="timeline-item">
+                        <div class="timeline-icon icon-alergia"><i class="bi bi-exclamation-lg"></i></div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">Reação Alérgica Dermatológica</h6>
+                            <small class="text-muted fw-bold">02/11/2024</small>
+                        </div>
+                        <p class="text-muted small mb-2">Apresentou vermelhidão e coceira após banho com shampoo de essência de coco. Recomendado uso restrito de shampoo hipoalergênico.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados Rápidos -->
+            <div class="col-lg-4">
+                <div class="bg-white p-4 rounded-4 shadow-sm mb-4">
+                    <h6 class="fw-bold border-bottom pb-2 mb-3">Resumo de Saúde</h6>
+                    <ul class="list-unstyled small text-muted">
+                        <li class="mb-2 d-flex justify-content-between"><span>Vermífugo em dia:</span> <i class="bi bi-check-circle-fill text-success"></i></li>
+                        <li class="mb-2 d-flex justify-content-between"><span>Antipulgas em dia:</span> <i class="bi bi-check-circle-fill text-success"></i></li>
+                        <li class="mb-2 d-flex justify-content-between"><span>Castrado:</span> <span class="fw-bold">Não</span></li>
+                        <li class="d-flex justify-content-between"><span>Microchip:</span> <span class="fw-bold">9820004051112</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Novo Registro Médico -->
+    <div class="modal fade" id="modalNovoRegistro" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="fw-bold">Adicionar Evolução / Registro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Tipo de Registro</label>
+                                <select class="form-select bg-light border-0">
+                                    <option value="consulta">Consulta</option>
+                                    <option value="vacina">Vacina</option>
+                                    <option value="medicamento">Medicamento</option>
+                                    <option value="alergia">Alergia</option>
+                                    <option value="comportamento">Comportamento (Hotel/DayCare)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Data do Registro</label>
+                                <input type="date" class="form-control bg-light border-0" value="2026-05-15">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Descrição Clínica / Observação</label>
+                            <textarea class="form-control bg-light border-0" rows="5" placeholder="Descreva os sintomas, diagnósticos ou vacinas aplicadas..."></textarea>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Data Próximo Vencimento (Opcional)</label>
+                                <input type="date" class="form-control bg-light border-0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Peso Registrado (Kg)</label>
+                                <input type="number" step="0.1" class="form-control bg-light border-0" placeholder="Ex: 32.5">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-brand w-100 py-3">Salvar no Prontuário</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/dash_funcionario.js"></script>
+    <div class="modal fade" id="modalAssinaturaFuncionario" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white border-0 p-3">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock-fill me-2 text-warning"></i>Autorização Necessária</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center bg-light">
+                    <p class="text-muted small mb-3">Para confirmar esta ação, digite o seu <strong>CPF</strong>.</p>
+                    <input type="text" id="input-cpf-funcionario" class="form-control text-center fw-bold fs-5 mb-3 rounded-pill" placeholder="000.000.000-00" autocomplete="off" maxlength="14">
+                    <button id="btn-confirmar-acao" class="btn bg-brand-pink text-white w-100 fw-bold rounded-pill shadow-sm">VALIDAR E EXECUTAR</button>
+                    <div id="erro-validacao" class="text-danger small fw-bold mt-2" style="display: none;">
+                        <i class="bi bi-x-circle me-1"></i>CPF não encontrado ou inválido!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

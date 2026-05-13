@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
+from flask import Flask, send_from_directory # Verifique se o send_from_directory está aqui!
 from werkzeug.security import check_password_hash, generate_password_hash
 
 # Importação centralizada da sua função de query
@@ -44,9 +45,22 @@ HORA_INICIO_PADRAO = time(9, 0)
 HORA_FIM_PADRAO = time(18, 0)
 INTERVALO_SLOT_MINUTOS = 30 
 
+# Rota para a Página Inicial (Home)
 @app.route('/')
-def index():
-    return send_from_directory(FRONTEND_DIR, 'index.html')
+def home():
+    # Ele vai na pasta 'ecommerce' e entrega apenas o 'index.html'
+    return send_from_directory('ecommerce', 'index.html')
+
+# Rota para a Página de Busca
+@app.route('/busca')
+def busca():
+    # Quando o cara digitar site.com/busca, ele entrega o 'busca.html'
+    return send_from_directory('ecommerce', 'busca.html')
+
+# Rota para o Catálogo (Aquela que unificamos)
+@app.route('/catalogo')
+def catalogo():
+    return send_from_directory('ecommerce', 'catalogo.html')
 
 @app.route('/img/<path:filename>')
 def imagens(filename):

@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('email');
     const rememberCheckbox = document.getElementById('remember');
     
-    // Verificação de segurança para o botão
     const submitButton = loginForm?.querySelector('button[type="submit"]');
 
     // 1. LEMBRAR DE MIM
@@ -23,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rememberCheckbox) rememberCheckbox.checked = true;
     }
 
-    // 2. LÓGICA DO OLHINHO DE SENHA
+    // 2. OLHINHO DE SENHA
     if (togglePassword && passwordInput) {
         togglePassword.addEventListener('click', function () {
             const isPassword = passwordInput.type === 'password';
@@ -48,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem('lembrar_email');
             }
 
-            // Bloqueio visual
             submitButton.disabled = true;
             submitButton.textContent = 'VALIDANDO...';
 
@@ -66,29 +64,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // --- SUCESSO: GRAVA A SESSÃO ---
-                // Salvamos também o ID do perfil para usar nas consultas do dashboard
                 localStorage.setItem('usuario_id', data.id);
                 localStorage.setItem('usuario_nome', data.nome);
                 
-                // Convertemos para minúsculo para evitar erro de digitação no banco (Ex: Admin vs admin)
                 const userRole = data.role ? data.role.toLowerCase() : 'cliente';
                 localStorage.setItem('usuario_role', userRole);
 
                 console.log("Login realizado! Cargo detectado:", userRole);
 
-                // --- 4. REDIRECIONAMENTO POR CARGO ---
-                // Adicionei logs para você ver no F12 o que está acontecendo
+                // --- 4. REDIRECIONAMENTO POR CARGO (CAMINHOS CORRIGIDOS) ---
+                // Saímos da pasta /auth/ para entrar na pasta correta
+                
                 if (userRole === 'admin') {
                     console.log("Redirecionando para Dashboard Admin...");
                     window.location.href = '../admin/dashboard.html';
                 } 
                 else if (userRole === 'funcionario') {
-                    console.log("Redirecionando para Área do Funcionário...");
-                    window.location.href = '../admin/funcionario.html';
+                    console.log("Redirecionando para Painel Operacional...");
+                    // Corrigido para a sua nova pasta funcionario/
+                    window.location.href = '../funcionario/dash_funcionario.html';
                 } 
                 else {
-                    console.log("Redirecionando para Perfil Cliente...");
-                    window.location.href = 'perfil.html';
+                    console.log("Redirecionando para E-commerce...");
+                    // Clientes voltam para a vitrine principal
+                    window.location.href = '../ecommerce/index1.html';
                 }
 
             } catch (error) {
