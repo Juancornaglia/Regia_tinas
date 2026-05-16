@@ -46,8 +46,8 @@ HORA_FIM_PADRAO = time(18, 0)
 INTERVALO_SLOT_MINUTOS = 30 
 
 @app.route('/')
-def home():
-    return send_from_directory(FRONTEND_DIR, 'index1.html')
+def index():
+    return send_from_directory(FRONTEND_DIR, 'index.html')
 
 @app.route('/busca')
 def busca():
