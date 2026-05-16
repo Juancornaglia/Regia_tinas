@@ -1,6 +1,6 @@
 /**
  * js/catalogo.js - E-commerce SPA (Single Page Application)
- * Conectado ao banco Neon + Funcionalidade de Favoritos e Carrinho
+ * Conectado ao banco Neon + Alinhado com as chaves Regia & Tinas Care
  */
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -11,7 +11,7 @@ let produtosNoEstoque = [];
 let produtoAbertoAtualmente = null;
 
 // ==========================================
-// 1. UTILITÁRIOS (Preço e Favoritos)
+// 1. UTILITÁRIOS (Preço e Favoritos Alinhados com a Home)
 // ==========================================
 function formatPrice(price) {
     const valor = parseFloat(price);
@@ -19,8 +19,9 @@ function formatPrice(price) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function getFavorites() { return JSON.parse(localStorage.getItem('chateau_favorites')) || []; }
-function saveFavorites(favs) { localStorage.setItem('chateau_favorites', JSON.stringify(favs)); }
+// CORREÇÃO: Agora usa a mesma chave do home.js para sincronizar os corações!
+function getFavorites() { return JSON.parse(localStorage.getItem('regia_tinas_favorites')) || []; }
+function saveFavorites(favs) { localStorage.setItem('regia_tinas_favorites', JSON.stringify(favs)); }
 
 // ==========================================
 // 2. CARREGAMENTO DA VITRINE PRINCIPAL
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', carregarVitrine);
 
 async function carregarVitrine() {
     const container = document.getElementById('vitrine-produtos');
+    if (!container) return;
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
@@ -40,7 +42,7 @@ async function carregarVitrine() {
         if (produtosNoEstoque.length === 0) {
             container.innerHTML = `
                 <div class="col-12 text-center p-5 text-muted">
-                    <i class="bi bi-box-seam" style="font-size: 4rem; color: var(--brand-pink);"></i>
+                    <i class="bi bi-box-seam" style="font-size: 4rem; color: #FE8697;"></i>
                     <h4 class="mt-3 fw-bold">Nenhum produto disponível no momento.</h4>
                 </div>`;
             return;
@@ -49,8 +51,13 @@ async function carregarVitrine() {
         container.innerHTML = produtosNoEstoque.map(p => {
             const id = p.id_produto || p.id;
             const nome = p.nome_produto || 'Produto sem nome';
+            
+            // CORREÇÃO: Caminho corrigido de ../img/ para img/ porque os ficheiros mudaram de pasta
             let img = p.url_imagem || 'img/logo_pequena4.png';
-            if (img && !img.startsWith('http')) img = '../img/' + img; // Ajuste de rota
+            if (img && !img.startsWith('http') && !img.startsWith('img/')) {
+                img = 'img/' + img; 
+            }
+            
             const marca = p.marca || 'Regia & Tinas';
             
             const precoBase = parseFloat(p.preco) || 0;
@@ -63,21 +70,21 @@ async function carregarVitrine() {
             else if (p.quantidade_estoque < 5) badgeEstoque = '<span class="badge bg-danger position-absolute top-0 end-0 m-2">Últimas unidades!</span>';
 
             return `
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="product-card shadow-sm border-0 rounded-4" onclick="abrirDetalhesProduto('${id}')">
-                        <div class="position-relative text-center bg-white pt-3 img-container">
-                            <img src="${img}" class="product-img" alt="${nome}" onerror="this.src='../img/logo_pequena4.png'">
+                <div class="col-6 col-md-4 col-lg-3 mb-4">
+                    <div class="product-card h-100 shadow-sm border-0 rounded-4 bg-white p-2" onclick="abrirDetalhesProduto('${id}')" style="cursor: pointer;">
+                        <div class="position-relative text-center pt-3 img-container" style="height: 160px; display: flex; align-items: center; justify-content: center;">
+                            <img src="${img}" class="product-img img-fluid" alt="${nome}" style="max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
                             ${badgeEstoque}
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <small class="text-muted text-uppercase fw-bold" style="font-size: 0.6rem;">${marca}</small>
-                            <h6 class="card-title fw-bold mb-2 text-truncate" title="${nome}">${nome}</h6>
+                            <h6 class="card-title fw-bold mb-2 text-truncate" title="${nome}" style="font-size: 0.9rem;">${nome}</h6>
                             <div class="mt-auto">
                                 <div class="mb-2">
                                     ${temPromo ? `<small class="text-muted text-decoration-line-through">${formatPrice(precoBase)}</small>` : '<small class="text-white">&nbsp;</small>'}
-                                    <div class="fs-5 fw-bold" style="color: var(--brand-pink);">${formatPrice(precoFinal)}</div>
+                                    <div class="fs-5 fw-bold" style="color: #FE8697;">${formatPrice(precoFinal)}</div>
                                 </div>
-                                <button class="btn btn-brand w-100 rounded-pill btn-sm fw-bold py-2">VER DETALHES</button>
+                                <button class="btn btn-sm w-100 rounded-pill fw-bold py-2 text-white" style="background-color: #FE8697;">VER DETALHES</button>
                             </div>
                         </div>
                     </div>
@@ -86,11 +93,12 @@ async function carregarVitrine() {
         }).join('');
 
     } catch (error) {
+        console.error("Erro na vitrine:", error);
         container.innerHTML = `
             <div class="col-12 text-center py-5">
                 <i class="bi bi-wifi-off fs-1 text-muted"></i>
                 <h5 class="mt-3 fw-bold">Não foi possível carregar os produtos.</h5>
-                <button class="btn btn-outline-brand btn-sm mt-2 rounded-pill" onclick="location.reload()">Tentar Novamente</button>
+                <button class="btn btn-outline-secondary btn-sm mt-2 rounded-pill" onclick="location.reload()">Tentar Novamente</button>
             </div>`;
     }
 }
@@ -102,19 +110,22 @@ window.abrirDetalhesProduto = (idStr) => {
     const produto = produtosNoEstoque.find(p => (p.id_produto || p.id).toString() === idStr.toString());
     if (!produto) return;
     
-    produtoAbertoAtualmente = produto; // Salva para o botão de carrinho
+    produtoAbertoAtualmente = produto; 
 
-    // Ajusta Imagem
+    // CORREÇÃO: Caminho da imagem do modal corrigido
     let imgFinal = produto.url_imagem || 'img/logo_pequena4.png';
-    if (!imgFinal.startsWith('http')) imgFinal = '../img/' + imgFinal;
+    if (!imgFinal.startsWith('http') && !imgFinal.startsWith('img/')) {
+        imgFinal = 'img/' + imgFinal;
+    }
 
-    // Ajusta Preços
     const precoBase = parseFloat(produto.preco) || 0;
     const precoPromo = parseFloat(produto.preco_promocional);
     const temPromo = precoPromo && precoPromo < precoBase;
 
     // Preenche a tela do Modal
-    document.getElementById('modal-img').src = imgFinal;
+    const modalImgElement = document.getElementById('modal-img');
+    if (modalImgElement) modalImgElement.src = imgFinal;
+    
     document.getElementById('modal-categoria').innerText = produto.tipo_produto || 'Geral';
     document.getElementById('modal-codigo').innerText = produto.id_produto || produto.id;
     document.getElementById('modal-nome').innerText = produto.nome_produto;
@@ -132,10 +143,9 @@ window.abrirDetalhesProduto = (idStr) => {
         descBox.innerHTML = produto.descricao || 'Nenhuma informação adicional disponível para este produto.';
     }
 
-    // Botão de Favorito (Coração)
     atualizarIconeFavorito(produto.id_produto || produto.id);
 
-    // Mostra o Modal
+    // Mostra o Modal do Bootstrap
     const modalElement = document.getElementById('modalProduto');
     if (modalElement) {
         const modalInstance = new bootstrap.Modal(modalElement);
@@ -153,10 +163,10 @@ window.toggleFavorito = () => {
     const id = produtoAbertoAtualmente.id_produto || produtoAbertoAtualmente.id;
     
     let favs = getFavorites();
-    const index = favs.indexOf(parseInt(id));
+    const index = favs.indexOf(parseInt(id, 10));
     
     if (index > -1) favs.splice(index, 1);
-    else favs.push(parseInt(id));
+    else favs.push(parseInt(id, 10));
     
     saveFavorites(favs);
     atualizarIconeFavorito(id);
@@ -166,7 +176,7 @@ function atualizarIconeFavorito(id) {
     const icon = document.getElementById('modal-fav-icon');
     if (!icon) return;
     const favs = getFavorites();
-    icon.className = favs.includes(parseInt(id)) ? 'bi bi-heart-fill text-danger fs-4' : 'bi bi-heart text-danger fs-4';
+    icon.className = favs.includes(parseInt(id, 10)) ? 'bi bi-heart-fill text-danger fs-4' : 'bi bi-heart text-danger fs-4';
 }
 
 async function carregarLojasDisponiveis() {
@@ -180,13 +190,15 @@ async function carregarLojasDisponiveis() {
 }
 
 // ==========================================
-// 5. CARRINHO DE COMPRAS
+// 5. CARRINHO DE COMPRAS (Sincronizado globalmente)
 // ==========================================
 window.adicionarModalAoCarrinho = () => {
     if (!produtoAbertoAtualmente) return;
     
     const p = produtoAbertoAtualmente;
-    let carrinho = JSON.parse(localStorage.getItem('carrinho_regia')) || [];
+    
+    // CORREÇÃO: Padronizado para usar a mesma chave 'regia_tinas_cart' do busca.js
+    let carrinho = JSON.parse(localStorage.getItem('regia_tinas_cart')) || [];
     const id = p.id_produto || p.id;
     const existente = carrinho.find(item => item.id_produto == id);
 
@@ -202,6 +214,9 @@ window.adicionarModalAoCarrinho = () => {
         });
     }
 
-    localStorage.setItem('carrinho_regia', JSON.stringify(carrinho));
+    localStorage.setItem('regia_tinas_cart', JSON.stringify(carrinho));
     alert(`🛒 Sucesso! ${p.nome_produto} foi adicionado ao seu carrinho.`);
+    
+    // Dispara o evento global para a bolinha vermelha do menu atualizar na hora!
+    window.dispatchEvent(new Event('cartUpdated'));
 };

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados da Busca - Regia & Tinas Care</title>
-    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <title>Catálogo e Busca - Regia & Tinas Care</title>
+    <link class="rounded-circle" rel="icon" type="image/png" href="img/logo_pequena4.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2=family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
@@ -30,11 +30,11 @@
         .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .img-container { height: 180px; display: flex; align-items: center; justify-content: center; padding: 15px; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
-        .price-tag { color: var(--brand-pink); font-weight: 700; font-size: 1.2rem; }
-
+        
         /* --- MODAL --- */
         .modal-content { border-radius: 30px; border: none; }
-        .btn-buy { background: var(--brand-pink); color: white; border-radius: 30px; font-weight: 700; padding: 12px; border: none; }
+        .btn-buy { background: var(--brand-pink); color: white; border-radius: 30px; font-weight: 700; padding: 12px; border: none; transition: 0.2s; }
+        .btn-buy:hover { background: var(--brand-pink-hover); }
     </style>
 </head>
 <body>
@@ -44,70 +44,111 @@
             <a href="index.html" class="back-arrow"><i class="bi bi-arrow-left-short"></i></a>
             
             <form class="search-form-bar shadow-sm" action="busca.html" method="GET">
-                <input type="search" name="q" id="search-input-page" placeholder="Pesquisar novamente...">
+                <input type="search" name="q" id="search-input-page" placeholder="Pesquisar pet-produto...">
                 <button class="btn-search-icon" type="submit"><i class="bi bi-search"></i></button>
             </form>
 
-            <a class="text-white ms-3" href="carrinho.html"><i class="bi bi-cart3 fs-4"></i></a>
+            <a class="text-white ms-3 position-relative" href="carrinho.html">
+                <i class="bi bi-cart3 fs-4"></i>
+            </a>
         </div>
     </header>
 
     <main class="container my-5">
-        <div class="row">
-            <aside class="col-lg-3 d-none d-lg-block">
-                <div class="bg-white p-4 filter-card shadow-sm">
-                    <h5 class="filter-title">Filtros</h5>
-                    
-                    <div class="mb-4">
-                        <label class="fw-bold small mb-2">Categoria</label>
-                        <div id="category-filters" class="small">
-                             <div class="spinner-border spinner-border-sm text-pink"></div>
+        
+        <div id="secao-busca-catalogo">
+            <div class="row">
+                <aside class="col-lg-3 d-none d-lg-block" id="sidebar-filtros">
+                    <div class="bg-white p-4 filter-card shadow-sm">
+                        <h5 class="filter-title"><i class="bi bi-sliders me-1"></i> Filtros</h5>
+                        
+                        <div class="mb-4">
+                            <label class="fw-bold small mb-2 text-secondary">Categoria</label>
+                            <div id="category-filters" class="small">
+                                 <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="fw-bold small mb-2 text-secondary">Marca</label>
+                            <div id="brand-filters" class="small">
+                                 <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="fw-bold small mb-2 text-secondary">Preço Máximo</label>
+                            <input type="range" class="form-range" id="price-range" min="0" max="500" step="10">
+                            <div class="d-flex justify-content-between small fw-bold text-muted">
+                                <span>R$ 0</span>
+                                <span id="price-value">R$ 500</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <section class="col-lg-9">
+                    <div class="mb-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="fw-bold h4 mb-1">Resultados para: <span id="term-display" style="color: var(--brand-pink);"></span></h2>
+                            <p id="results-count" class="text-muted small fw-bold mb-0"></p>
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="fw-bold small mb-2">Marca</label>
-                        <div id="brand-filters" class="small">
-                             <div class="spinner-border spinner-border-sm text-pink"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="fw-bold small mb-2">Preço Máximo</label>
-                        <input type="range" class="form-range" id="price-range" min="0" max="500" step="10">
-                        <div class="d-flex justify-content-between small fw-bold text-muted">
-                            <span>R$ 0</span>
-                            <span id="price-value">R$ 500</span>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            <section class="col-lg-9">
-                <div class="mb-4">
-                    <h2 class="fw-bold h4">Resultados para: <span id="term-display" class="text-pink" style="color: var(--brand-pink);"></span></h2>
-                    <p id="results-count" class="text-muted small fw-bold"></p>
-                </div>
-
-                <div id="search-results" class="row row-cols-2 row-cols-md-3 g-4">
-                    </div>
-            </section>
+                    <div id="search-results" class="row row-cols-2 row-cols-md-3 g-4"></div>
+                </section>
+            </div>
         </div>
+
+        <div id="secao-detalhe-produto" style="display: none;">
+            <div id="product-detail-container" class="bg-white p-4 p-md-5 rounded-4 shadow-sm">
+                </div>
+        </div>
+
     </main>
 
     <div class="modal fade" id="modalProduto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg p-3">
-                <div class="modal-header border-0"><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body pt-0">
                     <div class="row align-items-center" id="modal-content-body">
+                        <div class="col-md-6 text-center mb-3 mb-md-0">
+                            <img id="modal-img" src="" class="img-fluid rounded-3 p-2" style="max-height: 280px; object-fit: contain;" onerror="this.src='img/logo_pequena4.png'">
                         </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span id="modal-categoria" class="badge text-white" style="background-color: var(--brand-pink);"></span>
+                                <button class="btn p-0 border-0" onclick="window.toggleFavorito()">
+                                    <i id="modal-fav-icon" class="bi bi-heart text-danger fs-4"></i>
+                                </button>
+                            </div>
+                            <h4 id="modal-nome" class="fw-bold text-dark mb-1"></h4>
+                            <p class="text-muted small mb-3">Marca: <span id="modal-marca" class="fw-bold"></span> | Cód: #<span id="modal-codigo"></span></p>
+                            
+                            <div id="modal-preco-box" class="fs-3 fw-bold mb-3" style="color: var(--brand-pink);"></div>
+                            <p id="modal-descricao" class="text-secondary small mb-4"></p>
+                            
+                            <div class="mb-4">
+                                <label class="fw-bold small mb-1 text-muted"><i class="bi bi-geo-alt-fill text-success me-1"></i>Disponibilidade imediata:</label>
+                                <ul id="modal-store-list" class="list-unstyled small ps-0 mb-0"></ul>
+                            </div>
+
+                            <button class="btn btn-buy w-100 rounded-pill py-2" onclick="window.adicionarModalAoCarrinho()">
+                                <i class="bi bi-cart-plus me-1"></i> Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/catalogo.js"></script> <script src="../js/busca.js"></script>
+    
+    <script src="js/catalogo.js"></script> 
+    <script src="js/busca.js"></script>
 </body>
 </html>

@@ -56,7 +56,7 @@ export function createProductCard(produto) {
     const isFavorite = favorites.includes(parseInt(idProduto, 10));
     const heartIconClass = isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart text-danger';
     
-    const productLink = `produto_detalhe.html?id=${idProduto}`; 
+    const productLink = `busca.html?id=${idProduto}`; 
     
     let imageUrl = produto.url_imagem;
     if (imageUrl && !imageUrl.startsWith('http')) {
@@ -114,7 +114,12 @@ async function loadProducts(containerId, filterType) {
         let produtos = allProducts; 
 
         if (filterType === 'ofertas') {
-            produtos = produtos.filter(p => p.preco_promocional && p.preco_promocional < p.preco);
+            // SEGURANÇA: ParseFloat garante que a comparação matemática funciona mesmo se vier String do Neon
+            produtos = produtos.filter(p => {
+                const original = parseFloat(p.preco) || 0;
+                const promo = parseFloat(p.preco_promocional) || 0;
+                return promo > 0 && promo < original;
+            });
         } else if (filterType === 'vendidos') {
             produtos.sort((a, b) => (b.quantidade_estoque || 0) - (a.quantidade_estoque || 0));
         } else if (filterType === 'novidades') {

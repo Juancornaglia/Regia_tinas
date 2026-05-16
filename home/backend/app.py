@@ -50,7 +50,7 @@ def index():
     return send_from_directory(FRONTEND_DIR, 'index.html')
 
 @app.route('/busca')
-def busca():
+def servir_busca():
     return send_from_directory(FRONTEND_DIR, 'busca.html')
 
 @app.route('/catalogo')
