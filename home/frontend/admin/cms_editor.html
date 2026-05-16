@@ -11,7 +11,12 @@
     <link rel="stylesheet" href="../css/admin.css">
 
     <style>
-        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
+        :root { 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585; 
+            --bg-light: #f8f9fa; 
+            --bg-light-pink: #fff0f2; /* CORRIGIDO: Variável que faltava para o efeito hover */
+        }
         .brand-pink { color: var(--brand-pink); }
         .bg-brand-pink { background-color: var(--brand-pink) !important; }
         
@@ -34,6 +39,9 @@
             transition: 0.3s;
             font-weight: 600;
             color: #555;
+            background: none;
+            width: 100%;
+            text-align: left;
         }
         .list-group-item-cms:hover { background-color: var(--bg-light-pink); color: var(--brand-pink); }
         .list-group-item-cms i { font-size: 1.2rem; margin-right: 12px; }
@@ -112,7 +120,7 @@
                         <h6 class="fw-bold mb-0 small text-uppercase text-muted">Elementos da Home</h6>
                     </div>
                     <div class="list-group list-group-flush">
-                        <button class="list-group-item list-group-item-action list-group-item-cms" data-bs-toggle="modal" data-bs-target="#editBannerModal">
+                        <button class="list-group-item list-group-item-action list-group-item-cms" id="btnEditBanner" data-bs-toggle="modal" data-bs-target="#editBannerModal">
                             <i class="bi bi-image brand-pink"></i> Banner Hero
                         </button>
                         <button class="list-group-item list-group-item-action list-group-item-cms text-muted opacity-50" disabled>
@@ -126,7 +134,7 @@
                         </button>
                     </div>
                     <div class="p-3 bg-light-pink">
-                        <small class="text-brand fw-bold"><i class="bi bi-info-circle me-1"></i>Dica:</small>
+                        <small class="brand-pink fw-bold"><i class="bi bi-info-circle me-1"></i>Dica:</small>
                         <p class="mb-0 text-muted" style="font-size: 0.75rem;">Use imagens em alta resolução (1920x600px) para o banner principal.</p>
                     </div>
                 </div>
@@ -142,7 +150,7 @@
                             https://regiaetinascare.com.br/home-preview
                         </div>
                     </div>
-                    <iframe src="../ecommerce/index.html" style="width: 100%; height: calc(100% - 35px); border: none;"></iframe>
+                    <iframe id="previewIframe" src="../ecommerce/index.html" style="width: 100%; height: calc(100% - 35px); border: none;"></iframe>
                 </div>
             </div>
         </div>
@@ -158,7 +166,7 @@
                 <div class="modal-body p-4 bg-light">
                     <form id="bannerEditForm">
                         <div id="modal-loading-spinner" class="text-center p-4">
-                            <div class="spinner-border text-brand" role="status"></div>
+                            <div class="spinner-border brand-pink" role="status"></div>
                             <p class="mt-2 text-muted small fw-bold">Acessando banco Neon...</p>
                         </div>
 
@@ -167,7 +175,7 @@
                                 <label class="form-label fw-bold small text-muted">Link da Imagem (URL)</label>
                                 <div class="input-group mb-2">
                                     <span class="input-group-text bg-light border-0"><i class="bi bi-link-45deg"></i></span>
-                                    <input type="url" class="form-control bg-light border-0" id="banner_img_url" placeholder="https://exemplo.com/foto.jpg">
+                                    <input type="url" class="form-control bg-light border-0" id="banner_img_url" placeholder="https://exemplo.com/foto.jpg" required>
                                 </div>
                                 <small class="text-muted d-block mb-4" style="font-size: 0.75rem;">Substitua o link atual para atualizar a imagem de destaque do site.</small>
                                 

@@ -371,15 +371,7 @@ def editar_produto(id_produto):
         print(f"Erro ao editar produto {id_produto}: {e}")
         return jsonify({"error": "Falha ao atualizar os dados do produto"}), 500
 
-@app.route('/api/cms/content', methods=['GET'])
-def get_cms_content():
-    try:
-        # Busca textos e imagens configuráveis do site
-        content = executar_query('SELECT element_id, content_value FROM public.cms_content')
-        return jsonify(content if content else []), 200
-    except Exception as e:
-        print(f"Erro ao carregar conteúdo CMS: {e}")
-        return jsonify({"error": "Falha ao carregar textos do site"}), 500
+
 
 @app.route('/api/busca', methods=['GET'])
 def buscar_produtos():
@@ -556,25 +548,80 @@ def get_filtros():
         print(f"Erro ao carregar filtros: {e}")
         return jsonify({"error": "Falha ao carregar opções de filtro"}), 500
 
-@app.route('/api/cms/update', methods=['POST'])
-def update_cms_content():
+@app.route('/api/cms/content', methods=['GET'])
+def get_cms_content():
+    """Rota que o JS chama para carregar a imagem atual do banner no painel"""
+    conn = None
+    cursor = None
     try:
-        dados = request.get_json() 
+        # Substitui pela tua função real de conexão ao Neon (ex: get_db_connection())
+        conn = get_db_connection() 
+        cursor = conn.cursor()
         
-        # Loop para atualizar múltiplos elementos do site de uma vez (UPSERT)
-        for item in dados:
-            sql = '''
-                INSERT INTO public.cms_content (element_id, content_value, updated_at)
-                VALUES (%s, %s, NOW())
-                ON CONFLICT (element_id) 
-                DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()
-            '''
-            executar_query(sql, (item['element_id'], item['content_value']))
+        # Procura todos os elementos dinâmicos da tabela cms_content
+        cursor.execute('SELECT element_id, content_type, content_value FROM "cms_content";')
+        rows = cursor.fetchall()
         
-        return jsonify({"message": "Conteúdo do site atualizado com sucesso!"}), 200
+        # Organiza os dados num formato de lista de dicionários para o Frontend entender
+        cms_data = []
+        for row in rows:
+            cms_data.append({
+                "element_id": row[0],
+                "content_type": row[1],
+                "content_value": row[2]
+            })
+            
+        return jsonify(cms_data), 200
+
     except Exception as e:
-        print(f"Erro ao atualizar CMS: {e}")
-        return jsonify({"error": "Falha ao salvar alterações do site"}), 500
+        print(f"Erro ao buscar dados do CMS: {e}")
+        return jsonify({"error": "Erro interno ao aceder ao banco Neon."}), 500
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+
+@app.route('/api/cms/update', methods=['POST'])
+# @token_required  <- Descomenta isto se fores validar o JWT do Admin que enviámos no Header Authorization
+def update_cms_content():
+    """Rota que o JS chama para salvar o novo link da imagem enviado pelo Admin"""
+    payload = request.get_json()
+    
+    if not payload or not isinstance(payload, list):
+        return jsonify({"error": "Dados inválidos. Esperada uma lista de alterações."}), 400
+        
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Faz um loop pelas alterações enviadas (no nosso caso, o banner_principal_img)
+        for item in payload:
+            element_id = item.get('element_id')
+            content_value = item.get('content_value')
+            
+            if not element_id or not content_value:
+                continue
+                
+            # Executa o UPDATE no Neon. Opcional: usar UPSERT (ON CONFLICT) para garantir segurança
+            cursor.execute('''
+                INSERT INTO "cms_content" (element_id, content_value, updated_at)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (element_id) 
+                DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = CURRENT_TIMESTAMP;
+            ''', (element_id, content_value))
+            
+        conn.commit() # Salva as alterações permanentemente no Neon
+        return jsonify({"message": "Conteúdo do CMS atualizado com sucesso!"}), 200
+
+    except Exception as e:
+        if conn: conn.rollback() # Cancela a operação em caso de falha catastrófica
+        print(f"Erro ao atualizar o CMS: {e}")
+        return jsonify({"error": "Falha ao gravar as alterações no banco de dados."}), 500
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
 
 @app.route('/api/admin/produtos/<id_produto>', methods=['DELETE'])
 def excluir_produto(id_produto):
