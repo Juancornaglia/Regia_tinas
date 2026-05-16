@@ -6,50 +6,155 @@
     <title>Operação de Atendimento | Regia & Tinas Care</title>
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --worker-dark: #1e272e; --bg-kanban: #f1f3f6; }
-        body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; overflow-x: hidden; }
+        /* --- CSS PADRONIZADO E EMBUTIDO (OPERACIONAL INTEGRADO) --- */
+        :root { 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585; 
+            --worker-dark: #1e272e; 
+            --bg-light: #f4f6f9; 
+            --bg-light-pink: #fff0f2;
+            --bg-kanban: #eef2f5; 
+        }
+        
+        body { 
+            background-color: var(--bg-light); 
+            font-family: 'Poppins', sans-serif; 
+            overflow-x: hidden; 
+        }
 
-        /* --- SIDEBAR PROFISSIONAL --- */
-        .worker-sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: var(--worker-dark); display: flex; flex-direction: column; z-index: 1000; transition: 0.3s; }
-        .worker-main-content { margin-left: 260px; padding: 40px; min-height: 100vh; transition: 0.3s; }
-        .nav-link { border-radius: 10px; margin: 2px 15px; color: #a4b0be !important; transition: 0.3s; font-weight: 500; }
-        .nav-link.active { background: var(--brand-pink) !important; color: white !important; }
-        .nav-link:hover:not(.active) { background: rgba(255,255,255,0.1); color: white !important; }
+        .brand-pink { color: var(--brand-pink); }
+        .bg-brand-pink { background-color: var(--brand-pink) !important; color: white !important; }
+        
+        /* Layout Sidebar Profissional Controlado */
+        .worker-sidebar { 
+            width: 260px; 
+            height: 100vh; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            background: var(--worker-dark); 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1000; 
+            transition: 0.3s; 
+        }
+        
+        .worker-main-content { 
+            margin-left: 260px; 
+            padding: 40px; 
+            min-height: 100vh; 
+            transition: 0.3s; 
+        }
+        
+        .mascote-header { 
+            font-size: 1.8rem; 
+            transition: 0.3s; 
+            cursor: pointer; 
+            display: inline-block; 
+        }
+        .mascote-header:hover { transform: scale(1.2) rotate(10deg); }
 
-        /* --- KANBAN BOARD --- */
+        /* Navegação Sidebar */
+        .nav-link { 
+            border-radius: 10px; 
+            margin: 2px 15px; 
+            color: #a4b0be !important; 
+            transition: 0.3s; 
+            font-weight: 500; 
+        }
+        .nav-link.active { 
+            background: var(--brand-pink) !important; 
+            color: white !important; 
+            font-weight: 600;
+        }
+        .nav-link:hover:not(.active) { 
+            background: rgba(255,255,255,0.1); 
+            color: white !important; 
+        }
+        
+        .nav-section-title { 
+            font-size: 0.75rem; 
+            letter-spacing: 1px; 
+            color: #576574; 
+            margin-top: 1.5rem; 
+            padding: 0 1.5rem; 
+        }
+
+        /* Quadro Kanban Premium */
         .kanban-container { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; }
-        .kanban-column { flex: 1; min-width: 320px; background: var(--bg-kanban); border-radius: 20px; padding: 20px; border: 1px solid rgba(0,0,0,0.05); }
-        .column-title { font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; display: flex; align-items: center; }
+        .kanban-column { flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); }
+        .column-title { font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; display: flex; align-items: center; border-bottom: 2px solid rgba(0,0,0,0.02); padding-bottom: 10px; }
 
-        /* --- CARDS DE TAREFA --- */
-        .task-card { background: white; border-radius: 15px; padding: 18px; margin-bottom: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid var(--brand-pink); transition: 0.3s; cursor: grab; }
-        .task-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        /* Cards de Tarefas */
+        .task-card { 
+            background: var(--bg-light); 
+            border-radius: 15px; 
+            padding: 18px; 
+            margin-bottom: 15px; 
+            border: none; 
+            border-left: 5px solid var(--brand-pink); 
+            transition: 0.3s; 
+            cursor: grab; 
+        }
+        .task-card:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
+            background: white;
+        }
+        
         .pet-name { font-size: 1.1rem; font-weight: 700; color: #2d3436; }
         .tutor-name { font-size: 0.85rem; color: #636e72; margin-bottom: 10px; display: block; }
-        .service-badge { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; background: #ffeaa7; color: #d63031; }
+        
+        /* CORRIGIDO: Mudado o cinza/neutral do badge para a cor oficial da marca */
+        .service-badge { 
+            font-size: 0.7rem; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-weight: 700; 
+            background: var(--bg-light-pink); 
+            color: var(--brand-pink); 
+        }
 
-        /* --- BOTÃO ADICIONAR (FAB) --- */
-        .btn-add-float { position: fixed; bottom: 40px; right: 40px; width: 65px; height: 65px; border-radius: 50%; background: var(--brand-pink); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 10px 25px rgba(254, 134, 151, 0.4); border: none; z-index: 1001; transition: 0.3s; }
-        .btn-add-float:hover { transform: scale(1.1) rotate(90deg); background: var(--brand-pink-hover); }
+        /* Botão Flutuante (FAB) */
+        .btn-add-float { 
+            position: fixed; 
+            bottom: 40px; 
+            right: 40px; 
+            width: 65px; 
+            height: 65px; 
+            border-radius: 50%; 
+            background: var(--brand-pink); 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 2rem; 
+            box-shadow: 0 10px 25px rgba(254, 134, 151, 0.4); 
+            border: none; 
+            z-index: 1001; 
+            transition: 0.3s; 
+        }
+        .btn-add-float:hover { transform: scale(1.1) rotate(90deg); background: var(--brand-pink-hover); color: white; }
 
-        /* --- FORMULÁRIO E MODAIS --- */
+        /* Formulários e Modais */
         .modal-content { border-radius: 25px; border: none; }
         .modal-header { border: none; padding: 25px 30px 10px; }
         .modal-body { padding: 10px 30px 30px; }
         .form-label { font-weight: 600; font-size: 0.85rem; color: #636e72; }
         .form-control, .form-select { border-radius: 12px; padding: 12px; border: 1px solid #dfe6e9; background: #f9f9f9; }
-        .form-control:focus { box-shadow: 0 0 0 3px rgba(254, 134, 151, 0.2); border-color: var(--brand-pink); }
+        .form-control:focus, .form-select:focus { box-shadow: none; border-color: var(--brand-pink); background-color: white; }
     </style>
 </head>
 <body>
 
     <aside class="worker-sidebar shadow-lg">
         <div class="sidebar-header text-center p-4">
-            <div class="mb-2 fs-2">🐾</div>
+            <div class="mascote-header mb-2">🐾</div>
             <h4 class="fw-bold text-white mb-0">Regia & Tinas</h4>
             <small class="text-white-50">PAINEL DE TRABALHO</small>
         </div>
@@ -67,11 +172,11 @@
         <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
                 <h2 class="fw-bold text-dark mb-0">Gestão da Fila ✂️</h2>
-                <p class="text-muted">Acompanhe e mova os agendamentos em tempo real.</p>
+                <p class="text-muted mb-0 small">Acompanhe e mova os agendamentos da equipe em tempo real.</p>
             </div>
             <div class="text-end">
-                <button class="btn btn-white shadow-sm border-0 rounded-pill px-4 fw-bold" onclick="location.reload()">
-                    <i class="bi bi-arrow-clockwise me-2 text-brand-pink"></i>Atualizar
+                <button class="btn btn-white shadow-sm border-0 rounded-pill px-4 py-2 fw-bold brand-pink" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Atualizar
                 </button>
             </div>
         </div>
@@ -97,7 +202,7 @@
                     <div class="task-card">
                         <div class="d-flex justify-content-between align-items-start">
                             <span class="pet-name">Luna</span>
-                            <span class="service-badge" style="background:#e1f5fe; color:#0288d1;">Vacina V10</span>
+                            <span class="service-badge">Vacina V10</span>
                         </div>
                         <small class="tutor-name">Beatriz Lima</small>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -114,12 +219,12 @@
                     <div class="task-card" style="border-left-color: #0d6efd;">
                         <div class="d-flex justify-content-between align-items-start">
                             <span class="pet-name">Bob</span>
-                            <span class="service-badge" style="background:#e8f5e9; color:#2e7d32;">Tosa Higiênica</span>
+                            <span class="service-badge">Tosa Higiênica</span>
                         </div>
                         <small class="tutor-name">Roberto Dias</small>
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="small fw-bold text-primary"><i class="bi bi-person-check me-1"></i>Com: Guilherme</span>
-                            <button class="btn btn-success btn-sm rounded-pill px-3 fw-bold" onclick="solicitarAssinatura((id) => alert('Finalizado!'))">CONCLUIR</button>
+                            <button class="btn btn-success btn-sm rounded-pill px-3 fw-bold" style="background-color:#198754;" onclick="solicitarAssinatura((id) => alert('Finalizado!'))">CONCLUIR</button>
                         </div>
                     </div>
                 </div>
@@ -131,7 +236,7 @@
                     <div class="task-card opacity-75" style="border-left-color: #198754;">
                         <div class="d-flex justify-content-between align-items-start">
                             <span class="pet-name">Mel</span>
-                            <span class="service-badge" style="background:#f3e5f5; color:#7b1fa2;">Consulta Vet</span>
+                            <span class="service-badge">Consulta Vet</span>
                         </div>
                         <small class="tutor-name">Mariana Costa</small>
                         <div class="d-grid mt-3">
@@ -150,16 +255,16 @@
 
     <div class="modal fade" id="modalAcaoRapida" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
-                <div class="modal-header">
+            <div class="modal-content shadow-lg overflow-hidden">
+                <div class="modal-header bg-dark text-white p-4">
                     <h5 class="fw-bold mb-0">Gerenciar Atendimento</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4 bg-light">
                     <form id="form-fila">
-                        <div class="mb-4">
-                            <label class="form-label">O que deseja fazer?</label>
-                            <div class="d-flex gap-2">
+                        <div class="bg-white p-4 rounded-4 shadow-sm mb-3">
+                            <label class="form-label small text-uppercase text-muted fw-bold">O que deseja fazer?</label>
+                            <div class="d-flex gap-2 mb-3">
                                 <input type="radio" class="btn-check" name="tipo_acao" id="acao-add" value="adicionar" checked>
                                 <label class="btn btn-outline-dark rounded-pill flex-grow-1 fw-bold" for="acao-add">Adicionar</label>
                                 
@@ -171,7 +276,7 @@
                             </div>
                         </div>
 
-                        <div id="campos-form">
+                        <div class="bg-white p-4 rounded-4 shadow-sm mb-3" id="campos-form">
                             <div class="mb-3">
                                 <label class="form-label">Nome do Animal</label>
                                 <input type="text" class="form-control" id="form-pet" placeholder="Ex: Bob">
@@ -180,7 +285,7 @@
                                 <label class="form-label">Nome do Tutor (Dono)</label>
                                 <input type="text" class="form-control" id="form-tutor" placeholder="Ex: Maria Silva">
                             </div>
-                            <div class="row g-3 mb-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Data e Hora</label>
                                     <input type="datetime-local" class="form-control" id="form-data">
@@ -197,14 +302,14 @@
                             </div>
                         </div>
 
-                        <div class="alert alert-info small border-0 py-2">
-                            <i class="bi bi-info-circle-fill me-2"></i>Esta ação exige validação de CPF.
-                        </div>
-
-                        <div class="d-grid mt-4">
-                            <button type="button" class="btn btn-primary btn-lg rounded-pill fw-bold" onclick="solicitarAssinatura(processarAcaoFila)">AVANÇAR E VALIDAR CPF</button>
+                        <div class="alert alert-info border-0 small rounded-3 mb-0">
+                            <i class="bi bi-info-circle-fill me-2 text-info"></i>Esta ação exige validação de segurança por CPF.
                         </div>
                     </form>
+                </div>
+                <div class="modal-footer border-0 bg-white p-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">CANCELAR</button>
+                    <button type="button" class="btn bg-brand-pink text-white rounded-pill px-4 fw-bold shadow" onclick="solicitarAssinatura(processarAcaoFila)">AVANÇAR E VALIDAR CPF</button>
                 </div>
             </div>
         </div>
@@ -212,16 +317,16 @@
 
     <div class="modal fade" id="modalAssinaturaFuncionario" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
                 <div class="modal-header bg-dark text-white border-0 p-3">
                     <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock-fill me-2 text-warning"></i>Autorização</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4 text-center">
-                    <p class="text-muted small mb-3">Digite seu <strong>CPF</strong> para validar a ação.</p>
-                    <input type="text" id="input-cpf-funcionario" class="form-control text-center fw-bold fs-5 mb-3 rounded-pill" placeholder="000.000.000-00">
-                    <button id="btn-confirmar-acao" class="btn btn-primary w-100 fw-bold rounded-pill">EXECUTAR AGORA</button>
-                    <div id="erro-validacao" class="text-danger small fw-bold mt-2" style="display: none;">CPF não autorizado!</div>
+                <div class="modal-body p-4 text-center bg-light">
+                    <p class="text-muted small mb-3">Digite seu <strong>CPF</strong> para validar a ação na fila.</p>
+                    <input type="text" id="input-cpf-funcionario" class="form-control text-center fw-bold fs-5 mb-3 rounded-pill p-2" placeholder="000.000.000-00" autocomplete="off" maxlength="14">
+                    <button id="btn-confirmar-acao" class="btn bg-brand-pink text-white w-100 fw-bold rounded-pill shadow-sm py-2">EXECUTAR AGORA</button>
+                    <div id="erro-validacao" class="text-danger small fw-bold mt-2" style="display: none;"><i class="bi bi-x-circle me-1"></i>CPF não autorizado!</div>
                 </div>
             </div>
         </div>
@@ -232,30 +337,23 @@
     <script src="../js/operacional_funcionario.js"></script>
     
     <script>
-        // Função que o Escudo de CPF chama quando o código está correto
         function processarAcaoFila(idFuncionario) {
-            // 1. Pega qual opção foi marcada (Adicionar, Alterar ou Cancelar)
             const inputAcao = document.querySelector('input[name="tipo_acao"]:checked');
             
-            // Segurança: Se o cara não marcou nada, avisa e para aqui
             if (!inputAcao) {
-                alert("Juan, selecione se deseja Adicionar, Alterar ou Cancelar antes de prosseguir!");
+                alert("Selecione se deseja Adicionar, Alterar ou Cancelar antes de prosseguir!");
                 return;
             }
 
             const acao = inputAcao.value;
+            alert(`✅ Sucesso!\n\nAção de "${acao}" enviada para o banco Neon pelo funcionário: ${idFuncionario}`);
 
-            // 2. Mostra o sucesso com o ID do funcionário que veio da validação
-            alert(`✅ Sucesso, Juan!\n\nAção de "${acao}" registrada pelo funcionário: ${idFuncionario}`);
-
-            // 3. Fecha o Modal de formulário automaticamente
             const modalElemento = document.getElementById('modalAcaoRapida');
             const instanciaModal = bootstrap.Modal.getInstance(modalElemento);
             if (instanciaModal) {
                 instanciaModal.hide();
             }
-        } // <--- AQUI ESTÁ A CORREÇÃO! Usei "}" em vez de "</div>"
+        }
     </script>
-  
 </body>
 </html>

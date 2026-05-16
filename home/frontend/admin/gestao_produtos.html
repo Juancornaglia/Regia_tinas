@@ -5,34 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Estoque | Regia & Tinas Care</title>
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
-        .brand-pink { color: var(--brand-pink); }
-        .bg-brand-pink { background-color: var(--brand-pink) !important; }
+        /* --- CSS PADRONIZADO E EMBUTIDO (ADMIN INTEGRADO) --- */
+        :root { 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585; 
+            --bg-light: #f4f6f9; 
+            --bg-light-pink: #fff0f2;
+        }
         
-        .mascote-header { font-size: 1.8rem; transition: 0.3s; cursor: pointer; display: inline-block; }
+        body { 
+            background-color: var(--bg-light); 
+            font-family: 'Poppins', sans-serif; 
+        }
+        
+        .brand-pink { color: var(--brand-pink); }
+        .bg-brand-pink { background-color: var(--brand-pink) !important; color: white !important; }
+        
+        /* Layout Sidebar Controlado */
+        .admin-sidebar { 
+            width: 260px; 
+            height: 100vh; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            background: #1e272e; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1000; 
+        }
+        
+        .admin-main-content { 
+            margin-left: 260px; 
+            padding: 40px; 
+            min-height: 100vh; 
+        }
+        
+        .mascote-header { 
+            font-size: 1.8rem; 
+            transition: 0.3s; 
+            cursor: pointer; 
+            display: inline-block; 
+        }
         .mascote-header:hover { transform: scale(1.2) rotate(10deg); }
+        
+        /* Navegação Sidebar */
+        .nav-link { 
+            border-radius: 10px; 
+            margin: 2px 10px; 
+            transition: 0.3s; 
+            color: #a4b0be; 
+        }
+        .nav-link.active { 
+            background: var(--brand-pink) !important; 
+            color: white !important; 
+            font-weight: 600;
+        }
+        .nav-link:hover:not(.active) { 
+            background: rgba(254, 134, 151, 0.1); 
+            color: var(--brand-pink); 
+        }
+        
+        .nav-section-title { 
+            font-size: 0.75rem; 
+            letter-spacing: 1px; 
+            color: #747d8c; 
+            margin-top: 1.5rem; 
+            padding: 0 1.5rem; 
+        }
 
+        /* Painéis e Catálogo */
         .dashboard-panel { 
             background: white; 
             border-radius: 20px; 
             padding: 25px; 
             border: none; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03); 
         }
 
-        .product-img-mini { width: 45px; height: 45px; object-fit: contain; border-radius: 8px; background: #f9f9f9; padding: 5px; }
+        .product-img-mini { 
+            width: 45px; 
+            height: 45px; 
+            object-fit: contain; 
+            border-radius: 8px; 
+            background: #f9f9f9; 
+            padding: 5px; 
+        }
         
-        .stock-badge { padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; }
+        .stock-badge { padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; display: inline-block; }
         .stock-low { background-color: #fff2f2; color: #dc3545; border: 1px solid #ffc1c1; }
         .stock-ok { background-color: #f2fff5; color: #198754; border: 1px solid #c1ffcc; }
-
-        .nav-link { border-radius: 10px; margin: 2px 10px; transition: 0.3s; color: rgba(255,255,255,0.7) !important; }
-        .nav-link.active { background: var(--brand-pink) !important; color: white !important; font-weight: 600; }
-        .nav-link:hover:not(.active) { background: rgba(255,255,255,0.1); color: white !important; }
 
         .search-container { position: sticky; top: 0; background: var(--bg-light); z-index: 100; padding: 20px 0; }
     </style>
@@ -50,11 +117,11 @@
             <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-grid-1x2-fill me-2"></i>Dashboard</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
             
-            <li class="nav-section-title px-4 mt-4 mb-2 small text-uppercase text-white-50 fw-bold">Operacional (Equipe)</li>
+            <li class="nav-section-title text-uppercase fw-bold">Operacional (Equipe)</li>
             <li class="nav-item"><a class="nav-link" href="operacional_atendimento.html"><i class="bi bi-person-badge me-2 text-warning"></i>Fila de Atendimento</a></li>
             <li class="nav-item"><a class="nav-link" href="prontuarios.html"><i class="bi bi-journal-medical me-2"></i>Prontuários / Vet</a></li>
             
-            <li class="nav-section-title px-4 mt-4 mb-2 small text-uppercase text-white-50 fw-bold">Administrativo</li>
+            <li class="nav-section-title text-uppercase fw-bold">Administrativo</li>
             <li class="nav-item"><a class="nav-link" href="gestao_usuarios.html"><i class="bi bi-people-fill me-2"></i>Usuários e RH</a></li>
             <li class="nav-item"><a class="nav-link active" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
             <li class="nav-item"><a class="nav-link" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Marketing e Banners</a></li>
@@ -79,13 +146,13 @@
             
             <div class="input-group input-group-lg shadow-sm rounded-4 overflow-hidden border-0">
                 <span class="input-group-text bg-white border-0"><i class="bi bi-search brand-pink"></i></span>
-                <input type="text" id="input-busca" class="form-control border-0" placeholder="O que você está procurando? (Nome, Marca ou Categoria)">
+                <input type="text" id="input-busca" class="form-control border-0 px-2" placeholder="O que você está procurando? (Nome, Marca ou Categoria)">
             </div>
         </div>
 
         <div class="dashboard-panel mt-2">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th class="small text-muted py-3">PRODUTO</th>
@@ -96,7 +163,13 @@
                         </tr>
                     </thead>
                     <tbody id="product-table-body">
-                        </tbody>
+                        <tr id="loading-row-products">
+                            <td colspan="5" class="text-center p-5">
+                                <div class="spinner-border brand-pink" role="status"></div>
+                                <p class="mt-2 text-muted small fw-bold">Buscando inventário de produtos no Neon...</p>
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -119,12 +192,12 @@
                                     <h6 class="fw-bold mb-4 text-secondary border-bottom pb-2">Informações de Venda</h6>
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Nome do Produto *</label>
-                                            <input type="text" class="form-control bg-light border-0" id="nome_produto" required>
+                                            <label class="form-label small fw-bold text-muted">Nome do Produto *</label>
+                                            <input type="text" class="form-control bg-light border-0 p-2.5" id="nome_produto" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold">Tipo / Categoria *</label>
-                                            <select class="form-select bg-light border-0" id="tipo_produto" required>
+                                            <label class="form-label small fw-bold text-muted">Tipo / Categoria *</label>
+                                            <select class="form-select bg-light border-0 p-2.5" id="tipo_produto" required>
                                                 <option value="Acessório">Acessório</option>
                                                 <option value="Ração">Ração</option>
                                                 <option value="Higiene">Higiene</option>
@@ -133,12 +206,12 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold">Marca</label>
-                                            <input type="text" class="form-control bg-light border-0" id="marca">
+                                            <label class="form-label small fw-bold text-muted">Marca</label>
+                                            <input type="text" class="form-control bg-light border-0 p-2.5" id="marca">
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label small fw-bold">Descrição para o Site</label>
-                                            <textarea class="form-control bg-light border-0" id="descricao" rows="3"></textarea>
+                                            <label class="form-label small fw-bold text-muted">Descrição para o Site</label>
+                                            <textarea class="form-control bg-light border-0" id="descricao" rows="4"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -148,11 +221,11 @@
                                 <div class="bg-white p-4 rounded-4 shadow-sm mb-4">
                                     <h6 class="fw-bold mb-3 text-secondary border-bottom pb-2">Financeiro</h6>
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Preço de Tabela (R$)</label>
-                                        <input type="number" step="0.01" class="form-control bg-light border-0 fs-5 fw-bold" id="preco" required>
+                                        <label class="form-label small fw-bold text-muted">Preço de Tabela (R$)</label>
+                                        <input type="number" step="0.01" class="form-control bg-light border-0 fs-5 fw-bold text-dark" id="preco" required>
                                     </div>
                                     <div>
-                                        <label class="form-label small fw-bold">Promoção (R$)</label>
+                                        <label class="form-label small fw-bold text-muted">Promoção (R$)</label>
                                         <input type="number" step="0.01" class="form-control bg-light border-0 text-success fw-bold" id="preco_promocional">
                                     </div>
                                 </div>
@@ -160,7 +233,7 @@
                                 <div class="bg-white p-4 rounded-4 shadow-sm">
                                     <h6 class="fw-bold mb-3 text-secondary border-bottom pb-2">Logística</h6>
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Qtd. em Estoque</label>
+                                        <label class="form-label small fw-bold text-muted">Qtd. em Estoque</label>
                                         <input type="number" class="form-control bg-light border-0" id="quantidade_estoque" required>
                                     </div>
                                     <div class="mb-3">
@@ -168,7 +241,7 @@
                                         <input type="number" class="form-control bg-light border-0" id="estoque_minimo" value="2">
                                     </div>
                                     <div class="mb-0">
-                                        <label class="form-label small fw-bold">Status</label>
+                                        <label class="form-label small fw-bold text-muted">Status</label>
                                         <select class="form-select bg-light border-0" id="status_produto">
                                             <option value="Ativo">Ativo</option>
                                             <option value="Inativo">Pausado</option>
@@ -178,9 +251,9 @@
                             </div>
 
                             <div class="col-12">
-                                <div class="bg-white p-3 rounded-4 shadow-sm border-start border-4 border-info">
-                                    <label class="form-label small fw-bold"><i class="bi bi-image me-2"></i>Link da Foto do Produto</label>
-                                    <input type="url" class="form-control bg-light border-0" id="url_imagem" placeholder="https://imagem-do-produto.jpg">
+                                <div class="bg-white p-4 rounded-4 shadow-sm border-start border-4 border-info">
+                                    <label class="form-label small fw-bold text-muted"><i class="bi bi-image me-2 text-info"></i>Link da Foto do Produto (URL)</label>
+                                    <input type="url" class="form-control bg-light border-0" id="url_imagem" placeholder="https://exemplo.com/imagem-do-produto.jpg">
                                 </div>
                             </div>
                         </div>

@@ -5,17 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Usuários | Regia & Tinas Care</title>
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
-        .brand-pink { color: var(--brand-pink); }
-        .bg-brand-pink { background-color: var(--brand-pink) !important; }
+        /* --- CSS PADRONIZADO E EMBUTIDO (ADMIN INTEGRADO) --- */
+        :root { 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585; 
+            --bg-light: #f4f6f9; 
+            --bg-light-pink: #fff0f2;
+        }
         
-        .mascote-header { font-size: 1.8rem; transition: 0.3s; cursor: pointer; display: inline-block; }
+        body { 
+            background-color: var(--bg-light); 
+            font-family: 'Poppins', sans-serif; 
+        }
+        
+        .brand-pink { color: var(--brand-pink); }
+        .bg-brand-pink { background-color: var(--brand-pink) !important; color: white !important; }
+        
+        /* Layout Sidebar Controlado */
+        .admin-sidebar { 
+            width: 260px; 
+            height: 100vh; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            background: #1e272e; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1000; 
+        }
+        
+        .admin-main-content { 
+            margin-left: 260px; 
+            padding: 40px; 
+            min-height: 100vh; 
+        }
+        
+        .mascote-header { 
+            font-size: 1.8rem; 
+            transition: 0.3s; 
+            cursor: pointer; 
+            display: inline-block; 
+        }
         .mascote-header:hover { transform: scale(1.2) rotate(10deg); }
+        
+        /* Navegação Sidebar */
+        .nav-link { 
+            border-radius: 10px; 
+            margin: 2px 10px; 
+            transition: 0.3s; 
+            color: #a4b0be; 
+        }
+        .nav-link.active { 
+            background: var(--brand-pink) !important; 
+            color: white !important; 
+            font-weight: 600;
+        }
+        .nav-link:hover:not(.active) { 
+            background: rgba(254, 134, 151, 0.1); 
+            color: var(--brand-pink); 
+        }
+        
+        .nav-section-title { 
+            font-size: 0.75rem; 
+            letter-spacing: 1px; 
+            color: #747d8c; 
+            margin-top: 1.5rem; 
+            padding: 0 1.5rem; 
+        }
 
+        /* Componentes e Listas de Usuários */
         .user-card { 
             border: none; 
             border-radius: 20px; 
@@ -26,7 +90,7 @@
         }
         .user-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(254, 134, 151, 0.1); }
         
-        .role-funcionario { border-left-color: #ffc107; } /* Amarelo para atenção/equipe */
+        .role-funcionario { border-left-color: #ffc107; } /* Amarelo para equipe */
         .role-admin { border-left-color: #dc3545; }      /* Vermelho para Admin */
         
         .section-title { 
@@ -45,10 +109,6 @@
             padding: 20px 0;
         }
 
-        .nav-link { border-radius: 10px; margin: 2px 10px; transition: 0.3s; color: rgba(255,255,255,0.7) !important; }
-        .nav-link.active { background: var(--brand-pink) !important; color: white !important; font-weight: 600; }
-        .nav-link:hover:not(.active) { background: rgba(255,255,255,0.1); color: white !important; }
-
         .btn-action { border-radius: 12px; font-weight: 600; font-size: 0.85rem; }
     </style>
 </head>
@@ -65,11 +125,11 @@
             <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-grid-1x2-fill me-2"></i>Dashboard</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
             
-            <li class="nav-section-title px-4 mt-4 mb-2 small text-uppercase text-white-50 fw-bold">Operacional (Equipe)</li>
+            <li class="nav-section-title text-uppercase fw-bold">Operacional (Equipe)</li>
             <li class="nav-item"><a class="nav-link" href="operacional_atendimento.html"><i class="bi bi-person-badge me-2 text-warning"></i>Fila de Atendimento</a></li>
             <li class="nav-item"><a class="nav-link" href="prontuarios.html"><i class="bi bi-journal-medical me-2"></i>Prontuários / Vet</a></li>
             
-            <li class="nav-section-title px-4 mt-4 mb-2 small text-uppercase text-white-50 fw-bold">Administrativo</li>
+            <li class="nav-section-title text-uppercase fw-bold">Administrativo</li>
             <li class="nav-item"><a class="nav-link active" href="gestao_usuarios.html"><i class="bi bi-people-fill me-2"></i>Usuários e RH</a></li>
             <li class="nav-item"><a class="nav-link" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
             <li class="nav-item"><a class="nav-link" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Marketing e Banners</a></li>
@@ -83,13 +143,16 @@
     <main class="admin-main-content">
         <div class="search-header">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="fw-bold text-dark mb-0">Gestão de Pessoas</h2>
-                <span class="badge bg-white text-dark shadow-sm p-2 rounded-pill fw-bold">Total: <span id="contador-total">...</span></span>
+                <div>
+                    <h2 class="fw-bold text-dark mb-0">Gestão de Pessoas</h2>
+                    <p class="text-muted mb-0 small">Administre as permissões da equipe e a base de tutores da rede.</p>
+                </div>
+                <span class="badge bg-white text-dark shadow-sm p-2 rounded-pill fw-bold">Total: <span id="contador-total" class="brand-pink">...</span></span>
             </div>
             
             <div class="input-group input-group-lg shadow-sm rounded-4 overflow-hidden border-0">
                 <span class="input-group-text bg-white border-0"><i class="bi bi-search brand-pink"></i></span>
-                <input type="text" id="input-busca-inteligente" class="form-control border-0" placeholder="Buscar por Nome, E-mail ou CPF...">
+                <input type="text" id="input-busca-inteligente" class="form-control border-0 px-2" placeholder="Buscar por Nome, E-mail ou CPF...">
                 <button class="btn btn-dark px-4 fw-bold" id="btn-buscar-manual">FILTRAR</button>
             </div>
         </div>
@@ -112,36 +175,38 @@
 
         <div class="modal fade" id="modalPromover" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
                     <div class="modal-header bg-brand-pink text-white border-0 p-4">
                         <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Contratar para a Equipe</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <form id="formPromover">
-                        <div class="modal-body p-4">
-                            <div class="alert alert-warning border-0 small rounded-3">
+                        <div class="modal-body p-4 bg-light">
+                            <div class="alert alert-warning border-0 small rounded-3 mb-4">
                                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                Ao confirmar, este usuário terá acesso ao painel de atendimento.
+                                Ao confirmar, este usuário passará a ser da equipe e ganhará acesso às ferramentas operacionais.
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-muted">Especialidade / Cargo</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0"><i class="bi bi-tag-fill"></i></span>
-                                    <input type="text" id="promover_especialidade" class="form-control border-0 bg-light" required placeholder="Ex: Veterinário, Tosador...">
+                            <div class="bg-white p-4 rounded-4 shadow-sm mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Especialidade / Cargo</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0"><i class="bi bi-tag-fill text-muted"></i></span>
+                                        <input type="text" id="promover_especialidade" class="form-control border-0 bg-light p-2.5" required placeholder="Ex: Veterinário, Tosador...">
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-muted">Salário Base (Mensal)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0">R$</span>
-                                    <input type="number" id="promover_salario" class="form-control border-0 bg-light" required placeholder="0.00" step="0.01">
+                                
+                                <div class="mb-0">
+                                    <label class="form-label fw-bold small text-muted">Salário Base (Mensal)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0 fw-bold text-muted">R$</span>
+                                        <input type="number" id="promover_salario" class="form-control border-0 bg-light p-2.5" required placeholder="0.00" step="0.01">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer border-0 p-4 pt-0">
-                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <div class="modal-footer border-0 bg-white p-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">CANCELAR</button>
                             <button type="submit" class="btn bg-brand-pink text-white rounded-pill px-4 fw-bold shadow-sm">EFETIVAR CONTRATAÇÃO</button>
                         </div>
                     </form>

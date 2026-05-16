@@ -5,20 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Gerencial | Regia & Tinas Care</title>
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; }
-        .brand-pink { color: var(--brand-pink); }
-        .bg-brand-pink { background-color: var(--brand-pink) !important; }
+        /* --- CSS PADRONIZADO E EMBUTIDO (ADMIN INTEGRADO) --- */
+        :root { 
+            --brand-pink: #FE8697; 
+            --brand-pink-hover: #e57585; 
+            --bg-light: #f4f6f9; 
+        }
         
-        body { background-color: #f4f6f9; }
-
-        .mascote-header { font-size: 1.8rem; transition: 0.3s; cursor: pointer; display: inline-block; }
+        body { 
+            background-color: var(--bg-light); 
+            font-family: 'Poppins', sans-serif; 
+        }
+        
+        .brand-pink { color: var(--brand-pink); }
+        .bg-brand-pink { background-color: var(--brand-pink) !important; color: white !important; }
+        
+        /* Layout Sidebar Controlado */
+        .admin-sidebar { 
+            width: 260px; 
+            height: 100vh; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            background: #1e272e; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1000; 
+        }
+        
+        .admin-main-content { 
+            margin-left: 260px; 
+            padding: 40px; 
+            min-height: 100vh; 
+        }
+        
+        .mascote-header { 
+            font-size: 1.8rem; 
+            transition: 0.3s; 
+            cursor: pointer; 
+            display: inline-block; 
+        }
         .mascote-header:hover { transform: scale(1.2) rotate(10deg); }
         
-        .dashboard-panel { background: white; border-radius: 20px; padding: 25px; border: 1px solid rgba(0,0,0,0.05); }
+        /* Navegação Sidebar */
+        .nav-link { 
+            border-radius: 10px; 
+            margin: 2px 10px; 
+            transition: 0.3s; 
+            color: #a4b0be; 
+        }
+        .nav-link.active { 
+            background: var(--brand-pink) !important; 
+            color: white !important; 
+        }
+        .nav-link:hover:not(.active) { 
+            background: rgba(254, 134, 151, 0.1); 
+            color: var(--brand-pink); 
+        }
+        
+        .nav-section-title { 
+            font-size: 0.75rem; 
+            letter-spacing: 1px; 
+            color: #747d8c; 
+            margin-top: 1.5rem; 
+            padding: 0 1.5rem; 
+        }
+
+        /* Componentes do Dashboard */
+        .dashboard-panel { 
+            background: white; 
+            border-radius: 20px; 
+            padding: 25px; 
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
         
         /* Botões de Ação Rápida */
         .btn-quick { 
@@ -32,13 +98,21 @@
         }
         .btn-quick:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         
-        .nav-link { border-radius: 10px; margin: 2px 10px; transition: 0.3s; }
-        .nav-link.active { background: var(--brand-pink) !important; color: white !important; }
-        .nav-link:hover:not(.active) { background: rgba(254, 134, 151, 0.1); color: var(--brand-pink); }
+        /* CORREÇÃO DO CINZA: Filtros do Gráfico mudam para a cor da marca quando desativados */
+        .chart-filter-btn { 
+            cursor: pointer; 
+            transition: 0.2s; 
+            font-weight: 600; 
+            border: 2px solid transparent;
+        }
         
-        /* Filtros do Gráfico */
-        .chart-filter-btn { cursor: pointer; transition: 0.2s; font-weight: 600; }
-        .chart-filter-btn.opacity-50 { filter: grayscale(100%); }
+        .chart-filter-btn.opacity-50 { 
+            background-color: transparent !important; 
+            border: 2px solid var(--brand-pink) !important; 
+            color: var(--brand-pink) !important; 
+            opacity: 1 !important; /* Remove a opacidade cinza */
+            filter: none !important; /* Remove o efeito grayscale cinza */
+        }
     </style>
 </head>
 <body>
@@ -52,16 +126,16 @@
         
         <ul class="nav flex-column mt-3">
             <li class="nav-item"><a class="nav-link active" href="dashboard.html"><i class="bi bi-grid-1x2-fill me-2"></i>Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link text-white-50" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
+            <li class="nav-item"><a class="nav-link" href="gestao_agendamentos.html"><i class="bi bi-calendar-check me-2"></i>Agendamentos</a></li>
             
-            <li class="nav-section-title px-4 mt-4 mb-2 small text-uppercase text-white-50 fw-bold">Operacional (Equipe)</li>
-            <li class="nav-item"><a class="nav-link text-white-50" href="operacional_atendimento.html"><i class="bi bi-person-badge me-2 text-warning"></i>Fila de Atendimento</a></li>
-            <li class="nav-item"><a class="nav-link text-white-50" href="prontuarios.html"><i class="bi bi-journal-medical me-2"></i>Prontuários / Vet</a></li>
+            <li class="nav-section-title text-uppercase fw-bold">Operacional (Equipe)</li>
+            <li class="nav-item"><a class="nav-link" href="operacional_atendimento.html"><i class="bi bi-person-badge me-2 text-warning"></i>Fila de Atendimento</a></li>
+            <li class="nav-item"><a class="nav-link" href="prontuarios.html"><i class="bi bi-journal-medical me-2"></i>Prontuários / Vet</a></li>
             
-            <li class="nav-section-title px-4 mt-4 mb-2 small text-uppercase text-white-50 fw-bold">Administrativo</li>
-            <li class="nav-item"><a class="nav-link text-white-50" href="gestao_usuarios.html"><i class="bi bi-people-fill me-2"></i>Usuários e RH</a></li>
-            <li class="nav-item"><a class="nav-link text-white-50" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
-            <li class="nav-item"><a class="nav-link text-white-50" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Marketing e Banners</a></li>
+            <li class="nav-section-title text-uppercase fw-bold">Administrativo</li>
+            <li class="nav-item"><a class="nav-link" href="gestao_usuarios.html"><i class="bi bi-people-fill me-2"></i>Usuários e RH</a></li>
+            <li class="nav-item"><a class="nav-link" href="gestao_produtos.html"><i class="bi bi-box-seam me-2"></i>Estoque e Loja</a></li>
+            <li class="nav-item"><a class="nav-link" href="cms_editor.html"><i class="bi bi-pencil-square me-2"></i>Marketing e Banners</a></li>
         </ul>
 
         <div class="logout-btn-container p-3 mt-auto">
@@ -125,7 +199,6 @@
                 <div class="dashboard-panel shadow-sm h-100">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-bold mb-0"><i class="bi bi-bar-chart-line-fill brand-pink me-2"></i>Desempenho Financeiro</h5>
-                        
                         <div class="d-flex gap-2">
                             <span class="badge bg-success chart-filter-btn px-3 py-2" onclick="toggleDataset(0, this)">Receitas</span>
                             <span class="badge bg-danger chart-filter-btn px-3 py-2" onclick="toggleDataset(1, this)">Despesas</span>
@@ -137,14 +210,11 @@
             </div>
 
             <div class="col-lg-4">
-                
                 <div class="dashboard-panel shadow-sm mb-4 bg-brand-pink text-white">
                     <h6 class="fw-bold small mb-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>AÇÃO RÁPIDA</h6>
-                    
                     <button class="btn btn-light w-100 text-start fw-bold mb-2 py-2" onclick="window.location.href='operacional_atendimento.html'">
                         <i class="bi bi-person-badge text-warning me-2"></i> Acessar Fila de Atendimento
                     </button>
-                    
                     <button class="btn btn-light w-100 text-start fw-bold py-2" onclick="window.location.href='prontuarios.html'">
                         <i class="bi bi-journal-medical text-primary me-2"></i> Buscar Prontuários Médicos
                     </button>
@@ -190,12 +260,11 @@
     <script type="module" src="../js/admin_dashboard.js"></script>
     
     <script>
-        let meuGrafico; // Variável global para guardar o gráfico
+        let meuGrafico;
 
         document.addEventListener("DOMContentLoaded", function() {
             const ctx = document.getElementById('graficoFaturamento').getContext('2d');
             
-            // Criação do Gráfico com 3 linhas diferentes
             meuGrafico = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -204,7 +273,7 @@
                         {
                             label: 'Receitas',
                             data: [1200, 1900, 1500, 2200, 2800, 3500, 4000],
-                            borderColor: '#198754', // Verde
+                            borderColor: '#198754',
                             backgroundColor: 'rgba(25, 135, 84, 0.2)',
                             borderWidth: 3,
                             fill: true,
@@ -213,16 +282,16 @@
                         {
                             label: 'Despesas',
                             data: [500, 800, 600, 1000, 1200, 1500, 1300],
-                            borderColor: '#dc3545', // Vermelho
+                            borderColor: '#dc3545',
                             backgroundColor: 'rgba(220, 53, 69, 0.1)',
                             borderWidth: 2,
-                            borderDash: [5, 5], // Linha tracejada
+                            borderDash: [5, 5],
                             tension: 0.4
                         },
                         {
                             label: 'Lucro',
                             data: [700, 1100, 900, 1200, 1600, 2000, 2700],
-                            borderColor: '#0d6efd', // Azul
+                            borderColor: '#0d6efd',
                             borderWidth: 2,
                             tension: 0.4
                         }
@@ -231,7 +300,7 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { display: false } // Escondemos a legenda padrão para usar nossos botões personalizados
+                        legend: { display: false }
                     },
                     scales: {
                         y: { beginAtZero: true }
@@ -240,16 +309,15 @@
             });
         });
 
-        // FUNÇÃO DE MAGIA: Liga e Desliga as linhas do gráfico
         function toggleDataset(index, element) {
             const isVisible = meuGrafico.isDatasetVisible(index);
             
             if (isVisible) {
                 meuGrafico.hide(index);
-                element.classList.add('opacity-50'); // Deixa o botão cinza
+                element.classList.add('opacity-50'); // Ativa o estilo de contorno rosa personalizado do CSS
             } else {
                 meuGrafico.show(index);
-                element.classList.remove('opacity-50'); // Volta a cor original do botão
+                element.classList.remove('opacity-50'); // Restaura o botão original completo
             }
         }
     </script>
