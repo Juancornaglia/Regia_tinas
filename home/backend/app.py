@@ -46,21 +46,23 @@ HORA_FIM_PADRAO = time(18, 0)
 INTERVALO_SLOT_MINUTOS = 30 
 
 # Rota para a Página Inicial (Home)
+# Rota para a Página Inicial (Home)
 @app.route('/')
 def home():
-    # Ele vai na pasta 'ecommerce' e entrega apenas o 'index.html'
-    return send_from_directory('ecommerce', 'index.html')
+    # Ele vai na pasta 'frontend' e entrega o seu 'index1.html'
+    return send_from_directory('FRONTEND_DIR', 'index.html')
 
 # Rota para a Página de Busca
 @app.route('/busca')
 def busca():
-    # Quando o cara digitar site.com/busca, ele entrega o 'busca.html'
-    return send_from_directory('ecommerce', 'busca.html')
+    # Quando o usuário acessar /busca, entrega o 'busca.html' da pasta frontend
+    return send_from_directory('FRONTEND_DIR', 'busca.html')
 
-# Rota para o Catálogo (Aquela que unificamos)
+# Rota para o Catálogo (Unificado)
 @app.route('/catalogo')
 def catalogo():
-    return send_from_directory('ecommerce', 'catalogo.html')
+    # Entrega o 'catalogo.html' da pasta frontend
+    return send_from_directory('FRONTEND_DIR', 'catalogo.html')
 
 @app.route('/img/<path:filename>')
 def imagens(filename):
