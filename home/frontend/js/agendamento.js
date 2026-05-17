@@ -1,9 +1,14 @@
-// 1. CONFIGURAÇÃO AMBIENTE
+/**
+ * js/agendamento.js - Motor de Fluxo de Agendamento (Regia & Tinas Care)
+ * Versão Limpa, Otimizada e Sincronizada com a Raiz do Projeto
+ */
+
+// 1. CONFIGURAÇÃO DE AMBIENTE
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
 
-// 2. ESTADO GLOBAL DO AGENDAMENTO
+// 2. ESTADO GLOBAL DA SESSÃO DE AGENDAMENTO
 let currentStep = 1;
 let calendarDate = new Date(); 
 
@@ -14,78 +19,80 @@ const appointmentData = {
     servico_id: null,
     servico_nome: null,
     servico_preco: 0,
-    data: null, // YYYY-MM-DD
-    horario: null, // HH:MM
+    data: null,      // Formato: YYYY-MM-DD
+    horario: null,   // Formato: HH:MM
     id_pet: null
 };
 
-// TRAVA DE SEGURANÇA: Obriga o cliente a ter cadastro/login antes de ver os horários
+// 3. BARREIRA DE AUTENTICAÇÃO (Sincronizada com a Raiz)
 if (!appointmentData.cliente_id) {
     sessionStorage.setItem('url_retorno_agendamento', window.location.href);
     alert("Para realizar um agendamento, é necessário estar logado. Vamos te redirecionar!");
-    window.location.href = 'login.html'; // Aponta direto para a raiz
+    window.location.href = 'login.html'; 
 }
 
+// 4. DISPARO INICIAL
 document.addEventListener('DOMContentLoaded', () => {
-    init();
+    initSchedulingSystem();
 });
 
-function init() {
-    loadServices();
-    loadStores();
-    setupEventListeners();
+function initSchedulingSystem() {
+    loadServicesCatalog();
+    loadPhysicalStores();
+    bindInterfaceEvents();
 }
 
-// --- PASSO 1: CARREGAR SERVIÇOS (PREÇOS 100% OCULTADOS DA INTERFACE) ---
-async function loadServices() {
+// --- PASSO 1: BUSCAR SERVIÇOS NO NEON (PREÇOS OCULTOS) ---
+async function loadServicesCatalog() {
     const select = document.getElementById('service-select');
     if (!select) return;
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/servicos`);
-        if (!res.ok) throw new Error(`Erro: ${res.status}`);
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
         
         const data = await res.json();
-        const listaServicos = Array.isArray(data) ? data : (data.servicos || data.data || []);
+        const servicos = Array.isArray(data) ? data : (data.servicos || []);
         
         select.innerHTML = '<option value="" disabled selected>O que vamos fazer hoje?</option>';
 
-        listaServicos.forEach(s => {
+        servicos.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id_servico;
-            opt.dataset.preco = s.preco_servico; // Guardado oculto nos bastidores para o Neon
-            opt.textContent = s.nome_servico;   // CORREÇÃO EXIGIDA: Apenas o nome na tela!
+            opt.dataset.preco = s.preco_servico; // Mantido em background para auditoria do Neon
+            opt.textContent = s.nome_servico;   // Exibe estritamente o nome do procedimento
             select.appendChild(opt);
         });
     } catch (e) {
-        console.error("Erro serviços:", e);
-        select.innerHTML = '<option value="">Erro ao carregar serviços.</option>';
+        console.error("Erro ao processar catálogo de serviços:", e);
+        select.innerHTML = '<option value="">Erro operacional ao buscar serviços.</option>';
     }
 }
 
-// --- PASSO 2: CARREGAR LOJAS ---
-async function loadStores() {
+// --- PASSO 2: BUSCAR LOJAS NO BANCO ---
+async function loadPhysicalStores() {
     const select = document.getElementById('store-select');
     if (!select) return;
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/lojas`);
         const data = await res.json();
-        const listaLojas = Array.isArray(data) ? data : (data.lojas || data.data || []);
+        const lojas = Array.isArray(data) ? data : [];
         
         select.innerHTML = '<option value="" disabled selected>Selecione a unidade...</option>';
-        listaLojas.forEach(l => {
+        lojas.forEach(l => {
             const opt = document.createElement('option');
             opt.value = l.id_loja;
             opt.textContent = l.nome_loja;
             select.appendChild(opt);
         });
     } catch (e) {
-        select.innerHTML = '<option value="">Erro ao carregar lojas</option>';
+        console.error("Erro ao carregar lojas físicas:", e);
+        select.innerHTML = '<option value="">Erro ao buscar filiais.</option>';
     }
 }
 
-// --- PASSO 3: CALENDÁRIO COM HORÁRIOS FILTRADOS ---
+// --- PASSO 3: GERENCIADOR DO CALENDÁRIO DINÂMICO ---
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYearLabel = document.getElementById('calendar-month-year');
@@ -140,7 +147,7 @@ async function fetchAvailableSlots(dateStr) {
         const res = await fetch(url);
         const slots = await res.json();
         
-        container.innerHTML = '<h6 class="fw-bold mb-3 small text-uppercase text-secondary">Horários Disponíveis:</h6>';
+        container.innerHTML = '<h6 class="fw-bold mb-3 small text-uppercase text-secondary">Horários Livres:</h6>';
         
         if (!slots || slots.length === 0) {
             container.innerHTML = '<p class="small text-muted text-center py-4">Agenda cheia para este dia.</p>';
@@ -162,16 +169,16 @@ async function fetchAvailableSlots(dateStr) {
             container.appendChild(btn);
         });
     } catch (e) {
-        container.innerHTML = '<p class="text-danger small">Erro ao carregar horários.</p>';
+        container.innerHTML = '<p class="text-danger small">Erro ao processar agenda.</p>';
     }
 }
 
-// --- PASSO 4: CARREGAR PETS (BLINDADO CONTRA FALHAS DE ROTA) ---
+// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS DO LOGADO ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     if (!select) return;
 
-    // CORREÇÃO CRÍTICA: Inicializa as opções base garantidas ANTES do fetch para não quebrar a tela
+    // Inicialização tática limpa antes da requisição externa
     select.innerHTML = `
         <option value="" disabled selected>Para qual pet será o atendimento?</option>
         <option value="NEW">➕ Cadastrar Outro / Novo Pet</option>
@@ -183,18 +190,18 @@ async function loadUserPets() {
             const data = await res.json();
             const listaPets = Array.isArray(data) ? data : [];
             
-            // Injeta os pets existentes logo acima da opção de criar um novo
+            // Adiciona acima da opção de criar novo pet
             listaPets.forEach(p => {
                 const opt = new Option(p.nome_pet, p.id_pet);
                 select.insertBefore(opt, select.lastChild);
             });
         }
     } catch (e) { 
-        console.warn("⚠️ API de consulta de pets offline ou pendente. Mantendo fluxo de cadastro ativo."); 
+        console.warn("API de listagem de pets em contingência."); 
     }
 }
 
-// --- CONTROLE DE FLUXO ---
+// --- CONTROLE CENTRAL DO ASSISTENTE (PASSO A PASSO) ---
 function showStep(n) {
     document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
     const progressBar = document.getElementById('step-progressbar');
@@ -202,27 +209,28 @@ function showStep(n) {
     currentStep = n;
 
     if (n === 4) loadUserPets();
-    if (n === 5) gerarResSummary();
+    if (n === 5) renderConfirmationSummary();
 }
 
-function gerarResSummary() {
+function renderConfirmationSummary() {
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
     const nomePet = isNewPet ? document.getElementById('nome_pet').value : selectPet.options[selectPet.selectedIndex].text;
 
-    // Resumo final premium e limpo de qualquer cifrão ou preço
+    // Layout limpo sem cifrões para cumprir a regra de design oculto de preço
     document.getElementById('confirmation-summary').innerHTML = `
         <div class="row g-3">
-            <div class="col-6"><small class="text-muted d-block">SERVIÇO ESCOLHIDO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">UNIDADE FÍSICA</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">SERVIÇO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">UNIDADE</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
             <div class="col-6"><small class="text-muted d-block">DATA SELECIONADA</small> <strong class="text-dark">${appointmentData.data.split('-').reverse().join('/')}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">HORÁRIO DA TOSA</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
-            <div class="col-12 border-top pt-2"><small class="text-muted d-block">COMPANHEIRO ANIMAL</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">HORÁRIO RESERVADO</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
+            <div class="col-12 border-top pt-2"><small class="text-muted d-block">PACIENTE ANIMAL</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
         </div>
     `;
 }
 
-function setupEventListeners() {
+// --- CAPTURA DE COMPORTAMENTOS (LISTENERS) ---
+function bindInterfaceEvents() {
     document.getElementById('service-select').onchange = (e) => {
         appointmentData.servico_id = e.target.value;
         appointmentData.servico_nome = e.target.options[e.target.selectedIndex].text;
@@ -261,10 +269,11 @@ function setupEventListeners() {
     document.getElementById('prevMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
     document.getElementById('nextMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); };
 
-    document.getElementById('confirmButton').onclick = confirmAppointment;
+    document.getElementById('confirmButton').onclick = executeFinalBooking;
 }
 
-async function confirmAppointment() {
+// --- CONFIRMAÇÃO DO AGENDAMENTO E ENVIO AO NEON ---
+async function executeFinalBooking() {
     const btn = document.getElementById('confirmButton');
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
@@ -285,7 +294,7 @@ async function confirmAppointment() {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Gravando Reserva...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processando no Neon...';
         
         const res = await fetch(`${API_BASE_URL}/api/agendar`, {
             method: 'POST',
@@ -294,8 +303,8 @@ async function confirmAppointment() {
         });
 
         if (res.ok) {
-            alert("✨ Tudo pronto! O seu agendamento foi confirmado.");
-            window.location.href = 'meus_agendamentos.html';
+            alert("✨ Perfeito! O seu agendamento foi gravado com sucesso.");
+            window.location.href = 'meus_agendamentos.html'; // Sincronizado para a raiz
         } else {
             const err = await res.json().catch(() => ({}));
             alert("Ops: " + (err.error || "Falha ao registrar horário."));
@@ -303,7 +312,7 @@ async function confirmAppointment() {
             btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
         }
     } catch (e) {
-        alert("Erro de comunicação com o servidor.");
+        alert("Erro de comunicação de rede.");
         btn.disabled = false;
         btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
     }

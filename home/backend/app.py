@@ -72,7 +72,6 @@ def servir_usuario(path):
 def servir_paginas(path):
     return send_from_directory(FRONTEND_DIR, path)
 
-# Ajustado para aceitar UUID (String) em vez de apenas Inteiro
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
 def get_agendamentos_usuario(id_usuario):
     conn = None
@@ -81,9 +80,12 @@ def get_agendamentos_usuario(id_usuario):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Query organizada para facilitar a leitura
+        # CORREÇÃO REAL: to_char transforma o timestamp em texto dentro do PostgreSQL.
+        # Isso impede que o jsonify do Flask sofra um erro 500 de serialização!
         query = '''
-            SELECT a.id_agendamento, a.data_hora_inicio, a.status,
+            SELECT a.id_agendamento, 
+                   to_char(a.data_hora_inicio, 'DD/MM/YYYY HH24:MI') as data_hora_inicio, 
+                   a.status,
                    pt.nome_pet, s.nome_servico, l.nome_loja
             FROM public.agendamentos a
             JOIN public.pets pt ON a.id_pet = pt.id_pet
@@ -97,7 +99,7 @@ def get_agendamentos_usuario(id_usuario):
         agendamentos = cur.fetchall()
         return jsonify(agendamentos), 200
     except Exception as e:
-        print(f"Erro ao buscar agendamentos: {e}")
+        print(f"❌ Erro ao buscar agendamentos do usuário {id_usuario}: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         if cur: cur.close()
@@ -808,38 +810,7 @@ def listar_pets_por_tutor(id_usuario):
         print(f"❌ ERRO CRÍTICO AO LISTAR PETS DO TUTOR {id_usuario}: {e}")
         return jsonify({"error": "Falha interna do servidor ao carregar a lista de pets."}), 500
 
-@app.route('/api/agendamentos/cliente/<id_cliente>', methods=['GET'])
-def listar_agenda_cliente(id_cliente):
-    """Busca o histórico completo de agendamentos ativos do cliente no Neon com dados via JOIN"""
-    try:
-        # CORREÇÃO CRÍTICA: to_char(a.data_hora_inicio, 'DD/MM/YYYY HH24:MI') converte o timestamp
-        # em string de texto comum, impedindo que o jsonify do Flask quebre com erro de serialização!
-        sql = """
-            SELECT a.id_agendamento, 
-                   to_char(a.data_hora_inicio, 'DD/MM/YYYY HH24:MI') as data_hora_inicio, 
-                   a.status, 
-                   a.valor_cobrado, 
-                   a.observacoes_cliente,
-                   p.nome_pet, 
-                   s.nome_servico, 
-                   l.nome_loja
-            FROM public.agendamentos a
-            JOIN public.pets p ON a.id_pet = p.id_pet
-            JOIN public.servicos s ON a.id_servico = s.id_servico
-            JOIN public.lojas l ON a.id_loja = l.id_loja
-            WHERE a.id_cliente = %s AND a.ativo = true
-            ORDER BY a.data_hora_inicio DESC
-        """
-        
-        # Executa a query passando o parâmetro de forma segura contra SQL Injection
-        agenda = executar_query(sql, (id_cliente,))
-        
-        # Agora a lista contém apenas textos, números e booleanos puros. O jsonify vai rodar liso!
-        return jsonify(agenda if agenda else []), 200
 
-    except Exception as e:
-        print(f"❌ ERRO CRÍTICO AO LISTAR AGENDA DO CLIENTE {id_cliente}: {e}")
-        return jsonify({"error": "Falha interna do servidor ao carregar o histórico de agendamentos."}), 500
     
 @app.route('/api/admin/usuarios/listar-tudo', methods=['GET'])
 def listar_usuarios_final():
@@ -1031,37 +1002,39 @@ def post_agendamento():
         if not d:
             return jsonify({"error": "Dados do agendamento não recebidos."}), 400
             
-        # BLINDAGEM DE TIPOS: Força a conversão para inteiro para o Neon aceitar os JOINs
+        # BLINDAGEM DE TIPOS: Força a conversão para inteiro
         id_servico = int(d['id_servico'])
         id_loja = int(d['id_loja'])
             
         # 1. BUSCA PREÇO E DURACAO DO SERVICO
-        serv = executar_query('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (id_servico,))
+        # CORREÇÃO: Utilizando a mesma estrutura limpa que já validamos antes
+        sql_serv = "SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s"
+        serv = executar_query(sql_serv, (id_servico,))
         if not serv:
             return jsonify({"error": "O serviço selecionado não foi localizado na base."}), 404
             
         preco = serv[0]['preco_servico']
         dur = serv[0]['duracao_media_minutos'] or 30
 
-        # 2. TRATAMENTO DE DATAS
-        inicio_str = d['data_hora_inicio'].replace('Z', '').split('+')[0]
-        inicio = datetime.fromisoformat(inicio_str)
+        # 2. TRATAMENTO DE DATAS ROBUSTO
+        # CORREÇÃO CRÍTICA: Convertendo a string "YYYY-MM-DDTHH:MM:SS" de forma 100% segura
+        inicio_str = d['data_hora_inicio'].split('.')[0] # Remove milissegundos se existirem
+        inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M:%S')
         fim = inicio + timedelta(minutes=dur)
 
-        # 3. TRATAMENTO DE NOVO PET NO AGENDAMENTO (EM LOTE)
+        # 3. TRATAMENTO DE NOVO PET
         id_pet = d.get('id_pet')
         novo_pet_dados = d.get('novo_pet')
 
         if not id_pet and novo_pet_dados:
             sql_novo_pet = """
                 INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
-                VALUES (%s, %s, %s, %s, %s, 'Cadastrado automaticamente no agendamento')
+                VALUES (%s, %s, 'Cão', %s, %s, 'Cadastrado automaticamente no agendamento')
                 RETURNING id_pet
             """
             res_pet = executar_query(sql_novo_pet, (
                 d['id_cliente'],
-                novo_pet_dados.get('nome'),
-                'Cão',
+                novo_pet_dados.get('nome', 'Pet Sem Nome'),
                 novo_pet_dados.get('raca', 'SRD'),
                 novo_pet_dados.get('porte', 'Médio')
             ))
@@ -1070,10 +1043,7 @@ def post_agendamento():
             else:
                 return jsonify({"error": "Falha ao registrar a nova ficha do pet."}), 500
 
-        # Sincroniza chaves de observações de forma segura
-        observacoes = d.get('observacoes', '')
-
-        # 4. INSERÇÃO DO AGENDAMENTO FINAL COM IDS CONVERTIDOS
+        # 4. INSERÇÃO DO AGENDAMENTO FINAL
         sql_agendar = """
             INSERT INTO public.agendamentos 
             (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
@@ -1088,15 +1058,14 @@ def post_agendamento():
             inicio, 
             fim, 
             preco, 
-            observacoes
+            d.get('observacoes', '')
         ))
         
         return jsonify({"status": "sucesso", "mensagem": "Agendamento registrado com sucesso!"}), 201
         
     except Exception as e:
         print(f"❌ ERRO CRÍTICO NO AGENDAMENTO: {e}")
-        return jsonify({"error": "Erro interno no servidor ao processar o agendamento."}), 500
-
+        return jsonify({"error": f"Erro no servidor: {str(e)}"}), 500
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
