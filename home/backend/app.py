@@ -117,6 +117,17 @@ def get_usuario_dados(id_usuario):
         print(f"Erro ao buscar dados do usuário: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/servicos', methods=['GET'])
+def listar_servicos_agendamento():
+    """Retorna os serviços ativos para o select do agendamento"""
+    try:
+        sql = "SELECT id_servico, nome_servico, preco_servico, duracao_media_minutos FROM public.servicos WHERE ativo = true ORDER BY nome_servico ASC"
+        servicos = executar_query(sql)
+        return jsonify(servicos if servicos else []), 200
+    except Exception as e:
+        print(f"Erro ao listar serviços: {e}")
+        return jsonify({"error": "Falha ao carregar serviços"}), 500
+
 @app.route('/api/lojas', methods=['GET'])
 def listar_lojas_publico():
     """Retorna todas as unidades físicas ativas da rede para exibição no catálogo"""
@@ -138,14 +149,6 @@ def listar_lojas_publico():
     except Exception as e:
         print(f"❌ ERRO AO BUSCAR LOJAS NO NEON: {e}")
         return jsonify({"error": "Falha interna ao carregar as unidades físicas."}), 500
-
-@app.route('/api/servicos_lista', methods=['GET'])
-def listar_servicos_publico():
-    try:
-        servicos = executar_query('SELECT id_servico, nome_servico FROM public.servicos ORDER BY nome_servico')
-        return jsonify(servicos), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/admin/stats', methods=['GET'])
@@ -952,80 +955,43 @@ def excluir_pet_unificado(id_pet):
         }), 500
 
 @app.route('/api/horarios-disponiveis', methods=['GET'])
-def get_available_slots():
+def buscar_horarios_livres():
+    """
+    Motor Inteligente de Grade de Agendamento.
+    Devolve os horários livres da clínica (09:00 às 17:00), 
+    removendo os que já estão ocupados no banco Neon para o mesmo dia e loja.
+    """
     try:
         loja_id = request.args.get('loja_id')
-        servico_id = request.args.get('servico_id')
-        data_str = request.args.get('data') # Formato esperado: YYYY-MM-DD
+        data_solicitada = request.args.get('data') # Formato: YYYY-MM-DD
 
-        if not all([loja_id, servico_id, data_str]):
-            return jsonify({"error": "Faltam parâmetros para calcular horários."}), 400
+        if not loja_id or not data_solicitada:
+            return jsonify({"error": "Faltam parâmetros de loja ou data."}), 400
 
-        data_selecionada = datetime.strptime(data_str, '%Y-%m-%d').date()
+        # Grade padrão da clínica Regia & Tinas Care (Pode ajustar como quiser depois)
+        grade_padrao = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"]
 
-        # 1. Verifica se o dia está bloqueado (Feriados ou Folgas)
-        bloqueio = executar_query('''
-            SELECT motivo FROM public.dias_bloqueados 
-            WHERE data_bloqueada = %s AND (id_loja = %s OR id_loja IS NULL)
-        ''', (data_str, loja_id))
+        # Busca no banco de dados Neon os horários que já têm agendamentos pendentes ou confirmados
+        sql = '''
+            SELECT to_char(data_hora_inicio, 'HH24:MI') as hora_ocupada
+            FROM public.agendamentos
+            WHERE id_loja = %s 
+              AND DATE(data_hora_inicio) = %s 
+              AND status NOT IN ('cancelado')
+        '''
+        ocupados_raw = executar_query(sql, (loja_id, data_solicitada))
         
-        if bloqueio:
-            return jsonify([]), 200 # Retorna lista vazia se o dia estiver trancado
+        # Cria uma lista apenas com as strings de horas (ex: "10:00")
+        horas_ocupadas = [item['hora_ocupada'] for item in ocupados_raw] if ocupados_raw else []
 
-        # 2. Busca regras de capacidade e duração do serviço
-        regra_res = executar_query('''
-            SELECT r.capacidade_simultanea, s.duracao_media_minutos 
-            FROM public.servicos_loja_regras r
-            JOIN public.servicos s ON r.id_servico = s.id_servico
-            WHERE r.id_loja = %s AND r.id_servico = %s AND r.ativo = true
-        ''', (loja_id, servico_id))
-        
-        if not regra_res:
-            return jsonify([]), 200 # Sem regra definida, sem horários
+        # Remove da grade padrão os horários que já estão na lista de ocupados do banco
+        horarios_livres = [h for h in grade_padrao if h not in horas_ocupadas]
 
-        regra = regra_res[0]
-        duracao = regra['duracao_media_minutos'] or 30
-        capacidade_maxima = regra['capacidade_simultanea']
-
-        # 3. Puxa agendamentos já ocupados para este dia e loja
-        agendamentos = executar_query('''
-            SELECT data_hora_inicio, data_hora_fim FROM public.agendamentos 
-            WHERE id_loja = %s AND CAST(data_hora_inicio AS DATE) = %s AND status != 'cancelado'
-        ''', (loja_id, data_str))
-
-        slots_disponiveis = []
-        
-        # Combinamos a data com a hora de início e fim padrão da Regia & Tinas
-        inicio_dia = datetime.combine(data_selecionada, HORA_INICIO_PADRAO)
-        fim_dia = datetime.combine(data_selecionada, HORA_FIM_PADRAO)
-
-        atual = inicio_dia
-        while atual + timedelta(minutes=duracao) <= fim_dia:
-            slot_inicio = atual
-            slot_fim = atual + timedelta(minutes=duracao)
-            
-            # Conta quantos agendamentos batem com este horário (conflitos)
-            conflitos = 0
-            for ag in agendamentos:
-                # Remove timezone se existir para evitar erro de comparação
-                ag_inicio = ag['data_hora_inicio'].replace(tzinfo=None)
-                ag_fim = ag['data_hora_fim'].replace(tzinfo=None) if ag['data_hora_fim'] else ag_inicio + timedelta(minutes=duracao)
-                
-                if slot_inicio < ag_fim and slot_fim > ag_inicio:
-                    conflitos += 1
-
-            # Se ainda houver "vaga" na loja para esse horário, adiciona à lista
-            if conflitos < capacidade_maxima:
-                slots_disponiveis.append(slot_inicio.strftime('%H:%M'))
-            
-            # Pula para o próximo intervalo (ex: de 30 em 30 min)
-            atual += timedelta(minutes=INTERVALO_SLOT_MINUTOS)
-
-        return jsonify(slots_disponiveis), 200
+        return jsonify(horarios_livres), 200
 
     except Exception as e:
-        print(f"Erro no motor de horários: {e}")
-        return jsonify({"error": "Falha ao calcular disponibilidade"}), 500
+        print(f"❌ ERRO AO CALCULAR GRADE DE HORÁRIOS: {e}")
+        return jsonify({"error": "Erro interno ao processar a grade."}), 500
 
 @app.route('/api/produtos', methods=['GET'])
 def listar_produtos_loja():

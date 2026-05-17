@@ -5,7 +5,7 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 
 // 2. ESTADO GLOBAL DO AGENDAMENTO
 let currentStep = 1;
-let calendarDate = new Date(); // Data base para navegação do calendário
+let calendarDate = new Date();
 
 const appointmentData = {
     cliente_id: localStorage.getItem('usuario_id'),
@@ -19,10 +19,10 @@ const appointmentData = {
     id_pet: null
 };
 
-// CORREÇÃO 1: SEGURANÇA COM MEMÓRIA DE RETORNO (Garante que volta para cá após o login)
+// SEGURANÇA: Garante login prévio
 if (!appointmentData.cliente_id) {
     sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    alert("Por favor, faça login para agendar o seu serviço.");
+    alert("Por favor, faça login na sua conta para agendar o serviço.");
     window.location.href = '../usuario/login.html';
 }
 
@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 });
 
-// --- INICIALIZAÇÃO ---
 function init() {
     loadServices();
     loadStores();
@@ -43,21 +42,14 @@ async function loadServices() {
     if (!select) return;
 
     try {
-        // CORREÇÃO 2: Alinhado para a rota oficial unificada /api/servicos
         const res = await fetch(`${API_BASE_URL}/api/servicos`);
-        if (!res.ok) throw new Error(`Erro na rota: ${res.status}`);
-        
+        if (!res.ok) throw new Error("Falha ao buscar serviços");
         const data = await res.json();
         
-        // Suporte caso a API venha envelopada ou em lista direta do Neon
         const listaServicos = Array.isArray(data) ? data : (data.servicos || data.data || []);
         
         select.innerHTML = '<option value="" disabled selected>O que vamos fazer hoje?</option>';
-        
-        if (listaServicos.length === 0) {
-            select.innerHTML = '<option value="">Nenhum serviço disponível</option>';
-            return;
-        }
+        if (listaServicos.length === 0) return select.innerHTML = '<option value="">Nenhum serviço disponível</option>';
 
         listaServicos.forEach(s => {
             const opt = document.createElement('option');
@@ -67,8 +59,7 @@ async function loadServices() {
             select.appendChild(opt);
         });
     } catch (e) {
-        console.error("Erro ao carregar serviços:", e);
-        select.innerHTML = '<option value="">Erro ao carregar serviços. Tente recarregar.</option>';
+        select.innerHTML = '<option value="">Erro ao carregar os serviços.</option>';
     }
 }
 
@@ -79,12 +70,12 @@ async function loadStores() {
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/lojas`);
-        if (!res.ok) throw new Error("Erro ao buscar lojas");
-        
+        if (!res.ok) throw new Error("Falha ao buscar lojas");
         const data = await res.json();
-        const listaLojas = Array.isArray(data) ? data : (data.lojas || data.data || []);
         
+        const listaLojas = Array.isArray(data) ? data : (data.lojas || data.data || []);
         select.innerHTML = '<option value="" disabled selected>Selecione a unidade...</option>';
+        
         listaLojas.forEach(l => {
             const opt = document.createElement('option');
             opt.value = l.id_loja;
@@ -92,12 +83,11 @@ async function loadStores() {
             select.appendChild(opt);
         });
     } catch (e) {
-        console.error("Erro ao carregar lojas:", e);
-        select.innerHTML = '<option value="">Erro ao carregar lojas</option>';
+        select.innerHTML = '<option value="">Erro ao carregar as unidades.</option>';
     }
 }
 
-// --- PASSO 3: CALENDÁRIO E HORÁRIOS ---
+// --- PASSO 3: CALENDÁRIO ---
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYearLabel = document.getElementById('calendar-month-year');
@@ -105,12 +95,12 @@ function renderCalendar() {
 
     grid.innerHTML = '';
     const daysHeader = ['D','S','T','Q','Q','S','S'];
-    daysHeader.forEach(d => grid.innerHTML += `<div class="calendar-day-name">${d}</div>`);
+    daysHeader.forEach(d => grid.innerHTML += `<div class="calendar-day-name fw-bold text-muted small">${d}</div>`);
 
     const month = calendarDate.getMonth();
     const year = calendarDate.getFullYear();
-    
     const mesNome = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(calendarDate);
+    
     monthYearLabel.textContent = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} ${year}`;
 
     const firstDay = new Date(year, month, 1).getDay();
@@ -126,15 +116,14 @@ function renderCalendar() {
         const isPast = loopDate < today;
 
         const dayEl = document.createElement('div');
-        dayEl.className = `calendar-day ${isPast ? 'disabled' : ''}`;
-        if (appointmentData.data === dateStr) dayEl.classList.add('selected');
+        dayEl.className = `calendar-day ${isPast ? 'disabled opacity-25' : ''}`;
+        if (appointmentData.data === dateStr) dayEl.classList.add('selected', 'bg-brand', 'text-white', 'rounded-circle');
         dayEl.textContent = d;
 
         if (!isPast) {
             dayEl.onclick = () => {
                 appointmentData.data = dateStr;
-                document.querySelectorAll('.calendar-day.selected').forEach(x => x.classList.remove('selected'));
-                dayEl.classList.add('selected');
+                renderCalendar(); // Re-renderiza para aplicar o estilo visual do dia
                 fetchAvailableSlots(dateStr);
             };
         }
@@ -142,42 +131,54 @@ function renderCalendar() {
     }
 }
 
+// --- BUSCA OS HORÁRIOS LIVRES NO PYTHON ---
 async function fetchAvailableSlots(dateStr) {
     const container = document.getElementById('time-slots-container');
     if (!container) return;
 
-    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border brand-pink spinner-border-sm"></div></div>';
+    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border text-danger spinner-border-sm"></div><p class="small text-muted mt-2">Buscando horários...</p></div>';
 
     try {
         const url = `${API_BASE_URL}/api/horarios-disponiveis?loja_id=${appointmentData.loja_id}&servico_id=${appointmentData.servico_id}&data=${dateStr}`;
         const res = await fetch(url);
-        const slots = await res.json();
         
-        container.innerHTML = '<h6 class="fw-bold mb-3 small text-uppercase">Horários Livres:</h6>';
-        
-        if (!slots || slots.length === 0) {
-            container.innerHTML = '<div class="text-center py-4"><i class="bi bi-calendar-x text-muted"></i><p class="small text-muted">Lotado ou Fechado</p></div>';
+        // TRATAMENTO INTELIGENTE DO ERRO 404 (Avisa se o Python não tiver a rota)
+        if (res.status === 404) {
+            container.innerHTML = '<p class="text-danger small mt-3 fw-bold"><i class="bi bi-exclamation-triangle"></i> Erro 404: Rota de horários ausente no Backend.</p>';
             return;
         }
 
+        const slots = await res.json();
+        
+        container.innerHTML = '<h6 class="fw-bold mb-3 small text-uppercase text-secondary mt-3">Horários Livres:</h6>';
+        
+        if (!slots || slots.length === 0) {
+            container.innerHTML += '<div class="text-center py-3 bg-light rounded-3"><i class="bi bi-calendar-x text-muted fs-4"></i><p class="small text-muted mb-0">Agenda lotada para este dia.</p></div>';
+            return;
+        }
+
+        const slotsGrid = document.createElement('div');
+        slotsGrid.className = 'd-flex flex-wrap gap-2 justify-content-center';
+        
         slots.forEach(time => {
             const btn = document.createElement('button');
-            btn.className = 'btn btn-outline-secondary btn-sm m-1 time-slot-btn';
+            btn.className = `btn btn-sm rounded-pill px-3 py-2 fw-medium ${appointmentData.horario === time ? 'btn-danger text-white shadow-sm' : 'btn-outline-secondary'}`;
             btn.textContent = time;
-            if (appointmentData.horario === time) btn.classList.replace('btn-outline-secondary', 'btn-brand');
             
             btn.onclick = () => {
                 appointmentData.horario = time;
-                document.querySelectorAll('.time-slot-btn').forEach(b => b.className = 'btn btn-outline-secondary btn-sm m-1 time-slot-btn');
-                btn.className = 'btn bg-brand-pink btn-sm m-1 time-slot-btn text-white';
+                fetchAvailableSlots(dateStr); // Re-renderiza para destacar o botão clicado
                 
                 const nextBtn = document.getElementById('nextButtonStep3');
                 if (nextBtn) nextBtn.disabled = false;
             };
-            container.appendChild(btn);
+            slotsGrid.appendChild(btn);
         });
+        container.appendChild(slotsGrid);
+
     } catch (e) {
-        container.innerHTML = '<p class="text-danger small">Erro ao carregar horários.</p>';
+        console.error(e);
+        container.innerHTML = '<p class="text-danger small mt-3">Falha ao conectar com o servidor Neon.</p>';
     }
 }
 
@@ -191,19 +192,16 @@ async function loadUserPets() {
         const data = await res.json();
         const listaPets = Array.isArray(data) ? data : [];
         
-        select.innerHTML = '<option value="NEW">-- Cadastrar Novo Pet --</option>';
-        listaPets.forEach(p => {
-            const opt = new Option(p.nome_pet, p.id_pet);
-            select.add(opt);
-        });
+        select.innerHTML = '<option value="NEW">-- Adicionar um Novo Pet --</option>';
+        listaPets.forEach(p => select.add(new Option(p.nome_pet, p.id_pet)));
     } catch (e) { 
-        console.error("Erro ao carregar pets:", e); 
+        console.error("Erro pets:", e); 
     }
 }
 
-// --- NAVEGAÇÃO E WIZARD ---
+// --- NAVEGAÇÃO WIZARD ---
 function showStep(n) {
-    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
+    document.querySelectorAll('.step').forEach((s, i) => s.style.display = (i + 1 === n) ? 'block' : 'none');
     const progressBar = document.getElementById('step-progressbar');
     if (progressBar) progressBar.style.width = `${(n / 5) * 100}%`;
     currentStep = n;
@@ -215,25 +213,24 @@ function showStep(n) {
 function gerarResSummary() {
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
-    const nomePet = isNewPet ? document.getElementById('nome_pet').value : selectPet.options[selectPet.selectedIndex].text;
+    const nomePet = isNewPet ? (document.getElementById('nome_pet')?.value || 'Novo Pet') : selectPet.options[selectPet.selectedIndex].text;
 
     document.getElementById('confirmation-summary').innerHTML = `
-        <div class="row g-3">
-            <div class="col-6"><small class="text-muted d-block">SERVIÇO</small> <strong>${appointmentData.servico_nome}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">UNIDADE</small> <strong>${appointmentData.loja_nome}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">DATA</small> <strong>${new Date(appointmentData.data + "T12:00:00").toLocaleDateString('pt-BR')}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">HORÁRIO</small> <strong>${appointmentData.horario}</strong></div>
-            <div class="col-12"><small class="text-muted d-block">PET</small> <strong>${nomePet}</strong></div>
+        <div class="row g-3 bg-light p-3 rounded-4 border">
+            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">SERVIÇO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
+            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">UNIDADE</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
+            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">DATA</small> <strong class="text-dark">${appointmentData.data.split('-').reverse().join('/')}</strong></div>
+            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">HORÁRIO</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
+            <div class="col-12 border-top pt-2"><small class="text-muted d-block" style="font-size:0.7rem;">PET SELECIONADO</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
         </div>
     `;
 }
 
-// --- EVENTOS E CLIQUES ---
+// --- LISTENERS ---
 function setupEventListeners() {
     document.getElementById('service-select').onchange = (e) => {
         appointmentData.servico_id = e.target.value;
         appointmentData.servico_nome = e.target.options[e.target.selectedIndex].text.split(' - ')[0];
-        appointmentData.servico_preco = e.target.options[e.target.selectedIndex].dataset.preco;
         document.getElementById('nextButtonStep1').disabled = false;
     };
 
@@ -244,36 +241,34 @@ function setupEventListeners() {
     };
 
     document.getElementById('select-pet').onchange = (e) => {
-        document.getElementById('new-pet-fields').style.display = (e.target.value === 'NEW') ? 'block' : 'none';
+        const fields = document.getElementById('new-pet-fields');
+        if (fields) fields.style.display = (e.target.value === 'NEW') ? 'block' : 'none';
         appointmentData.id_pet = (e.target.value === 'NEW') ? null : e.target.value;
     };
 
-    document.getElementById('nextButtonStep1').onclick = () => showStep(2);
-    document.getElementById('nextButtonStep2').onclick = () => { renderCalendar(); showStep(3); };
-    document.getElementById('nextButtonStep3').onclick = () => showStep(4);
+    document.getElementById('nextButtonStep1')?.addEventListener('click', () => showStep(2));
+    document.getElementById('nextButtonStep2')?.addEventListener('click', () => { renderCalendar(); showStep(3); });
+    document.getElementById('nextButtonStep3')?.addEventListener('click', () => showStep(4));
     
-    document.getElementById('pet-info-form').onsubmit = (e) => {
+    document.getElementById('pet-info-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
         showStep(5);
-    };
-
-    document.querySelectorAll('.btn-back').forEach(b => {
-        b.onclick = () => showStep(currentStep - 1);
     });
 
-    document.getElementById('prevMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
-    document.getElementById('nextMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); };
+    document.querySelectorAll('.btn-back').forEach(b => b.onclick = () => showStep(currentStep - 1));
 
-    document.getElementById('confirmButton').onclick = confirmAppointment;
+    document.getElementById('prevMonthButton')?.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); });
+    document.getElementById('nextMonthButton')?.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); });
+
+    document.getElementById('confirmButton')?.addEventListener('click', confirmAppointment);
 }
 
-// --- ENVIO PARA O BACKEND ---
+// --- ENVIO FINAL PARA O BACKEND ---
 async function confirmAppointment() {
     const btn = document.getElementById('confirmButton');
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
     
-    // Captura os elementos de forma defensiva para evitar erros de 'null'
     const inputObs = document.getElementById('observacoes') || document.getElementById('observacoes_cliente');
     const inputNomePet = document.getElementById('nome_pet');
     const inputRaca = document.getElementById('especie_raca') || document.getElementById('raca');
@@ -295,7 +290,7 @@ async function confirmAppointment() {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Gravando no Neon...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Finalizando...';
         
         const res = await fetch(`${API_BASE_URL}/api/agendar`, {
             method: 'POST',
@@ -304,16 +299,16 @@ async function confirmAppointment() {
         });
 
         if (res.ok) {
-            alert("✨ Tudo pronto! O seu agendamento foi confirmado.");
+            alert("✨ Tudo pronto! O seu agendamento foi confirmado no Neon.");
             window.location.href = '../usuario/perfil.html';
         } else {
             const err = await res.json().catch(() => ({}));
-            alert("Ops: " + (err.error || "Falha ao registrar horário. Tente outro momento."));
+            alert("Ops: " + (err.error || "Falha ao registrar horário no banco."));
             btn.disabled = false;
             btn.innerText = "Confirmar Agora!";
         }
     } catch (e) {
-        console.error("Erro na conexão do agendamento:", e);
+        console.error(e);
         alert("Erro de comunicação com o servidor.");
         btn.disabled = false;
         btn.innerText = "Confirmar Agora!";
