@@ -131,11 +131,11 @@ def listar_servicos_agendamento():
 @app.route('/api/lojas', methods=['GET'])
 def listar_lojas_unificado():
     """
-    Rota Unificada para Unidades Físicas (Regia & Tinas Care).
-    Atende tanto a página de exibição (loja.html) quanto o fluxo de agendamentos.
+    Rota Unificada e Corrigida para Unidades Físicas (Regia & Tinas Care).
+    Lê direto do Neon sem travar o argumento da query.
     """
     try:
-        # Traz as colunas exatas do seu banco Neon de forma otimizada
+        # Comando SQL puro combinando com as colunas da sua tabela public.lojas
         sql = """
             SELECT id_loja, nome_loja, endereco, telefone 
             FROM public.lojas 
@@ -143,16 +143,14 @@ def listar_lojas_unificado():
             ORDER BY nome_loja ASC
         """
         
-        # CORREÇÃO DE ARGUMENTO: Passamos None como segundo parâmetro para garantir
-        # que a sua função executar_query não quebre caso exija a tupla de argumentos.
-        lojas = executar_query(sql, None)
+        # CORREÇÃO CRÍTICA: Removido o ', None'. Passando apenas o SQL de forma limpa
+        lojas = executar_query(sql)
         
-        # Retorna a lista pura de dicionários que o seu loja.js já está pronto para ler
         return jsonify(lojas if lojas else []), 200
         
     except Exception as e:
-        print(f"❌ ERRO CONTROLADO AO BUSCAR LOJAS NO NEON: {e}")
-        return jsonify({"error": "Falha interna do servidor ao carregar o catálogo de unidades físicas."}), 500
+        print(f"❌ ERRO REAL NA ROTA DE LOJAS: {e}")
+        return jsonify({"error": f"Erro interno no Neon: {str(e)} "}), 500
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
