@@ -120,11 +120,25 @@ def get_usuario_dados(id_usuario):
 
 @app.route('/api/lojas', methods=['GET'])
 def listar_lojas_publico():
+    """Retorna todas as unidades físicas ativas da rede para exibição no catálogo"""
     try:
-        lojas = executar_query('SELECT id_loja, nome_loja FROM public.lojas ORDER BY nome_loja')
-        return jsonify(lojas), 200
+        # CORREÇÃO 1: Adicionado 'WHERE ativo = true' para esconder lojas desativadas do público
+        # CORREÇÃO 2: Adicionado 'endereco' e 'telefone' para suporte completo à retirada física
+        sql = """
+            SELECT id_loja, nome_loja, endereco, telefone 
+            FROM public.lojas 
+            WHERE ativo = true 
+            ORDER BY nome_loja ASC
+        """
+        
+        lojas = executar_query(sql)
+        
+        # Garante o retorno de uma lista vazia limpa caso não haja registros
+        return jsonify(lojas if lojas else []), 200
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"❌ ERRO AO BUSCAR LOJAS NO NEON: {e}")
+        return jsonify({"error": "Falha interna ao carregar as unidades físicas."}), 500
 
 @app.route('/api/servicos_lista', methods=['GET'])
 def listar_servicos_publico():
@@ -134,14 +148,6 @@ def listar_servicos_publico():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/produtos')
-def listar_produtos():
-    try:
-        # Retorna apenas produtos ativos para a vitrine
-        produtos = executar_query("SELECT * FROM public.produtos WHERE status_produto = 'Ativo' ORDER BY nome_produto")
-        return jsonify(produtos), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
@@ -376,18 +382,18 @@ def editar_produto(id_produto):
 @app.route('/api/busca', methods=['GET'])
 def buscar_produtos():
     try:
-        # Captura os filtros da URL
+        # Captura os filtros enviados pelos seletores do Frontend
         termo = request.args.get('q', '').strip()
         categoria = request.args.get('categoria', '')
         marca = request.args.get('marca', '')
         preco_min = request.args.get('preco_min')
         preco_max = request.args.get('preco_max')
 
-        # SQL Base: Apenas produtos que o dono quer vender agora
-        sql = "SELECT * FROM public.produtos WHERE status_produto = 'Ativo'"
+        # CORREÇÃO 1: Garante segurança contra Soft Delete (ativo = true) e checa vitrine
+        sql = "SELECT * FROM public.produtos WHERE ativo = true AND status_produto = 'Ativo'"
         params = []
 
-        # Filtro de texto (Nome, Marca ou Descrição)
+        # Filtro de texto inteligente (Nome, Marca ou Descrição)
         if termo:
             sql += " AND (nome_produto ILIKE %s OR marca ILIKE %s OR descricao ILIKE %s)"
             search_param = f"%{termo}%"
@@ -401,23 +407,26 @@ def buscar_produtos():
             sql += " AND marca = %s"
             params.append(marca)
 
+        # CORREÇÃO 2: Considera dinamicamente o preço promocional se ele for menor que o de tabela
         if preco_min:
-            sql += " AND preco >= %s"
+            sql += " AND LEAST(preco, COALESCE(preco_promocional, preco)) >= %s"
             params.append(float(preco_min))
 
         if preco_max:
-            sql += " AND preco <= %s"
+            sql += " AND LEAST(preco, COALESCE(preco_promocional, preco)) <= %s"
             params.append(float(preco_max))
 
         sql += " ORDER BY nome_produto ASC"
         
-        # Executa a busca filtrada
+        # Executa a busca filtrada e segura no ecossistema Neon
         produtos = executar_query(sql, tuple(params))
+        
+        # Garante o retorno de uma lista vazia limpa de segurança caso a query retorne None
         return jsonify(produtos if produtos else []), 200
 
     except Exception as e:
-        print(f"Erro na busca de produtos: {e}")
-        return jsonify({"error": "Falha ao processar a busca"}), 500
+        print(f"❌ ERRO NA BUSCA DE PRODUTOS (NEON): {e}")
+        return jsonify({"error": "Falha interna ao processar a busca no catálogo"}), 500
 
 @app.route('/api/finalizar-pedido', methods=['POST'])
 def finalizar_pedido():
@@ -514,24 +523,43 @@ def redefinir_senha():
         print(f"Erro ao redefinir senha para {email}: {e}")
         return jsonify({"status": "erro", "mensagem": "Falha ao processar a redefinição"}), 500
 
+@app.route('/api/perfil/atualizar', methods=['PUT'])
 @app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
-def atualizar_perfil(id_usuario):
+def atualizar_perfil(id_usuario=None):
+    """
+    Rota Unificada de Atualização Cadastral.
+    Suporta tanto a passagem do ID via URL quanto dentro do payload JSON do Frontend.
+    """
     try:
         dados = request.get_json()
+        if not dados:
+            return jsonify({"status": "erro", "mensagem": "Dados cadastrais não recebidos."}), 400
+            
+        # CORREÇÃO 1: Captura o ID do usuário de forma híbrida (URL ou corpo do JSON)
+        user_id = id_usuario if id_usuario else dados.get('id')
         
-        # Atualiza dados básicos do perfil do cliente
-        # Note que id_usuario aqui aceita o UUID do banco
+        if not user_id:
+            return jsonify({"status": "erro", "mensagem": "Identificador único do tutor ausente na requisição."}), 400
+            
+        nome_completo = dados.get('nome_completo')
+        telefone = dados.get('telefone')
+
+        # CORREÇÃO 2: Adicionada a cláusula 'AND ativo = true' para garantir a integridade do Soft Delete
         sql = '''
             UPDATE public.perfis 
             SET nome_completo = %s, telefone = %s 
-            WHERE id = %s
+            WHERE id = %s AND ativo = true
         '''
-        executar_query(sql, (dados.get('nome_completo'), dados.get('telefone'), id_usuario))
         
-        return jsonify({"status": "sucesso", "message": "Perfil atualizado com sucesso!"}), 200
+        # Executa a atualização segura no Neon
+        executar_query(sql, (nome_completo, telefone, user_id))
+        
+        # CORREÇÃO 3: Padronizada a chave para "mensagem" batendo com as respostas globais do ecossistema
+        return jsonify({"status": "sucesso", "mensagem": "Dados cadastrais atualizados com sucesso no Neon!"}), 200
+        
     except Exception as e:
-        print(f"Erro ao atualizar perfil {id_usuario}: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha ao atualizar os dados do perfil"}), 500
+        print(f"❌ ERRO CRÍTICO AO ATUALIZAR PERFIL DO TUTOR: {e}")
+        return jsonify({"status": "erro", "mensagem": "Falha interna ao processar a atualização no servidor."}), 500
 
 @app.route('/api/filtros', methods=['GET'])
 def get_filtros():
@@ -678,24 +706,37 @@ def bloquear_dia():
         return jsonify({"error": "Falha ao salvar bloqueio"}), 500
 
 @app.route('/api/admin/usuarios/busca', methods=['GET'])
+# @token_required <- Se for ativar a validação do JWT para proteger os dados dos clientes
 def buscar_usuarios_admin():
     try:
-        termo = request.args.get('q', '')
-        # ILIKE faz a busca ignorar se é maiúsculo ou minúsculo
+        # Pega o termo digitado na barra de busca (?q=termo)
+        termo = request.args.get('q', '').strip()
+        
+        # CORREÇÃO: Adicionado o campo "cpf" na busca e também incluído o "cpf" no SELECT 
+        # para que o Frontend possa renderizar os dados completos nos cards!
         sql = """
-            SELECT id, nome_completo, email, role 
+            SELECT id, nome_completo, email, role, cpf, telefone, ativo
             FROM public.perfis 
-            WHERE (nome_completo ILIKE %s OR email ILIKE %s)
+            WHERE (nome_completo ILIKE %s OR email ILIKE %s OR cpf ILIKE %s)
             AND ativo = true
-            LIMIT 10
+            ORDER BY nome_completo ASC
+            LIMIT 50
         """
-        params = (f"%{termo}%", f"%{termo}%")
+        
+        # Como adicionámos o CPF no SQL, precisamos passar o parâmetro 3 vezes
+        termo_busca = f"%{termo}%"
+        params = (termo_busca, termo_busca, termo_busca)
+        
+        # Executa a query segura no banco Neon
         usuarios = executar_query(sql, params)
+        
+        # Retorna a lista de dicionários perfeitamente para o gestao_usuarios.js consumir
         return jsonify(usuarios), 200
+        
     except Exception as e:
-        print(f"Erro na busca de usuários: {e}")
-        return jsonify({"error": "Falha ao buscar usuários"}), 500
-
+        print(f"❌ ERRO GRAVE NA BUSCA DE USUÁRIOS: {e}")
+        return jsonify({"error": "Falha interna ao processar a busca de usuários no Neon."}), 500
+    
 @app.route('/api/admin/usuarios/alterar-role', methods=['PUT'])
 def alterar_role_usuario():
     dados = request.json
@@ -740,43 +781,58 @@ def alterar_role_usuario():
         print(f"ERRO AO ALTERAR ROLE: {str(e)}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
-@app.route('/api/fidelidade/<id_cliente>', methods=['GET'])
-def buscar_pontos_fidelidade(id_cliente):
-    """Soma todos os pontos do histórico do cliente"""
-    sql = "SELECT COALESCE(SUM(pontos), 0) as total FROM public.fidelidade_historico WHERE id_cliente = %s"
-    resultado = executar_query(sql, (id_cliente,))
-    return jsonify(resultado[0]), 200
-
-@app.route('/api/perfil/atualizar', methods=['PUT'])
-def atualizar_dados_perfil():
-    """Atualiza as informações básicas do tutor"""
-    dados = request.json
-    sql = "UPDATE public.perfis SET nome_completo = %s, telefone = %s WHERE id = %s"
-    executar_query(sql, (dados['nome_completo'], dados['telefone'], dados['id']))
-    return jsonify({"message": "Perfil atualizado!"}), 200
 
 @app.route('/api/pets/usuario/<id_usuario>', methods=['GET'])
 def listar_pets_por_tutor(id_usuario):
-    """Lista todos os pets de um cliente específico"""
-    sql = "SELECT id_pet, nome_pet, especie, raca, porte, observacoes FROM public.pets WHERE id_tutor = %s"
-    pets = executar_query(sql, (id_usuario,))
-    return jsonify(pets), 200
+    """Lista todos os pets ativos de um cliente específico no banco Neon"""
+    try:
+        # CORREÇÃO 1: Adicionado try...except para blindar o servidor contra quedas
+        # CORREÇÃO 2: Adicionado ORDER BY para os cards de pets não ficarem mudando de lugar sozinhos na tela
+        sql = """
+            SELECT id_pet, nome_pet, especie, raca, porte, observacoes 
+            FROM public.pets 
+            WHERE id_tutor = %s
+            ORDER BY nome_pet ASC
+        """
+        
+        pets = executar_query(sql, (id_usuario,))
+        
+        # CORREÇÃO 3: Garante o retorno de uma lista vazia [] caso o cliente não tenha pets cadastrados,
+        # impedindo que o JavaScript lance um erro de leitura na Área do Tutor.
+        return jsonify(pets if pets else []), 200
+        
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO AO LISTAR PETS DO TUTOR {id_usuario}: {e}")
+        return jsonify({"error": "Falha interna do servidor ao carregar a lista de pets."}), 500
 
 @app.route('/api/agendamentos/cliente/<id_cliente>', methods=['GET'])
 def listar_agenda_cliente(id_cliente):
-    """Busca o histórico de agendamentos com nomes de pet e serviço (usando JOIN)"""
-    sql = """
-        SELECT a.id_agendamento, a.data_hora_inicio, a.status, 
-               p.nome_pet, s.nome_servico, l.nome_loja
-        FROM public.agendamentos a
-        JOIN public.pets p ON a.id_pet = p.id_pet
-        JOIN public.servicos s ON a.id_servico = s.id_servico
-        JOIN public.lojas l ON a.id_loja = l.id_loja
-        WHERE a.id_cliente = %s
-        ORDER BY a.data_hora_inicio DESC
-    """
-    agenda = executar_query(sql, (id_cliente,))
-    return jsonify(agenda), 200
+    """Busca o histórico completo de agendamentos ativos do cliente no Neon com dados via JOIN"""
+    try:
+        # CORREÇÃO 1: Adicionado try...except para blindar a API contra Erros 500 inesperados
+        # CORREÇÃO 2: Adicionado 'a.valor_cobrado' e 'a.observacoes_cliente' para o card do perfil não ficar incompleto
+        # CORREÇÃO 3: Adicionada a trava 'a.ativo = true' para respeitar a exclusão/cancelamento lógico do banco
+        sql = """
+            SELECT a.id_agendamento, a.data_hora_inicio, a.status, a.valor_cobrado, a.observacoes_cliente,
+                   p.nome_pet, s.nome_servico, l.nome_loja
+            FROM public.agendamentos a
+            JOIN public.pets p ON a.id_pet = p.id_pet
+            JOIN public.servicos s ON a.id_servico = s.id_servico
+            JOIN public.lojas l ON a.id_loja = l.id_loja
+            WHERE a.id_cliente = %s AND a.ativo = true
+            ORDER BY a.data_hora_inicio DESC
+        """
+        
+        # Executa a query passando o parâmetro de forma segura contra SQL Injection
+        agenda = executar_query(sql, (id_cliente,))
+        
+        # Se o cliente não tiver nenhum agendamento ainda, devolve uma lista vazia []
+        # de forma limpa, evitando que o .map() do JavaScript dê erro de leitura
+        return jsonify(agenda if agenda else []), 200
+
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO AO LISTAR AGENDA DO CLIENTE {id_cliente}: {e}")
+        return jsonify({"error": "Falha interna do servidor ao carregar o histórico de agendamentos."}), 500
     
 @app.route('/api/admin/usuarios/listar-tudo', methods=['GET'])
 def listar_usuarios_final():
@@ -821,44 +877,80 @@ def cancelar_agendamento(id_agendamento):
 
 # --- GESTÃO DE PETS (CADASTRO) ---
 
+@app.route('/api/pets', methods=['POST'])
 @app.route('/api/cadastrar-pet', methods=['POST'])
-def cadastrar_pet():
+def cadastrar_pet_unificado():
+    """
+    Rota Unificada de Cadastro de Pets.
+    Suporta tanto a rota RESTful limpa (/api/pets) quanto o endpoint antigo (/api/cadastrar-pet).
+    """
     try:
         dados = request.get_json()
-        
-        # O id_tutor aqui deve ser o UUID do cliente logado
+        if not dados:
+            return jsonify({"status": "erro", "mensagem": "Dados do animal não foram recebidos."}), 400
+            
+        # Captura os parâmetros enviados pelo formulário do Frontend
+        id_tutor = dados.get('id_tutor')
+        nome_pet = dados.get('nome_pet')
+        especie = dados.get('especie')
+        raca = dados.get('raca', 'SRD') # Se vier vazio, assume Sem Raça Definida de segurança
+        porte = dados.get('porte')
+        observacoes = dados.get('observacoes')
+
+        # Validação rápida de campos obrigatórios no servidor
+        if not id_tutor or not nome_pet or not especie:
+            return jsonify({"status": "erro", "mensagem": "Campos obrigatórios ausentes (Tutor, Nome ou Espécie)."}), 400
+
+        # SQL estruturado para inserção segura com injeção protegida por tupla
         sql = '''
             INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id_pet
         '''
-        params = (
-            dados.get('id_tutor'), 
-            dados.get('nome_pet'), 
-            dados.get('especie'), 
-            dados.get('raca'), 
-            dados.get('porte'), 
-            dados.get('observacoes')
-        )
+        params = (id_tutor, nome_pet, especie, raca, porte, observacoes)
         
-        # Usamos a query para inserir e pegar o novo ID
+        # Executa a query no Neon e captura o ID gerado pelo banco serial
         resultado = executar_query(sql, params)
         novo_id = resultado[0]['id_pet'] if resultado else None
         
-        return jsonify({"message": "Pet cadastrado com sucesso!", "id": novo_id}), 201
+        # Retorna o JSON de sucesso com o padrão de chaves limpo esperado pelo Frontend
+        return jsonify({
+            "status": "sucesso", 
+            "mensagem": f"🐾 {nome_pet} foi cadastrado com sucesso no banco Neon!", 
+            "id": novo_id
+        }), 201
+        
     except Exception as e:
-        print(f"Erro ao cadastrar pet: {e}")
-        return jsonify({"error": "Falha ao salvar dados do pet"}), 500
-  
+        print(f"❌ ERRO GRAVE AO CADASTRAR PET NO NEON: {e}")
+        return jsonify({"status": "erro", "error": "Falha interna no servidor ao salvar os dados do pet."}), 500
+    
+@app.route('/api/pets/<id_pet>', methods=['DELETE'])
 @app.route('/api/pet/excluir/<id_pet>', methods=['DELETE'])
-def excluir_pet(id_pet):
+def excluir_pet_unificado(id_pet):
+    """
+    Rota Unificada para Exclusão de Pets.
+    Suporta tanto a rota RESTful limpa (/api/pets/<id>) quanto o endpoint antigo (/api/pet/excluir/<id>).
+    """
     try:
-        # Tenta deletar o pet. O banco vai impedir se houver agendamentos vinculados (Integridade Referencial)
-        executar_query('DELETE FROM public.pets WHERE id_pet = %s', (id_pet,))
-        return jsonify({"message": "Pet removido com sucesso!"}), 200
+        # Executa o comando SQL seguro contra injeções de dados
+        # IMPORTANTE: Se o pet tiver algum agendamento histórico, a integridade referencial do Neon 
+        # vai lançar uma exceção de Foreign Key, impedindo a quebra de histórico financeiro/operacional.
+        sql = 'DELETE FROM public.pets WHERE id_pet = %s'
+        executar_query(sql, (id_pet,))
+        
+        # Retorna o JSON de sucesso casado com as chaves que o JavaScript lê para disparar os Toasts
+        return jsonify({
+            "status": "sucesso", 
+            "mensagem": "Ficha do pet removida com sucesso do banco Neon!"
+        }), 200
+        
     except Exception as e:
-        print(f"Erro ao excluir pet: {e}")
-        return jsonify({"error": "Não foi possível excluir o pet. Verifique se ele possui agendamentos históricos."}), 500
+        print(f"❌ ERRO CONTROLADO AO DELETAR PET {id_pet}: {e}")
+        # Se cair aqui, o banco barrou a exclusão para não quebrar a consistência dos relatórios da clínica
+        return jsonify({
+            "status": "erro", 
+            "error": "Este pet possui históricos de agendamentos vinculados e não pode ser removido fisicamente."
+        }), 500
 
 @app.route('/api/horarios-disponiveis', methods=['GET'])
 def get_available_slots():
@@ -938,47 +1030,101 @@ def get_available_slots():
 
 @app.route('/api/produtos', methods=['GET'])
 def listar_produtos_loja():
-    """Retorna todos os produtos ativos do banco de dados"""
-    sql = """
-        SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
-               marca, preco, preco_promocional, quantidade_estoque 
-        FROM public.produtos 
-        WHERE ativo = true AND quantidade_estoque > 0
-    """
-    produtos = executar_query(sql)
-    return jsonify(produtos), 200
-# --- 10. CRIAÇÃO DE AGENDAMENTO (CONFIRMAÇÃO) ---
+    """Retorna todos os produtos ativos do banco de dados Neon para a vitrine digital"""
+    try:
+        # CORREÇÃO 1: Adicionado 'descricao' e 'status_produto' para o modal de detalhes não abrir em branco
+        # CORREÇÃO 2: Removida a trava de estoque zerado para que o selo 'Indisponível' funcione no site
+        sql = """
+            SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
+                   marca, preco, preco_promocional, quantidade_estoque, 
+                   descricao, status_produto
+            FROM public.produtos 
+            WHERE ativo = true AND status_produto = 'Ativo'
+            ORDER BY nome_produto ASC
+        """
+        
+        # Executa a busca segura no Neon
+        produtos = executar_query(sql)
+        
+        # Garante o retorno de uma lista vazia limpa caso não haja registros
+        return jsonify(produtos if produtos else []), 200
+        
+    except Exception as e:
+        print(f"❌ ERRO AO LISTAR PRODUTOS NA VITRINE: {e}")
+        return jsonify({"error": "Falha interna ao carregar o catálogo de produtos."}), 500
+
 
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
+    """Processa o agendamento inteligente gravando o serviço e tratando novos pets em lote no Neon"""
     try:
-        d = request.json
-        # 1. Busca o preço atual e a duração do serviço no banco
+        d = request.get_json()
+        if not d:
+            return jsonify({"error": "Dados do agendamento não recebidos."}), 400
+            
+        # 1. BUSCA PREÇO E DURACAO DO SERVICO
         serv = executar_query('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (d['id_servico'],))
-        
         if not serv:
-            return jsonify({"error": "Serviço não encontrado"}), 404
+            return jsonify({"error": "O serviço selecionado não está mais disponível."}), 404
             
         preco = serv[0]['preco_servico']
         dur = serv[0]['duracao_media_minutos'] or 30
 
-        # 2. Tratamento da Data e cálculo do fim do atendimento
+        # 2. TRATAMENTO DE DATAS (Cálculo automático do horário de término)
         inicio_str = d['data_hora_inicio'].replace('Z', '').split('+')[0]
         inicio = datetime.fromisoformat(inicio_str)
         fim = inicio + timedelta(minutes=dur)
 
-        # 3. Insere incluindo o VALOR_COBRADO
-        sql = '''
+        # 3. FLUXO INTELIGENTE: TRATAMENTO DE NOVO PET NO AGENDAMENTO
+        id_pet = d.get('id_pet')
+        novo_pet_dados = d.get('novo_pet')
+
+        # Se o ID do pet veio nulo mas existem dados de um novo bicho, insere ele primeiro
+        if not id_pet and novo_pet_dados:
+            print("🐾 Detectado cadastro de pet em lote durante o agendamento. Gravando...")
+            sql_novo_pet = """
+                INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
+                VALUES (%s, %s, %s, %s, %s, 'Cadastrado no fluxo de agendamento')
+                RETURNING id_pet
+            """
+            res_pet = executar_query(sql_novo_pet, (
+                d['id_cliente'],
+                novo_pet_dados.get('nome'),
+                'Cão', # Espécie padrão de contingência
+                novo_pet_dados.get('raca', 'SRD'),
+                novo_pet_dados.get('porte', 'Médio')
+            ))
+            if res_pet:
+                id_pet = res_pet[0]['id_pet']
+            else:
+                return jsonify({"error": "Falha operacional ao registrar o novo pet no Neon."}), 500
+
+        # CORREÇÃO DE CHAVE: Mapeia 'observacoes' vindo diretamente do payload do JS
+        observacoes = d.get('observacoes') or d.get('observacoes_cliente')
+
+        # 4. INSERÇÃO DO AGENDAMENTO FINAL
+        sql_agendar = """
             INSERT INTO public.agendamentos 
             (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
-            VALUES (%s, %s, %s, %s, %s, %s, 'confirmado', %s, %s)
-        '''
+            VALUES (%s, %s, %s, %s, %s, %s, 'pendente', %s, %s)
+        """
         
-        executar_query(sql, (d['id_cliente'], d.get('id_pet'), d['id_loja'], d['id_servico'], inicio, fim, preco, d.get('observacoes_cliente')))
-        return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
+        executar_query(sql_agendar, (
+            d['id_cliente'], 
+            id_pet, 
+            d['id_loja'], 
+            d['id_servico'], 
+            inicio, 
+            fim, 
+            preco, 
+            observacoes
+        ))
+        
+        return jsonify({"status": "sucesso", "mensagem": "Agendamento realizado com sucesso!"}), 201
+        
     except Exception as e:
-        print(f"Erro ao criar agendamento: {e}")
-        return jsonify({"error": "Falha ao processar o agendamento"}), 500
+        print(f"❌ ERRO CRÍTICO AO PROCESSAR AGENDAMENTO NO NEON: {e}")
+        return jsonify({"error": "Falha interna do servidor ao processar o agendamento."}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -1008,9 +1154,9 @@ def login():
             if senha_valida:
                 return jsonify({
                     "status": "sucesso",
-                    "id": str(usuario['id']), # UUID para String
+                    "id": str(usuario['id']), # UUID para String seguro
                     "nome": usuario['nome_completo'],
-                    "role": usuario['role']
+                    "role": str(usuario['role']).lower() # BLINDAGEM: Garante letra minúscula para o JS não quebrar!
                 }), 200
         
         return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401

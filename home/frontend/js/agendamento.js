@@ -19,9 +19,10 @@ const appointmentData = {
     id_pet: null
 };
 
-// SEGURANÇA: REDIRECIONA SE NÃO TIVER LOGADO
+// CORREÇÃO 1: SEGURANÇA COM MEMÓRIA DE RETORNO (Garante que volta para cá após o login)
 if (!appointmentData.cliente_id) {
-    alert("Por favor, faça login para agendar.");
+    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
+    alert("Por favor, faça login para agendar o seu serviço.");
     window.location.href = '../usuario/login.html';
 }
 
@@ -39,34 +40,52 @@ function init() {
 // --- PASSO 1: CARREGAR SERVIÇOS ---
 async function loadServices() {
     const select = document.getElementById('service-select');
+    if (!select) return;
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/servicos_lista`);
+        // CORREÇÃO 2: Alinhado para a rota oficial unificada /api/servicos
+        const res = await fetch(`${API_BASE_URL}/api/servicos`);
+        if (!res.ok) throw new Error(`Erro na rota: ${res.status}`);
+        
         const data = await res.json();
         
+        // Suporte caso a API venha envelopada ou em lista direta do Neon
+        const listaServicos = Array.isArray(data) ? data : (data.servicos || data.data || []);
+        
         select.innerHTML = '<option value="" disabled selected>O que vamos fazer hoje?</option>';
-        data.forEach(s => {
+        
+        if (listaServicos.length === 0) {
+            select.innerHTML = '<option value="">Nenhum serviço disponível</option>';
+            return;
+        }
+
+        listaServicos.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id_servico;
-            // Guardamos o preço no atributo data para facilitar a recuperação depois
             opt.dataset.preco = s.preco_servico;
             opt.textContent = `${s.nome_servico} - R$ ${s.preco_servico}`;
             select.appendChild(opt);
         });
     } catch (e) {
         console.error("Erro ao carregar serviços:", e);
-        select.innerHTML = '<option value="">Erro ao carregar serviços</option>';
+        select.innerHTML = '<option value="">Erro ao carregar serviços. Tente recarregar.</option>';
     }
 }
 
 // --- PASSO 2: CARREGAR LOJAS ---
 async function loadStores() {
     const select = document.getElementById('store-select');
+    if (!select) return;
+
     try {
         const res = await fetch(`${API_BASE_URL}/api/lojas`);
+        if (!res.ok) throw new Error("Erro ao buscar lojas");
+        
         const data = await res.json();
+        const listaLojas = Array.isArray(data) ? data : (data.lojas || data.data || []);
         
         select.innerHTML = '<option value="" disabled selected>Selecione a unidade...</option>';
-        data.forEach(l => {
+        listaLojas.forEach(l => {
             const opt = document.createElement('option');
             opt.value = l.id_loja;
             opt.textContent = l.nome_loja;
@@ -74,6 +93,7 @@ async function loadStores() {
         });
     } catch (e) {
         console.error("Erro ao carregar lojas:", e);
+        select.innerHTML = '<option value="">Erro ao carregar lojas</option>';
     }
 }
 
@@ -90,7 +110,6 @@ function renderCalendar() {
     const month = calendarDate.getMonth();
     const year = calendarDate.getFullYear();
     
-    // Nome do mês em português
     const mesNome = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(calendarDate);
     monthYearLabel.textContent = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} ${year}`;
 
@@ -99,10 +118,8 @@ function renderCalendar() {
     const today = new Date();
     today.setHours(0,0,0,0);
 
-    // Espaços vazios do início do mês
     for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div></div>';
 
-    // Dias do mês
     for (let d = 1; d <= totalDays; d++) {
         const loopDate = new Date(year, month, d);
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -127,7 +144,9 @@ function renderCalendar() {
 
 async function fetchAvailableSlots(dateStr) {
     const container = document.getElementById('time-slots-container');
-    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border text-brand spinner-border-sm"></div></div>';
+    if (!container) return;
+
+    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border brand-pink spinner-border-sm"></div></div>';
 
     try {
         const url = `${API_BASE_URL}/api/horarios-disponiveis?loja_id=${appointmentData.loja_id}&servico_id=${appointmentData.servico_id}&data=${dateStr}`;
@@ -150,8 +169,10 @@ async function fetchAvailableSlots(dateStr) {
             btn.onclick = () => {
                 appointmentData.horario = time;
                 document.querySelectorAll('.time-slot-btn').forEach(b => b.className = 'btn btn-outline-secondary btn-sm m-1 time-slot-btn');
-                btn.className = 'btn btn-brand btn-sm m-1 time-slot-btn text-white';
-                document.getElementById('nextButtonStep3').disabled = false;
+                btn.className = 'btn bg-brand-pink btn-sm m-1 time-slot-btn text-white';
+                
+                const nextBtn = document.getElementById('nextButtonStep3');
+                if (nextBtn) nextBtn.disabled = false;
             };
             container.appendChild(btn);
         });
@@ -163,18 +184,21 @@ async function fetchAvailableSlots(dateStr) {
 // --- PASSO 4: CARREGAR PETS ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
+    if (!select) return;
+
     try {
         const res = await fetch(`${API_BASE_URL}/api/pets/usuario/${appointmentData.cliente_id}`);
         const data = await res.json();
+        const listaPets = Array.isArray(data) ? data : [];
         
         select.innerHTML = '<option value="NEW">-- Cadastrar Novo Pet --</option>';
-        if (Array.isArray(data)) {
-            data.forEach(p => {
-                const opt = new Option(p.nome_pet, p.id_pet);
-                select.add(opt);
-            });
-        }
-    } catch (e) { console.error("Erro pets"); }
+        listaPets.forEach(p => {
+            const opt = new Option(p.nome_pet, p.id_pet);
+            select.add(opt);
+        });
+    } catch (e) { 
+        console.error("Erro ao carregar pets:", e); 
+    }
 }
 
 // --- NAVEGAÇÃO E WIZARD ---
@@ -185,12 +209,13 @@ function showStep(n) {
     currentStep = n;
 
     if (n === 4) loadUserPets();
-    if (n === 5) gerarResumo();
+    if (n === 5) gerarResSummary();
 }
 
-function gerarResumo() {
-    const isNewPet = document.getElementById('select-pet').value === 'NEW';
-    const nomePet = isNewPet ? document.getElementById('nome_pet').value : document.getElementById('select-pet').options[document.getElementById('select-pet').selectedIndex].text;
+function gerarResSummary() {
+    const selectPet = document.getElementById('select-pet');
+    const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
+    const nomePet = isNewPet ? document.getElementById('nome_pet').value : selectPet.options[selectPet.selectedIndex].text;
 
     document.getElementById('confirmation-summary').innerHTML = `
         <div class="row g-3">
@@ -205,7 +230,6 @@ function gerarResumo() {
 
 // --- EVENTOS E CLIQUES ---
 function setupEventListeners() {
-    // Passo 1 -> Passo 2
     document.getElementById('service-select').onchange = (e) => {
         appointmentData.servico_id = e.target.value;
         appointmentData.servico_nome = e.target.options[e.target.selectedIndex].text.split(' - ')[0];
@@ -213,20 +237,17 @@ function setupEventListeners() {
         document.getElementById('nextButtonStep1').disabled = false;
     };
 
-    // Passo 2 -> Passo 3
     document.getElementById('store-select').onchange = (e) => {
         appointmentData.loja_id = e.target.value;
         appointmentData.loja_nome = e.target.options[e.target.selectedIndex].text;
         document.getElementById('nextButtonStep2').disabled = false;
     };
 
-    // Pet NEW/EXISTING
     document.getElementById('select-pet').onchange = (e) => {
         document.getElementById('new-pet-fields').style.display = (e.target.value === 'NEW') ? 'block' : 'none';
         appointmentData.id_pet = (e.target.value === 'NEW') ? null : e.target.value;
     };
 
-    // Navegação botões
     document.getElementById('nextButtonStep1').onclick = () => showStep(2);
     document.getElementById('nextButtonStep2').onclick = () => { renderCalendar(); showStep(3); };
     document.getElementById('nextButtonStep3').onclick = () => showStep(4);
@@ -240,11 +261,9 @@ function setupEventListeners() {
         b.onclick = () => showStep(currentStep - 1);
     });
 
-    // Meses Calendário
     document.getElementById('prevMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
     document.getElementById('nextMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); };
 
-    // Confirmar Final
     document.getElementById('confirmButton').onclick = confirmAppointment;
 }
 
@@ -269,7 +288,7 @@ async function confirmAppointment() {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gravando...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gravando no Neon...';
         
         const res = await fetch(`${API_BASE_URL}/api/agendar`, {
             method: 'POST',
@@ -278,16 +297,17 @@ async function confirmAppointment() {
         });
 
         if (res.ok) {
-            alert("✨ Tudo pronto! Seu agendamento foi confirmado.");
-            window.location.href = 'meus_agendamentos.html';
+            alert("✨ Tudo pronto! O seu agendamento foi confirmado com sucesso.");
+            // CORREÇÃO 3: Redireciona o cliente diretamente para a página correta de perfil/dashboard do cliente
+            window.location.href = '../usuario/perfil.html'; 
         } else {
             const err = await res.json();
-            alert("Ops: " + err.error);
+            alert("Erro no agendamento: " + err.error);
             btn.disabled = false;
             btn.innerText = "Confirmar Agora!";
         }
     } catch (e) {
-        alert("Erro de conexão.");
+        alert("Erro de conexão com o banco Neon.");
         btn.disabled = false;
     }
 }

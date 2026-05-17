@@ -1,6 +1,7 @@
 /**
  * js/login.js - Sistema de Autenticação Regia & Tinas Care
  * Gerencia o acesso diferenciado por cargos (Admin, Funcionário, Cliente)
+ * Integrado com Rastreabilidade de Rotas para fluxo de Agendamentos
  */
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -33,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. ENVIO DO FORMULÁRIO
+    // 3. ENVIO DO FORMULÁRIO COM VALIDAÇÃO NEON
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -63,31 +64,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error((data && (data.error || data.mensagem)) || "Credenciais inválidas.");
                 }
 
-                // --- SUCESSO: GRAVA A SESSÃO ---
+                // --- SUCESSO: GRAVA A SESSÃO LOCAL NO NAVEGADOR ---
                 localStorage.setItem('usuario_id', data.id);
                 localStorage.setItem('usuario_nome', data.nome);
                 
                 const userRole = data.role ? data.role.toLowerCase() : 'cliente';
                 localStorage.setItem('usuario_role', userRole);
 
-                console.log("Login realizado! Cargo detectado:", userRole);
+                console.log("Login realizado com sucesso! Cargo detectado:", userRole);
 
-                // --- 4. REDIRECIONAMENTO POR CARGO (CAMINHOS CORRIGIDOS) ---
-                // Saímos da pasta /auth/ para entrar na pasta correta
-                
+                // --- 4. REDIRECIONAMENTO INTELIGENTE POR CARGO ---
                 if (userRole === 'admin') {
                     console.log("Redirecionando para Dashboard Admin...");
                     window.location.href = '../admin/dashboard.html';
                 } 
                 else if (userRole === 'funcionario') {
                     console.log("Redirecionando para Painel Operacional...");
-                    // Corrigido para a sua nova pasta funcionario/
                     window.location.href = '../funcionario/dash_funcionario.html';
                 } 
                 else {
-                    console.log("Redirecionando para E-commerce...");
-                    // Clientes voltam para a vitrine principal
-                    window.location.href = '../ecommerce/index1.html';
+                    console.log("Detectado papel de Cliente. Verificando retorno pendente...");
+                    
+                    // CORREÇÃO MÁXIMA: Verifica se o utilizador possui um link de agendamento salvo na memória
+                    const urlRetorno = sessionStorage.getItem('url_retorno_agendamento');
+
+                    if (urlRetorno) {
+                        console.log("Retorno de agendamento localizado! Devolvendo usuário ao fluxo...");
+                        sessionStorage.removeItem('url_retorno_agendamento'); // Limpa a memória por segurança de sessão
+                        window.location.href = urlRetorno; // Redireciona de volta para a tela de agendamento!
+                    } else {
+                        console.log("Nenhum agendamento pendente detectado. Redirecionando para o Perfil...");
+                        window.location.href = 'perfil.html'; // Fluxo padrão se ele entrou de forma direta
+                    }
                 }
 
             } catch (error) {

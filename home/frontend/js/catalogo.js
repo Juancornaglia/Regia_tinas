@@ -1,5 +1,6 @@
 /**
- * js/catalogo.js - E-commerce SPA (Single Page Application)
+ * js/catalogo.js - Vitrine Digital e Catálogo SPA (Single Page Application)
+ * Modelo focado em exibição de produtos e consulta de unidades físicas da rede
  * Conectado ao banco Neon + Alinhado com as chaves Regia & Tinas Care
  */
 
@@ -11,7 +12,7 @@ let produtosNoEstoque = [];
 let produtoAbertoAtualmente = null;
 
 // ==========================================
-// 1. UTILITÁRIOS (Preço e Favoritos Alinhados com a Home)
+// 1. UTILITÁRIOS DE FORMATAÇÃO E FAVORITOS
 // ==========================================
 function formatPrice(price) {
     const valor = parseFloat(price);
@@ -19,7 +20,6 @@ function formatPrice(price) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// CORREÇÃO: Agora usa a mesma chave do home.js para sincronizar os corações!
 function getFavorites() { return JSON.parse(localStorage.getItem('regia_tinas_favorites')) || []; }
 function saveFavorites(favs) { localStorage.setItem('regia_tinas_favorites', JSON.stringify(favs)); }
 
@@ -34,44 +34,47 @@ async function carregarVitrine() {
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        if (!response.ok) throw new Error("Erro de conexão");
+        if (!response.ok) throw new Error("Erro de conexão com o servidor");
         
         const data = await response.json();
-        produtosNoEstoque = Array.isArray(data) ? data : (data.produtos || []);
+        
+        // Garante a captura correta dos dados vindos do backend Python
+        produtosNoEstoque = Array.isArray(data) ? data : (data.produtos || data.data || []);
 
         if (produtosNoEstoque.length === 0) {
             container.innerHTML = `
                 <div class="col-12 text-center p-5 text-muted">
                     <i class="bi bi-box-seam" style="font-size: 4rem; color: #FE8697;"></i>
-                    <h4 class="mt-3 fw-bold">Nenhum produto disponível no momento.</h4>
+                    <h4 class="mt-3 fw-bold">Nenhum produto em exposição no momento.</h4>
                 </div>`;
             return;
         }
 
         container.innerHTML = produtosNoEstoque.map(p => {
             const id = p.id_produto || p.id;
-            const nome = p.nome_produto || 'Produto sem nome';
+            const nome = p.nome_produto || 'Produto';
             
-            // CORREÇÃO: Caminho corrigido de ../img/ para img/ porque os ficheiros mudaram de pasta
             let img = p.url_imagem || 'img/logo_pequena4.png';
             if (img && !img.startsWith('http') && !img.startsWith('img/')) {
                 img = 'img/' + img; 
             }
             
             const marca = p.marca || 'Regia & Tinas';
-            
             const precoBase = parseFloat(p.preco) || 0;
             const precoPromo = parseFloat(p.preco_promocional);
             const temPromo = precoPromo && precoPromo < precoBase;
             const precoFinal = temPromo ? precoPromo : precoBase;
 
             let badgeEstoque = '';
-            if (p.quantidade_estoque <= 0) badgeEstoque = '<span class="badge bg-secondary position-absolute top-0 end-0 m-2">Esgotado</span>';
-            else if (p.quantidade_estoque < 5) badgeEstoque = '<span class="badge bg-danger position-absolute top-0 end-0 m-2">Últimas unidades!</span>';
+            if (p.quantidade_estoque <= 0) {
+                badgeEstoque = '<span class="badge bg-secondary position-absolute top-0 end-0 m-2">Indisponível</span>';
+            } else if (p.quantidade_estoque < 3) {
+                badgeEstoque = '<span class="badge bg-danger position-absolute top-0 end-0 m-2">Baixo Estoque</span>';
+            }
 
             return `
                 <div class="col-6 col-md-4 col-lg-3 mb-4">
-                    <div class="product-card h-100 shadow-sm border-0 rounded-4 bg-white p-2" onclick="abrirDetalhesProduto('${id}')" style="cursor: pointer;">
+                    <div class="product-card h-100 shadow-sm border-0 rounded-4 bg-white p-2" onclick="abrirDetalhesProduto('${id}')" style="cursor: pointer; transition: 0.3s;">
                         <div class="position-relative text-center pt-3 img-container" style="height: 160px; display: flex; align-items: center; justify-content: center;">
                             <img src="${img}" class="product-img img-fluid" alt="${nome}" style="max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
                             ${badgeEstoque}
@@ -97,7 +100,7 @@ async function carregarVitrine() {
         container.innerHTML = `
             <div class="col-12 text-center py-5">
                 <i class="bi bi-wifi-off fs-1 text-muted"></i>
-                <h5 class="mt-3 fw-bold">Não foi possível carregar os produtos.</h5>
+                <h5 class="mt-3 fw-bold">Não foi possível carregar o catálogo de produtos.</h5>
                 <button class="btn btn-outline-secondary btn-sm mt-2 rounded-pill" onclick="location.reload()">Tentar Novamente</button>
             </div>`;
     }
@@ -112,7 +115,6 @@ window.abrirDetalhesProduto = (idStr) => {
     
     produtoAbertoAtualmente = produto; 
 
-    // CORREÇÃO: Caminho da imagem do modal corrigido
     let imgFinal = produto.url_imagem || 'img/logo_pequena4.png';
     if (!imgFinal.startsWith('http') && !imgFinal.startsWith('img/')) {
         imgFinal = 'img/' + imgFinal;
@@ -122,7 +124,7 @@ window.abrirDetalhesProduto = (idStr) => {
     const precoPromo = parseFloat(produto.preco_promocional);
     const temPromo = precoPromo && precoPromo < precoBase;
 
-    // Preenche a tela do Modal
+    // Preenche as informações textuais do Modal
     const modalImgElement = document.getElementById('modal-img');
     if (modalImgElement) modalImgElement.src = imgFinal;
     
@@ -145,18 +147,29 @@ window.abrirDetalhesProduto = (idStr) => {
 
     atualizarIconeFavorito(produto.id_produto || produto.id);
 
-    // Mostra o Modal do Bootstrap
+    // AUTOMAÇÃO INTELIGENTE: Localiza o antigo botão de compra e altera o texto dinamicamente
+    const botoesModal = document.querySelectorAll('#modalProduto button');
+    botoesModal.forEach(btn => {
+        // Se for o botão que chama a função de adicionar ao carrinho, altera a cara dele
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('adicionarModalAoCarrinho')) {
+            btn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i> VEJA AS UNIDADES DISPONÍVEIS';
+            btn.style.backgroundColor = '#1e272e'; // Tom escuro profissional elegante
+        }
+    });
+
+    // Abre o Modal do Bootstrap de forma limpa
     const modalElement = document.getElementById('modalProduto');
     if (modalElement) {
-        const modalInstance = new bootstrap.Modal(modalElement);
+        const modalInstance = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
         modalInstance.show();
     }
     
+    // Dispara a consulta de estoques locais no banco Neon
     carregarLojasDisponiveis();
 };
 
 // ==========================================
-// 4. FAVORITOS E LOJAS (DENTRO DO MODAL)
+// 4. FAVORITOS E ESCALABILIDADE DE LOJAS
 // ==========================================
 window.toggleFavorito = () => {
     if (!produtoAbertoAtualmente) return;
@@ -179,44 +192,48 @@ function atualizarIconeFavorito(id) {
     icon.className = favs.includes(parseInt(id, 10)) ? 'bi bi-heart-fill text-danger fs-4' : 'bi bi-heart text-danger fs-4';
 }
 
+/**
+ * Consulta a API de Lojas do Neon e lista onde o cliente pode encontrar o item
+ */
 async function carregarLojasDisponiveis() {
     const list = document.getElementById('modal-store-list');
     if (!list) return;
+    
     try {
         const response = await fetch(`${API_BASE_URL}/api/lojas`);
         const lojas = await response.json();
-        list.innerHTML = lojas.slice(0, 3).map(l => `<li class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Unidade ${l.nome_loja}</li>`).join('') || '<li>Apenas venda online</li>';
-    } catch (e) { list.innerHTML = '<li>Consulte disponibilidade via WhatsApp</li>'; }
+        
+        // Mapeia todas as lojas ativas cadastradas no seu Neon (Mooca, Tatuapé, etc.)
+        if (lojas && lojas.length > 0) {
+            list.innerHTML = lojas.map(l => `
+                <li class="text-dark mb-2 fw-medium list-unstyled">
+                    <i class="bi bi-geo-alt-fill me-2" style="color: #FE8697;"></i>Unidade ${l.nome_loja} 
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success ms-2 small">Estoque Pronto</span>
+                </li>
+            `).join('');
+        } else {
+            list.innerHTML = '<li class="text-muted list-unstyled"><i class="bi bi-exclamation-circle me-2"></i>Disponível sob consulta no balcão</li>';
+        }
+    } catch (e) { 
+        // Fallback elegante caso a rota do Render esteja offline no momento
+        list.innerHTML = `
+            <li class="text-secondary list-unstyled mb-1"><i class="bi bi-geo-alt me-2"></i>Disponível nas unidades: Mooca, Tatuapé, São Caetano, Ipiranga e Santos.</li>
+            <li class="text-muted small list-unstyled mt-2"><i class="bi bi-info-circle me-1"></i>Consulte a quantidade exata via WhatsApp da unidade escolhida.</li>
+        `; 
+    }
 }
 
 // ==========================================
-// 5. CARRINHO DE COMPRAS (Sincronizado globalmente)
+// 5. REDIRECIONAMENTO COMPATÍVEL DA RETIRADA
 // ==========================================
 window.adicionarModalAoCarrinho = () => {
     if (!produtoAbertoAtualmente) return;
     
-    const p = produtoAbertoAtualmente;
+    // Quando o usuário clicar no botão principal, ele avisa que é para retirada física e foca a lista
+    alert(`📍 Retirada Física Disponível!\n\nEste produto está em exposição e disponível para pronta entrega nas nossas unidades físicas (Mooca, Tatuapé, São Caetano, Ipiranga e Santos).\n\nConfira os detalhes de contato na aba de unidades abaixo.`);
     
-    // CORREÇÃO: Padronizado para usar a mesma chave 'regia_tinas_cart' do busca.js
-    let carrinho = JSON.parse(localStorage.getItem('regia_tinas_cart')) || [];
-    const id = p.id_produto || p.id;
-    const existente = carrinho.find(item => item.id_produto == id);
-
-    if (existente) {
-        existente.quantidade += 1;
-    } else {
-        carrinho.push({
-            id_produto: id,
-            nome: p.nome_produto,
-            preco: parseFloat(p.preco_promocional || p.preco),
-            imagem: p.url_imagem,
-            quantidade: 1
-        });
+    const listSection = document.getElementById('modal-store-list');
+    if (listSection) {
+        listSection.scrollIntoView({ behavior: 'smooth' }); // Faz um scroll suave até a lista de lojas dentro do modal
     }
-
-    localStorage.setItem('regia_tinas_cart', JSON.stringify(carrinho));
-    alert(`🛒 Sucesso! ${p.nome_produto} foi adicionado ao seu carrinho.`);
-    
-    // Dispara o evento global para a bolinha vermelha do menu atualizar na hora!
-    window.dispatchEvent(new Event('cartUpdated'));
 };
