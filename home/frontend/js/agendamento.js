@@ -5,7 +5,7 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 
 // 2. ESTADO GLOBAL DO AGENDAMENTO
 let currentStep = 1;
-let calendarDate = new Date();
+let calendarDate = new Date(); 
 
 const appointmentData = {
     cliente_id: localStorage.getItem('usuario_id'),
@@ -19,11 +19,11 @@ const appointmentData = {
     id_pet: null
 };
 
-// SEGURANÇA: Garante login prévio
+// TRAVA DE SEGURANÇA: Obriga o cliente a ter cadastro/login antes de ver os horários
 if (!appointmentData.cliente_id) {
     sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    alert("Por favor, faça login na sua conta para agendar o serviço.");
-    window.location.href = '../usuario/login.html';
+    alert("Para realizar um agendamento, é necessário estar logado. Vamos te redirecionar!");
+    window.location.href = 'login.html'; // CORREÇÃO: Aponta direto para a raiz
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,30 +36,30 @@ function init() {
     setupEventListeners();
 }
 
-// --- PASSO 1: CARREGAR SERVIÇOS ---
+// --- PASSO 1: CARREGAR SERVIÇOS (PREÇOS OCULTADOS DA INTERFACE) ---
 async function loadServices() {
     const select = document.getElementById('service-select');
     if (!select) return;
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/servicos`);
-        if (!res.ok) throw new Error("Falha ao buscar serviços");
-        const data = await res.json();
+        if (!res.ok) throw new Error(`Erro: ${res.status}`);
         
+        const data = await res.json();
         const listaServicos = Array.isArray(data) ? data : (data.servicos || data.data || []);
         
         select.innerHTML = '<option value="" disabled selected>O que vamos fazer hoje?</option>';
-        if (listaServicos.length === 0) return select.innerHTML = '<option value="">Nenhum serviço disponível</option>';
 
         listaServicos.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id_servico;
-            opt.dataset.preco = s.preco_servico;
-            opt.textContent = `${s.nome_servico} - R$ ${s.preco_servico}`;
+            opt.dataset.preco = s.preco_servico; // Mantido em background de forma invisível
+            opt.textContent = s.nome_servico;   // CORREÇÃO: Exibe apenas o nome, sem preço!
             select.appendChild(opt);
         });
     } catch (e) {
-        select.innerHTML = '<option value="">Erro ao carregar os serviços.</option>';
+        console.error("Erro serviços:", e);
+        select.innerHTML = '<option value="">Erro ao carregar serviços.</option>';
     }
 }
 
@@ -70,12 +70,10 @@ async function loadStores() {
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/lojas`);
-        if (!res.ok) throw new Error("Falha ao buscar lojas");
         const data = await res.json();
-        
         const listaLojas = Array.isArray(data) ? data : (data.lojas || data.data || []);
-        select.innerHTML = '<option value="" disabled selected>Selecione a unidade...</option>';
         
+        select.innerHTML = '<option value="" disabled selected>Selecione a unidade...</option>';
         listaLojas.forEach(l => {
             const opt = document.createElement('option');
             opt.value = l.id_loja;
@@ -83,11 +81,11 @@ async function loadStores() {
             select.appendChild(opt);
         });
     } catch (e) {
-        select.innerHTML = '<option value="">Erro ao carregar as unidades.</option>';
+        select.innerHTML = '<option value="">Erro ao carregar lojas</option>';
     }
 }
 
-// --- PASSO 3: CALENDÁRIO ---
+// --- PASSO 3: CALENDÁRIO COM HORÁRIOS FILTRADOS ---
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYearLabel = document.getElementById('calendar-month-year');
@@ -95,12 +93,11 @@ function renderCalendar() {
 
     grid.innerHTML = '';
     const daysHeader = ['D','S','T','Q','Q','S','S'];
-    daysHeader.forEach(d => grid.innerHTML += `<div class="calendar-day-name fw-bold text-muted small">${d}</div>`);
+    daysHeader.forEach(d => grid.innerHTML += `<div class="calendar-day-name">${d}</div>`);
 
     const month = calendarDate.getMonth();
     const year = calendarDate.getFullYear();
     const mesNome = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(calendarDate);
-    
     monthYearLabel.textContent = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} ${year}`;
 
     const firstDay = new Date(year, month, 1).getDay();
@@ -116,14 +113,15 @@ function renderCalendar() {
         const isPast = loopDate < today;
 
         const dayEl = document.createElement('div');
-        dayEl.className = `calendar-day ${isPast ? 'disabled opacity-25' : ''}`;
-        if (appointmentData.data === dateStr) dayEl.classList.add('selected', 'bg-brand', 'text-white', 'rounded-circle');
+        dayEl.className = `calendar-day ${isPast ? 'disabled' : ''}`;
+        if (appointmentData.data === dateStr) dayEl.classList.add('selected');
         dayEl.textContent = d;
 
         if (!isPast) {
             dayEl.onclick = () => {
                 appointmentData.data = dateStr;
-                renderCalendar(); // Re-renderiza para aplicar o estilo visual do dia
+                document.querySelectorAll('.calendar-day.selected').forEach(x => x.classList.remove('selected'));
+                dayEl.classList.add('selected');
                 fetchAvailableSlots(dateStr);
             };
         }
@@ -131,58 +129,44 @@ function renderCalendar() {
     }
 }
 
-// --- BUSCA OS HORÁRIOS LIVRES NO PYTHON ---
 async function fetchAvailableSlots(dateStr) {
     const container = document.getElementById('time-slots-container');
     if (!container) return;
 
-    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border text-danger spinner-border-sm"></div><p class="small text-muted mt-2">Buscando horários...</p></div>';
+    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border text-danger spinner-border-sm"></div></div>';
 
     try {
         const url = `${API_BASE_URL}/api/horarios-disponiveis?loja_id=${appointmentData.loja_id}&servico_id=${appointmentData.servico_id}&data=${dateStr}`;
         const res = await fetch(url);
-        
-        // TRATAMENTO INTELIGENTE DO ERRO 404 (Avisa se o Python não tiver a rota)
-        if (res.status === 404) {
-            container.innerHTML = '<p class="text-danger small mt-3 fw-bold"><i class="bi bi-exclamation-triangle"></i> Erro 404: Rota de horários ausente no Backend.</p>';
-            return;
-        }
-
         const slots = await res.json();
         
-        container.innerHTML = '<h6 class="fw-bold mb-3 small text-uppercase text-secondary mt-3">Horários Livres:</h6>';
+        container.innerHTML = '<h6 class="fw-bold mb-3 small text-uppercase text-secondary">Horários Disponíveis:</h6>';
         
         if (!slots || slots.length === 0) {
-            container.innerHTML += '<div class="text-center py-3 bg-light rounded-3"><i class="bi bi-calendar-x text-muted fs-4"></i><p class="small text-muted mb-0">Agenda lotada para este dia.</p></div>';
+            container.innerHTML = '<p class="small text-muted text-center py-4">Agenda cheia para este dia.</p>';
             return;
         }
 
-        const slotsGrid = document.createElement('div');
-        slotsGrid.className = 'd-flex flex-wrap gap-2 justify-content-center';
-        
         slots.forEach(time => {
             const btn = document.createElement('button');
-            btn.className = `btn btn-sm rounded-pill px-3 py-2 fw-medium ${appointmentData.horario === time ? 'btn-danger text-white shadow-sm' : 'btn-outline-secondary'}`;
+            btn.className = 'btn btn-outline-secondary btn-sm m-1 time-slot-btn rounded-pill';
             btn.textContent = time;
+            if (appointmentData.horario === time) btn.classList.replace('btn-outline-secondary', 'btn-danger');
             
             btn.onclick = () => {
                 appointmentData.horario = time;
-                fetchAvailableSlots(dateStr); // Re-renderiza para destacar o botão clicado
-                
-                const nextBtn = document.getElementById('nextButtonStep3');
-                if (nextBtn) nextBtn.disabled = false;
+                document.querySelectorAll('.time-slot-btn').forEach(b => b.className = 'btn btn-outline-secondary btn-sm m-1 time-slot-btn rounded-pill');
+                btn.className = 'btn bg-brand-pink text-white btn-sm m-1 time-slot-btn rounded-pill';
+                document.getElementById('nextButtonStep3').disabled = false;
             };
-            slotsGrid.appendChild(btn);
+            container.appendChild(btn);
         });
-        container.appendChild(slotsGrid);
-
     } catch (e) {
-        console.error(e);
-        container.innerHTML = '<p class="text-danger small mt-3">Falha ao conectar com o servidor Neon.</p>';
+        container.innerHTML = '<p class="text-danger small">Erro ao carregar horários.</p>';
     }
 }
 
-// --- PASSO 4: CARREGAR PETS ---
+// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS DO LOGADO ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     if (!select) return;
@@ -192,16 +176,19 @@ async function loadUserPets() {
         const data = await res.json();
         const listaPets = Array.isArray(data) ? data : [];
         
-        select.innerHTML = '<option value="NEW">-- Adicionar um Novo Pet --</option>';
-        listaPets.forEach(p => select.add(new Option(p.nome_pet, p.id_pet)));
+        select.innerHTML = '<option value="" disabled selected>Para qual pet será o atendimento?</option>';
+        listaPets.forEach(p => {
+            select.add(new Option(p.nome_pet, p.id_pet));
+        });
+        select.add(new Option("➕ Cadastrar Outro / Novo Pet", "NEW"));
     } catch (e) { 
-        console.error("Erro pets:", e); 
+        console.error("Erro ao puxar pets:", e); 
     }
 }
 
-// --- NAVEGAÇÃO WIZARD ---
+// --- CONTROLE DE FLUXO ---
 function showStep(n) {
-    document.querySelectorAll('.step').forEach((s, i) => s.style.display = (i + 1 === n) ? 'block' : 'none');
+    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
     const progressBar = document.getElementById('step-progressbar');
     if (progressBar) progressBar.style.width = `${(n / 5) * 100}%`;
     currentStep = n;
@@ -213,24 +200,25 @@ function showStep(n) {
 function gerarResSummary() {
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
-    const nomePet = isNewPet ? (document.getElementById('nome_pet')?.value || 'Novo Pet') : selectPet.options[selectPet.selectedIndex].text;
+    const nomePet = isNewPet ? document.getElementById('nome_pet').value : selectPet.options[selectPet.selectedIndex].text;
 
+    // Resumo final limpo sem nenhuma menção a preços ou valores financeiros
     document.getElementById('confirmation-summary').innerHTML = `
-        <div class="row g-3 bg-light p-3 rounded-4 border">
-            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">SERVIÇO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
-            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">UNIDADE</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
-            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">DATA</small> <strong class="text-dark">${appointmentData.data.split('-').reverse().join('/')}</strong></div>
-            <div class="col-6"><small class="text-muted d-block" style="font-size:0.7rem;">HORÁRIO</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
-            <div class="col-12 border-top pt-2"><small class="text-muted d-block" style="font-size:0.7rem;">PET SELECIONADO</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
+        <div class="row g-3">
+            <div class="col-6"><small class="text-muted d-block">SERVIÇO ESCOLHIDO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">UNIDADE FÍSICA</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">DATA SELECIONADA</small> <strong class="text-dark">${appointmentData.data.split('-').reverse().join('/')}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">HORÁRIO DA TOSA</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
+            <div class="col-12 border-top pt-2"><small class="text-muted d-block">ANIMAL VINCULADO</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
         </div>
     `;
 }
 
-// --- LISTENERS ---
 function setupEventListeners() {
     document.getElementById('service-select').onchange = (e) => {
         appointmentData.servico_id = e.target.value;
-        appointmentData.servico_nome = e.target.options[e.target.selectedIndex].text.split(' - ')[0];
+        appointmentData.servico_nome = e.target.options[e.target.selectedIndex].text;
+        appointmentData.servico_preco = e.target.options[e.target.selectedIndex].dataset.preco;
         document.getElementById('nextButtonStep1').disabled = false;
     };
 
@@ -246,33 +234,29 @@ function setupEventListeners() {
         appointmentData.id_pet = (e.target.value === 'NEW') ? null : e.target.value;
     };
 
-    document.getElementById('nextButtonStep1')?.addEventListener('click', () => showStep(2));
-    document.getElementById('nextButtonStep2')?.addEventListener('click', () => { renderCalendar(); showStep(3); });
-    document.getElementById('nextButtonStep3')?.addEventListener('click', () => showStep(4));
+    document.getElementById('nextButtonStep1').onclick = () => showStep(2);
+    document.getElementById('nextButtonStep2').onclick = () => { renderCalendar(); showStep(3); };
+    document.getElementById('nextButtonStep3').onclick = () => showStep(4);
     
-    document.getElementById('pet-info-form')?.addEventListener('submit', (e) => {
+    document.getElementById('pet-info-form').onsubmit = (e) => {
         e.preventDefault();
         showStep(5);
+    };
+
+    document.querySelectorAll('.btn-prev').forEach(b => {
+        b.onclick = () => showStep(currentStep - 1);
     });
 
-    document.querySelectorAll('.btn-back').forEach(b => b.onclick = () => showStep(currentStep - 1));
+    document.getElementById('prevMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
+    document.getElementById('nextMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); };
 
-    document.getElementById('prevMonthButton')?.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); });
-    document.getElementById('nextMonthButton')?.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); });
-
-    document.getElementById('confirmButton')?.addEventListener('click', confirmAppointment);
+    document.getElementById('confirmButton').onclick = confirmAppointment;
 }
 
-// --- ENVIO FINAL PARA O BACKEND ---
 async function confirmAppointment() {
     const btn = document.getElementById('confirmButton');
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
-    
-    const inputObs = document.getElementById('observacoes') || document.getElementById('observacoes_cliente');
-    const inputNomePet = document.getElementById('nome_pet');
-    const inputRaca = document.getElementById('especie_raca') || document.getElementById('raca');
-    const inputPorte = document.getElementById('porte');
     
     const payload = {
         id_cliente: appointmentData.cliente_id,
@@ -281,16 +265,16 @@ async function confirmAppointment() {
         data_hora_inicio: `${appointmentData.data}T${appointmentData.horario}:00`,
         id_pet: isNewPet ? null : appointmentData.id_pet,
         novo_pet: isNewPet ? {
-            nome: inputNomePet ? inputNomePet.value.trim() : 'Pet Sem Nome',
-            raca: inputRaca ? inputRaca.value.trim() : 'SRD',
-            porte: inputPorte ? inputPorte.value : 'Médio'
+            nome: document.getElementById('nome_pet').value.trim(),
+            raca: document.getElementById('raca').value.trim() || 'SRD',
+            porte: document.getElementById('porte').value
         } : null,
-        observacoes: inputObs ? inputObs.value.trim() : ''
+        observacoes: document.getElementById('observacoes').value.trim()
     };
 
     try {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Finalizando...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Gravando Reserva...';
         
         const res = await fetch(`${API_BASE_URL}/api/agendar`, {
             method: 'POST',
@@ -299,18 +283,17 @@ async function confirmAppointment() {
         });
 
         if (res.ok) {
-            alert("✨ Tudo pronto! O seu agendamento foi confirmado no Neon.");
-            window.location.href = '../usuario/perfil.html';
+            alert("✨ Tudo pronto! O seu agendamento foi confirmado.");
+            window.location.href = 'meus_agendamentos.html'; // CORREÇÃO: Redireciona na raiz
         } else {
             const err = await res.json().catch(() => ({}));
-            alert("Ops: " + (err.error || "Falha ao registrar horário no banco."));
+            alert("Ops: " + (err.error || "Falha ao registrar horário."));
             btn.disabled = false;
-            btn.innerText = "Confirmar Agora!";
+            btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
         }
     } catch (e) {
-        console.error(e);
         alert("Erro de comunicação com o servidor.");
         btn.disabled = false;
-        btn.innerText = "Confirmar Agora!";
+        btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
     }
 }

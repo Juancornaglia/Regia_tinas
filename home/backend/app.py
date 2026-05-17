@@ -812,12 +812,17 @@ def listar_pets_por_tutor(id_usuario):
 def listar_agenda_cliente(id_cliente):
     """Busca o histórico completo de agendamentos ativos do cliente no Neon com dados via JOIN"""
     try:
-        # CORREÇÃO 1: Adicionado try...except para blindar a API contra Erros 500 inesperados
-        # CORREÇÃO 2: Adicionado 'a.valor_cobrado' e 'a.observacoes_cliente' para o card do perfil não ficar incompleto
-        # CORREÇÃO 3: Adicionada a trava 'a.ativo = true' para respeitar a exclusão/cancelamento lógico do banco
+        # CORREÇÃO CRÍTICA: to_char(a.data_hora_inicio, 'DD/MM/YYYY HH24:MI') converte o timestamp
+        # em string de texto comum, impedindo que o jsonify do Flask quebre com erro de serialização!
         sql = """
-            SELECT a.id_agendamento, a.data_hora_inicio, a.status, a.valor_cobrado, a.observacoes_cliente,
-                   p.nome_pet, s.nome_servico, l.nome_loja
+            SELECT a.id_agendamento, 
+                   to_char(a.data_hora_inicio, 'DD/MM/YYYY HH24:MI') as data_hora_inicio, 
+                   a.status, 
+                   a.valor_cobrado, 
+                   a.observacoes_cliente,
+                   p.nome_pet, 
+                   s.nome_servico, 
+                   l.nome_loja
             FROM public.agendamentos a
             JOIN public.pets p ON a.id_pet = p.id_pet
             JOIN public.servicos s ON a.id_servico = s.id_servico
@@ -829,8 +834,7 @@ def listar_agenda_cliente(id_cliente):
         # Executa a query passando o parâmetro de forma segura contra SQL Injection
         agenda = executar_query(sql, (id_cliente,))
         
-        # Se o cliente não tiver nenhum agendamento ainda, devolve uma lista vazia []
-        # de forma limpa, evitando que o .map() do JavaScript dê erro de leitura
+        # Agora a lista contém apenas textos, números e booleanos puros. O jsonify vai rodar liso!
         return jsonify(agenda if agenda else []), 200
 
     except Exception as e:

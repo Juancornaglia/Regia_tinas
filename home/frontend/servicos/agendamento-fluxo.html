@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamento | Regia & Tinas Care</title>
     
-    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link rel="icon" type="image/png" href="img/logo_pequena4.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -22,117 +22,54 @@
             --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        body { 
-            background-color: var(--bg-light); 
-            font-family: 'Poppins', sans-serif; 
-            color: var(--text-main);
-        }
-
+        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; color: var(--text-main); }
         .text-brand { color: var(--brand-pink) !important; }
         .bg-brand { background-color: var(--brand-pink) !important; }
 
-        .navbar { 
-            background-color: #ffffff !important; 
-            padding: 1.2rem 0; 
-            border-bottom: 1px solid #edf2f7;
-        }
-        .btn-voltar-home { 
-            border: 1px solid #e2e8f0; 
-            color: var(--text-main) !important;
-            border-radius: 24px; 
-            background: #ffffff;
-            font-weight: 500;
-            padding: 8px 18px;
-            transition: var(--transition-smooth); 
-            text-decoration: none;
-        }
-        .btn-voltar-home:hover { background: #f1f5f9; transform: translateX(-3px); }
-
-        .progress { height: 8px; border-radius: 10px; background-color: #f1f5f9; overflow: visible; }
-        .progress-bar { background-color: var(--brand-pink); transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px; position: relative;}
+        .navbar { background-color: #ffffff !important; padding: 1.2rem 0; border-bottom: 1px solid #edf2f7; }
+        .btn-voltar-home { border: 1px solid #e2e8f0; color: var(--text-main) !important; border-radius: 24px; background: #ffffff; font-weight: 500; padding: 8px 18px; text-decoration: none; }
         
-        .card-agendamento { 
-            border: none; 
-            border-radius: 36px; 
-            box-shadow: var(--card-shadow); 
-            background: white; 
-            border: 1px solid #f8fafc;
-        }
-
+        .progress { height: 8px; border-radius: 10px; background-color: #f1f5f9; overflow: visible; }
+        .progress-bar { background-color: var(--brand-pink); border-radius: 10px; position: relative;}
+        
+        .card-agendamento { border: none; border-radius: 36px; box-shadow: var(--card-shadow); background: white; }
         .step { display: none; }
         .step.active { display: block; animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .form-select, .form-control {
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-            padding: 16px 20px;
-            background-color: #f8fafc;
-            color: var(--text-main);
-            font-weight: 500;
-            transition: var(--transition-smooth);
-        }
-        .form-select:focus, .form-control:focus {
-            border-color: var(--brand-pink);
-            box-shadow: 0 0 0 4px rgba(254, 134, 151, 0.15);
-            background-color: #ffffff;
-        }
+        .form-select, .form-control { border-radius: 16px; border: 1px solid #e2e8f0; padding: 16px 20px; background-color: #f8fafc; color: var(--text-main); }
+        .form-select:focus, .form-control:focus { border-color: var(--brand-pink); box-shadow: 0 0 0 4px rgba(254, 134, 151, 0.15); background-color: #ffffff; }
 
-        .btn-brand { 
-            background-color: var(--brand-pink); 
-            color: white; 
-            border: none; 
-            border-radius: 30px; 
-            padding: 14px 40px;
-            font-weight: 600;
-            transition: var(--transition-smooth); 
-            box-shadow: 0 6px 18px rgba(254, 134, 151, 0.3);
-        }
-        .btn-brand:hover:not(:disabled) { 
-            background-color: var(--brand-pink-hover); 
-            transform: translateY(-2px); 
-        }
+        .btn-brand { background-color: var(--brand-pink); color: white; border: none; border-radius: 30px; padding: 14px 40px; font-weight: 600; box-shadow: 0 6px 18px rgba(254, 134, 151, 0.3); }
+        .btn-brand:hover:not(:disabled) { background-color: var(--brand-pink-hover); }
         .btn-brand:disabled { background-color: #cbd5e1; box-shadow: none; }
         .btn-prev { background: transparent; border: none; font-weight: 600; color: #94a3b8; }
 
         #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-        .calendar-day { 
-            padding: 12px 8px; 
-            border-radius: 14px; 
-            cursor: pointer; 
-            text-align: center; 
-            font-weight: 600; 
-            border: 2px solid transparent; 
-            font-size: 0.95rem; 
-            color: var(--text-main);
-        }
+        .calendar-day { padding: 12px 8px; border-radius: 14px; cursor: pointer; text-align: center; font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
         .calendar-day:hover:not(.disabled) { background-color: var(--brand-pink-light); color: var(--brand-pink); }
         .calendar-day.selected { background-color: var(--brand-pink) !important; color: white !important; }
         .calendar-day.disabled { color: #cbd5e1; cursor: not-allowed; opacity: 0.4; }
         .calendar-day-name { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; text-align: center; font-weight: 700; }
 
-        .summary-box { 
-            background: linear-gradient(135deg, #ffffff 0%, var(--brand-pink-light) 100%);
-            border: 1px solid #fec0c8; 
-            border-radius: 24px;
-        }
+        .summary-box { background: linear-gradient(135deg, #ffffff 0%, var(--brand-pink-light) 100%); border: 1px solid #fec0c8; border-radius: 24px; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top mb-4">
         <div class="container">
-            <a class="btn-voltar-home d-flex align-items-center small" href="../index.html">
+            <a class="btn-voltar-home d-flex align-items-center small" href="index.html">
                 <i class="bi bi-arrow-left me-2"></i> Cancelar
             </a>
-            <span class="fw-bold mx-auto text-dark" style="letter-spacing: 0.5px;">CENTRO DE AGENDAMENTO</span>
+            <span class="fw-bold mx-auto text-dark" style="letter-spacing: 0.5px;">CENTRO DE MARCAÇÃO</span>
             <div style="width: 100px;" class="d-none d-md-block"></div>
         </div>
     </nav>
 
     <main class="container my-5">
         <div class="text-center mb-5">
-            <p class="small text-muted fw-bold text-uppercase mb-3">Sua reserva está quase pronta</p>
+            <p class="small text-muted fw-bold text-uppercase mb-3">Sua vaga em tempo real no Neon DB</p>
             <div class="progress mx-auto" style="max-width: 600px;">
                 <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
             </div>
@@ -204,13 +141,13 @@
                 </div>
                 <form id="pet-info-form">
                     <div class="mb-4">
-                        <label class="form-label text-muted small fw-semibold">Meus Animais Cadastrados</label>
+                        <label class="form-label text-muted small fw-semibold">Animais Vinculados à Sua Conta</label>
                         <select class="form-select form-select-lg" id="select-pet" required>
                             </select>
                     </div>
                     
                     <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
-                        <h6 class="fw-bold text-dark mb-3">➕ Informações do Novo Amiguinho</h6>
+                        <h6 class="fw-bold text-dark mb-3">➕ Ficha do Novo Amiguinho</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small text-muted">Nome do Pet *</label>
@@ -218,7 +155,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small text-muted">Raça (Opcional)</label>
-                                <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Golden, Poodle, SRD">
+                                <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Poodle, Golden, SRD">
                             </div>
                             <div class="col-12">
                                 <label class="form-label small text-muted">Porte *</label>
@@ -232,13 +169,13 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted small fw-semibold">Notas e Recomendações</label>
-                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Possui alergias? Cuidado com orelhas? Notas comportamentais?"></textarea>
+                        <label class="form-label text-muted small fw-semibold">Notas e Recomendações de Cuidado</label>
+                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Ex: Alergia a perfumes, restrições médicas, ou corte específico..."></textarea>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-5">
                         <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                        <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Agendamento <i class="bi bi-search ms-2"></i></button>
+                        <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Reserva <i class="bi bi-search ms-2"></i></button>
                     </div>
                 </form>
             </div>
@@ -252,7 +189,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <button class="btn-prev"><i class="bi bi-pencil me-2"></i>Corrigir</button>
                     <button id="confirmButton" class="btn btn-success btn-lg px-5 py-3 fw-bold rounded-pill shadow">
-                        CONFIRMAR AGORA <i class="bi bi-send-fill ms-2"></i>
+                        CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>
                     </button>
                 </div>
             </div>
@@ -261,6 +198,6 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="../js/agendamento.js"></script>
+    <script type="module" src="js/agendamento.js"></script>
 </body>
 </html>
