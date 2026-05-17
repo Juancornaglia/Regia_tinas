@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo Agendamento | Regia & Tinas Care</title>
+    <title>Agendamento | Regia & Tinas Care</title>
     
     <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -31,13 +31,12 @@
         .text-brand { color: var(--brand-pink) !important; }
         .bg-brand { background-color: var(--brand-pink) !important; }
 
-        /* --- Navbar Minimalista --- */
         .navbar { 
             background-color: #ffffff !important; 
             padding: 1.2rem 0; 
             border-bottom: 1px solid #edf2f7;
         }
-        .btn-voltar { 
+        .btn-voltar-home { 
             border: 1px solid #e2e8f0; 
             color: var(--text-main) !important;
             border-radius: 24px; 
@@ -47,17 +46,11 @@
             transition: var(--transition-smooth); 
             text-decoration: none;
         }
-        .btn-voltar:hover { background: #f1f5f9; transform: translateX(-3px); }
+        .btn-voltar-home:hover { background: #f1f5f9; transform: translateX(-3px); }
 
-        /* --- Progress Bar (Wizard) --- */
-        .progress { height: 8px; border-radius: 10px; background-color: #f1f5f9; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); overflow: visible; }
+        .progress { height: 8px; border-radius: 10px; background-color: #f1f5f9; overflow: visible; }
         .progress-bar { background-color: var(--brand-pink); transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px; position: relative;}
-        .progress-bar::after {
-            content: ''; position: absolute; right: -4px; top: -4px; width: 16px; height: 16px;
-            background: #fff; border: 3px solid var(--brand-pink); border-radius: 50%;
-        }
-
-        /* --- Card Principal de Agendamento --- */
+        
         .card-agendamento { 
             border: none; 
             border-radius: 36px; 
@@ -66,12 +59,10 @@
             border: 1px solid #f8fafc;
         }
 
-        /* Animação dos Passos */
         .step { display: none; }
         .step.active { display: block; animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Inputs e Selects Premium */
         .form-select, .form-control {
             border-radius: 16px;
             border: 1px solid #e2e8f0;
@@ -80,7 +71,6 @@
             color: var(--text-main);
             font-weight: 500;
             transition: var(--transition-smooth);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
         }
         .form-select:focus, .form-control:focus {
             border-color: var(--brand-pink);
@@ -88,7 +78,6 @@
             background-color: #ffffff;
         }
 
-        /* --- Botões Principais --- */
         .btn-brand { 
             background-color: var(--brand-pink); 
             color: white; 
@@ -102,13 +91,10 @@
         .btn-brand:hover:not(:disabled) { 
             background-color: var(--brand-pink-hover); 
             transform: translateY(-2px); 
-            box-shadow: 0 8px 24px rgba(254, 134, 151, 0.45);
         }
-        .btn-brand:disabled { background-color: #cbd5e1; box-shadow: none; transform: none; }
-        .btn-prev { background: transparent; border: none; font-weight: 600; color: #94a3b8; transition: 0.2s; }
-        .btn-prev:hover { color: var(--text-main); }
+        .btn-brand:disabled { background-color: #cbd5e1; box-shadow: none; }
+        .btn-prev { background: transparent; border: none; font-weight: 600; color: #94a3b8; }
 
-        /* --- Calendário Customizado --- */
         #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .calendar-day { 
             padding: 12px 8px; 
@@ -118,40 +104,35 @@
             font-weight: 600; 
             border: 2px solid transparent; 
             font-size: 0.95rem; 
-            transition: var(--transition-smooth);
             color: var(--text-main);
         }
         .calendar-day:hover:not(.disabled) { background-color: var(--brand-pink-light); color: var(--brand-pink); }
-        .calendar-day.selected { background-color: var(--brand-pink) !important; color: white !important; box-shadow: 0 4px 12px rgba(254, 134, 151, 0.3); }
+        .calendar-day.selected { background-color: var(--brand-pink) !important; color: white !important; }
         .calendar-day.disabled { color: #cbd5e1; cursor: not-allowed; opacity: 0.4; }
+        .calendar-day-name { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; text-align: center; font-weight: 700; }
 
-        /* --- Resumo Final --- */
         .summary-box { 
             background: linear-gradient(135deg, #ffffff 0%, var(--brand-pink-light) 100%);
             border: 1px solid #fec0c8; 
             border-radius: 24px;
         }
-
-        /* Rodapé */
-        footer { border-top: 1px solid #edf2f7; background-color: #ffffff; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top mb-4">
         <div class="container">
-            <a class="btn-voltar d-flex align-items-center small" href="../index.html">
+            <a class="btn-voltar-home d-flex align-items-center small" href="../index.html">
                 <i class="bi bi-arrow-left me-2"></i> Cancelar
             </a>
-            <span class="navbar-brand fw-bold mx-auto text-dark d-none d-md-block" style="letter-spacing: 0.5px;">NOVO AGENDAMENTO</span>
+            <span class="fw-bold mx-auto text-dark" style="letter-spacing: 0.5px;">CENTRO DE AGENDAMENTO</span>
             <div style="width: 100px;" class="d-none d-md-block"></div>
         </div>
     </nav>
 
-    <main class="container my-4 my-md-5">
-        
+    <main class="container my-5">
         <div class="text-center mb-5">
-            <p class="small text-muted fw-bold text-uppercase mb-3" style="letter-spacing: 1px;">Sua reserva está quase pronta</p>
+            <p class="small text-muted fw-bold text-uppercase mb-3">Sua reserva está quase pronta</p>
             <div class="progress mx-auto" style="max-width: 600px;">
                 <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
             </div>
@@ -165,9 +146,8 @@
                     <h3 class="fw-bold mb-0 text-dark">O que vamos fazer hoje?</h3>
                 </div>
                 <div class="mb-4">
-                    <label class="form-label text-muted small fw-semibold ms-2">CATÁLOGO DE SERVIÇOS</label>
                     <select class="form-select form-select-lg" id="service-select">
-                        <option value="" selected disabled>Carregando serviços disponíveis...</option>
+                        <option value="" selected disabled>Carregando serviços...</option>
                     </select>
                 </div>
                 <div class="text-end mt-5">
@@ -181,13 +161,12 @@
                     <h3 class="fw-bold mb-0 text-dark">Onde será o atendimento?</h3>
                 </div>
                 <div class="mb-4">
-                    <label class="form-label text-muted small fw-semibold ms-2">UNIDADE FÍSICA</label>
                     <select class="form-select form-select-lg" id="store-select">
-                        <option value="" selected disabled>Carregando unidades da rede...</option>
+                        <option value="" selected disabled>Carregando unidades...</option>
                     </select>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-5">
-                    <button class="btn-prev px-3 py-2"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
+                    <button class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
                     <button id="nextButtonStep2" class="btn btn-brand btn-lg" disabled>Ver Calendário <i class="bi bi-calendar-date ms-2"></i></button>
                 </div>
             </div>
@@ -197,30 +176,24 @@
                     <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-clock-history text-brand fs-4"></i></div>
                     <h3 class="fw-bold mb-0 text-dark">Escolha o melhor momento</h3>
                 </div>
-                
                 <div class="row g-4 mt-2">
-                    <div class="col-md-7 pe-md-4">
+                    <div class="col-md-7">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <button id="prevMonthButton" class="btn btn-sm btn-light border rounded-circle shadow-sm p-2"><i class="bi bi-chevron-left"></i></button>
+                            <button id="prevMonthButton" class="btn btn-sm btn-light border p-2"><i class="bi bi-chevron-left"></i></button>
                             <h5 id="calendar-month-year" class="mb-0 fw-bold text-dark text-capitalize">...</h5>
-                            <button id="nextMonthButton" class="btn btn-sm btn-light border rounded-circle shadow-sm p-2"><i class="bi bi-chevron-right"></i></button>
+                            <button id="nextMonthButton" class="btn btn-sm btn-light border p-2"><i class="bi bi-chevron-right"></i></button>
                         </div>
                         <div id="calendar-grid" class="mt-2"></div>
                     </div>
-                    
-                    <div class="col-md-5 ps-md-4 border-start border-light-subtle">
-                        <div id="time-slots-container" class="h-100 d-flex flex-column justify-content-center">
-                            <div class="text-center opacity-50 py-5">
-                                <i class="bi bi-calendar-event fs-1 d-block mb-2"></i>
-                                <p class="small fw-medium">Selecione uma data no calendário para ver os horários.</p>
-                            </div>
+                    <div class="col-md-5 ps-md-4 border-start">
+                        <div id="time-slots-container">
+                            <p class="small text-muted text-center py-5">Selecione uma data ao lado.</p>
                         </div>
                     </div>
                 </div>
-                
-                <div class="d-flex justify-content-between align-items-center mt-5 border-top pt-4">
-                    <button class="btn-prev px-3 py-2"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                    <button id="nextButtonStep3" class="btn btn-brand btn-lg" disabled>Detalhes do Pet <i class="bi bi-paw-fill ms-2"></i></button>
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                    <button class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
+                    <button id="nextButtonStep3" class="btn btn-brand btn-lg" disabled>Quem é o Pet? <i class="bi bi-paw-fill ms-2"></i></button>
                 </div>
             </div>
 
@@ -229,16 +202,15 @@
                     <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-hearts text-brand fs-4"></i></div>
                     <h3 class="fw-bold mb-0 text-dark">Quem é o fofinho(a)?</h3>
                 </div>
-                
                 <form id="pet-info-form">
                     <div class="mb-4">
-                        <label class="form-label text-muted small fw-semibold ms-2">SELECIONE SEU PET</label>
+                        <label class="form-label text-muted small fw-semibold">Meus Animais Cadastrados</label>
                         <select class="form-select form-select-lg" id="select-pet" required>
                             </select>
                     </div>
                     
-                    <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border border-light-subtle">
-                        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-stars text-warning me-2"></i>Cadastrar no momento da reserva</h6>
+                    <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
+                        <h6 class="fw-bold text-dark mb-3">➕ Informações do Novo Amiguinho</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small text-muted">Nome do Pet *</label>
@@ -246,7 +218,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small text-muted">Raça (Opcional)</label>
-                                <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Poodle, SRD">
+                                <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Golden, Poodle, SRD">
                             </div>
                             <div class="col-12">
                                 <label class="form-label small text-muted">Porte *</label>
@@ -260,31 +232,26 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted small fw-semibold ms-2">OBSERVAÇÕES CLÍNICAS OU DA TOSA</label>
-                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Possui alergias? Perfume específico? Corte na tesoura?"></textarea>
+                        <label class="form-label text-muted small fw-semibold">Notas e Recomendações</label>
+                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Possui alergias? Cuidado com orelhas? Notas comportamentais?"></textarea>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-5">
-                        <button type="button" class="btn-prev px-3 py-2"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                        <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Reserva <i class="bi bi-search ms-2"></i></button>
+                        <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
+                        <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Agendamento <i class="bi bi-search ms-2"></i></button>
                     </div>
                 </form>
             </div>
 
             <div id="step-5" class="step">
                 <div class="text-center mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 80px; height: 80px;">
-                        <i class="bi bi-check-lg display-4"></i>
-                    </div>
-                    <h3 class="fw-bold text-dark">Tudo pronto para finalizar!</h3>
-                    <p class="text-muted mb-0">Revise os detalhes abaixo para garantir que está tudo perfeito.</p>
+                    <i class="bi bi-check-circle-fill text-success display-4"></i>
+                    <h3 class="fw-bold mt-2 text-dark">Confirme seus Dados</h3>
                 </div>
-                
                 <div id="confirmation-summary" class="summary-box p-4 mb-5 shadow-sm"></div>
-
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
-                    <button class="btn-prev px-3 py-2 w-100 w-sm-auto"><i class="bi bi-pencil me-2"></i>Alterar algo</button>
-                    <button id="confirmButton" class="btn btn-success btn-lg px-5 py-3 fw-bold rounded-pill shadow w-100 w-sm-auto">
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn-prev"><i class="bi bi-pencil me-2"></i>Corrigir</button>
+                    <button id="confirmButton" class="btn btn-success btn-lg px-5 py-3 fw-bold rounded-pill shadow">
                         CONFIRMAR AGORA <i class="bi bi-send-fill ms-2"></i>
                     </button>
                 </div>
@@ -292,13 +259,6 @@
 
         </div>
     </main>
-
-    <footer class="text-center py-5 mt-5">
-        <div class="container">
-            <p class="mb-1 fw-bold text-brand" style="letter-spacing: 1px;">REGIA & TINA'S CARE</p>
-            <p class="small text-muted mb-0"><i class="bi bi-shield-lock-fill me-1"></i>O seu agendamento é sincronizado de forma segura com o Neon DB.</p>
-        </div>
-    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="../js/agendamento.js"></script>
