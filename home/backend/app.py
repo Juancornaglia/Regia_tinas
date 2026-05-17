@@ -6,10 +6,9 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
-from flask import Flask, send_from_directory # Verifique se o send_from_directory está aqui!
+from flask import Flask, send_from_directory 
 from werkzeug.security import check_password_hash, generate_password_hash
-
-# Importação centralizada da sua função de query
+from datetime import datetime, timedelta
 from db.neon_db import executar_query 
 
 # 1. Configurações Iniciais

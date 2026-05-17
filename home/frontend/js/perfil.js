@@ -286,7 +286,8 @@ function showToast(mensagem, tipo = "sucesso") {
     
     if (!toastEl || !msgEl) return;
 
-    msgEl.innerText = mensaje || mensagem;
+    // CORREÇÃO: Removido o termo 'mensaje' que causava o ReferenceError
+    msgEl.innerText = mensagem;
     
     // Altera a cor de fundo com base no tipo de feedback dinamicamente
     if (tipo === "erro" || tipo === "deletar") {
