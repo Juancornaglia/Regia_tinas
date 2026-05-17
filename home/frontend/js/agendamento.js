@@ -270,7 +270,14 @@ function setupEventListeners() {
 // --- ENVIO PARA O BACKEND ---
 async function confirmAppointment() {
     const btn = document.getElementById('confirmButton');
-    const isNewPet = document.getElementById('select-pet').value === 'NEW';
+    const selectPet = document.getElementById('select-pet');
+    const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
+    
+    // Captura os elementos de forma defensiva para evitar erros de 'null'
+    const inputObs = document.getElementById('observacoes') || document.getElementById('observacoes_cliente');
+    const inputNomePet = document.getElementById('nome_pet');
+    const inputRaca = document.getElementById('especie_raca') || document.getElementById('raca');
+    const inputPorte = document.getElementById('porte');
     
     const payload = {
         id_cliente: appointmentData.cliente_id,
@@ -279,16 +286,16 @@ async function confirmAppointment() {
         data_hora_inicio: `${appointmentData.data}T${appointmentData.horario}:00`,
         id_pet: isNewPet ? null : appointmentData.id_pet,
         novo_pet: isNewPet ? {
-            nome: document.getElementById('nome_pet').value,
-            raca: document.getElementById('especie_raca').value,
-            porte: document.getElementById('porte').value
+            nome: inputNomePet ? inputNomePet.value.trim() : 'Pet Sem Nome',
+            raca: inputRaca ? inputRaca.value.trim() : 'SRD',
+            porte: inputPorte ? inputPorte.value : 'Médio'
         } : null,
-        observacoes: document.getElementById('observacoes').value
+        observacoes: inputObs ? inputObs.value.trim() : ''
     };
 
     try {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gravando no Neon...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Gravando no Neon...';
         
         const res = await fetch(`${API_BASE_URL}/api/agendar`, {
             method: 'POST',
@@ -297,17 +304,18 @@ async function confirmAppointment() {
         });
 
         if (res.ok) {
-            alert("✨ Tudo pronto! O seu agendamento foi confirmado com sucesso.");
-            // CORREÇÃO 3: Redireciona o cliente diretamente para a página correta de perfil/dashboard do cliente
-            window.location.href = '../usuario/perfil.html'; 
+            alert("✨ Tudo pronto! O seu agendamento foi confirmado.");
+            window.location.href = '../usuario/perfil.html';
         } else {
-            const err = await res.json();
-            alert("Erro no agendamento: " + err.error);
+            const err = await res.json().catch(() => ({}));
+            alert("Ops: " + (err.error || "Falha ao registrar horário. Tente outro momento."));
             btn.disabled = false;
             btn.innerText = "Confirmar Agora!";
         }
     } catch (e) {
-        alert("Erro de conexão com o banco Neon.");
+        console.error("Erro na conexão do agendamento:", e);
+        alert("Erro de comunicação com o servidor.");
         btn.disabled = false;
+        btn.innerText = "Confirmar Agora!";
     }
 }

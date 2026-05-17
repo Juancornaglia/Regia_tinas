@@ -1053,56 +1053,57 @@ def listar_produtos_loja():
         print(f"❌ ERRO AO LISTAR PRODUTOS NA VITRINE: {e}")
         return jsonify({"error": "Falha interna ao carregar o catálogo de produtos."}), 500
 
-
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
-    """Processa o agendamento inteligente gravando o serviço e tratando novos pets em lote no Neon"""
+    """Processa o agendamento convertendo tipos e tratando novos pets em lote no Neon"""
     try:
         d = request.get_json()
         if not d:
             return jsonify({"error": "Dados do agendamento não recebidos."}), 400
             
+        # BLINDAGEM DE TIPOS: Força a conversão para inteiro para o Neon aceitar os JOINs
+        id_servico = int(d['id_servico'])
+        id_loja = int(d['id_loja'])
+            
         # 1. BUSCA PREÇO E DURACAO DO SERVICO
-        serv = executar_query('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (d['id_servico'],))
+        serv = executar_query('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (id_servico,))
         if not serv:
-            return jsonify({"error": "O serviço selecionado não está mais disponível."}), 404
+            return jsonify({"error": "O serviço selecionado não foi localizado na base."}), 404
             
         preco = serv[0]['preco_servico']
         dur = serv[0]['duracao_media_minutos'] or 30
 
-        # 2. TRATAMENTO DE DATAS (Cálculo automático do horário de término)
+        # 2. TRATAMENTO DE DATAS
         inicio_str = d['data_hora_inicio'].replace('Z', '').split('+')[0]
         inicio = datetime.fromisoformat(inicio_str)
         fim = inicio + timedelta(minutes=dur)
 
-        # 3. FLUXO INTELIGENTE: TRATAMENTO DE NOVO PET NO AGENDAMENTO
+        # 3. TRATAMENTO DE NOVO PET NO AGENDAMENTO (EM LOTE)
         id_pet = d.get('id_pet')
         novo_pet_dados = d.get('novo_pet')
 
-        # Se o ID do pet veio nulo mas existem dados de um novo bicho, insere ele primeiro
         if not id_pet and novo_pet_dados:
-            print("🐾 Detectado cadastro de pet em lote durante o agendamento. Gravando...")
             sql_novo_pet = """
                 INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
-                VALUES (%s, %s, %s, %s, %s, 'Cadastrado no fluxo de agendamento')
+                VALUES (%s, %s, %s, %s, %s, 'Cadastrado automaticamente no agendamento')
                 RETURNING id_pet
             """
             res_pet = executar_query(sql_novo_pet, (
                 d['id_cliente'],
                 novo_pet_dados.get('nome'),
-                'Cão', # Espécie padrão de contingência
+                'Cão',
                 novo_pet_dados.get('raca', 'SRD'),
                 novo_pet_dados.get('porte', 'Médio')
             ))
             if res_pet:
                 id_pet = res_pet[0]['id_pet']
             else:
-                return jsonify({"error": "Falha operacional ao registrar o novo pet no Neon."}), 500
+                return jsonify({"error": "Falha ao registrar a nova ficha do pet."}), 500
 
-        # CORREÇÃO DE CHAVE: Mapeia 'observacoes' vindo diretamente do payload do JS
-        observacoes = d.get('observacoes') or d.get('observacoes_cliente')
+        # Sincroniza chaves de observações de forma segura
+        observacoes = d.get('observacoes', '')
 
-        # 4. INSERÇÃO DO AGENDAMENTO FINAL
+        # 4. INSERÇÃO DO AGENDAMENTO FINAL COM IDS CONVERTIDOS
         sql_agendar = """
             INSERT INTO public.agendamentos 
             (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
@@ -1111,20 +1112,20 @@ def post_agendamento():
         
         executar_query(sql_agendar, (
             d['id_cliente'], 
-            id_pet, 
-            d['id_loja'], 
-            d['id_servico'], 
+            int(id_pet) if id_pet else None, 
+            id_loja, 
+            id_servico, 
             inicio, 
             fim, 
             preco, 
             observacoes
         ))
         
-        return jsonify({"status": "sucesso", "mensagem": "Agendamento realizado com sucesso!"}), 201
+        return jsonify({"status": "sucesso", "mensagem": "Agendamento registrado com sucesso!"}), 201
         
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO AO PROCESSAR AGENDAMENTO NO NEON: {e}")
-        return jsonify({"error": "Falha interna do servidor ao processar o agendamento."}), 500
+        print(f"❌ ERRO CRÍTICO NO AGENDAMENTO: {e}")
+        return jsonify({"error": "Erro interno no servidor ao processar o agendamento."}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
