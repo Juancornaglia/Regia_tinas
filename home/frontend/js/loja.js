@@ -1,81 +1,79 @@
 /**
- * js/loja.js - Lista de Unidades Instantânea (Sem GPS)
+ * js/loja.js - Gestão Unificada das Unidades Físicas (Regia & Tinas Care)
+ * Sincronizado com os dados reais do Neon via arquivo JSON local
  */
 
-const unidades = [
-    {
-        nome: "Unidade Mooca",
-        endereco: "R. do Oratório, 426 - Mooca, São Paulo - SP",
-        telefone: "(11) 99177-0311",
-        imagem: "img/loja7.png"
-    },
-    {
-        nome: "Unidade Tatuapé",
-        endereco: "R. Coelho Lisboa, 739 - Tatuapé, São Paulo - SP",
-        telefone: "(11) 94527-7207",
-        imagem: "img/loja7.png"
-    },
-    {
-        nome: "Unidade Ipiranga",
-        endereco: "R. Srg. Mor João de Souza, 39 - Ipiranga, São Paulo - SP",
-        telefone: "(11) 2925-3884",
-        imagem: "img/loja7.png"
-    },
-    {
-        nome: "Unidade Santos",
-        endereco: "Av. Pres. Wilson, 180 - José Menino, Santos - SP",
-        telefone: "(13) 97424-2956",
-        imagem: "img/loja7.png"
-    },
-    {
-        nome: "Unidade Curitiba",
-        endereco: "R. das Araucárias, 70 - Curitiba, PR",
-        telefone: "(41) 9876-54321",
-        imagem: "img/loja7.png"
-    }
-];
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000" 
+    : "https://regia-tinas.onrender.com"; 
 
-function renderizarLojas() {
+document.addEventListener('DOMContentLoaded', () => {
+    carregarLojas();
+});
+
+async function carregarLojas() {
     const container = document.getElementById('lista-unidades');
     if (!container) return;
 
-    container.innerHTML = unidades.map(loja => {
-        // Gera o link de busca do Google Maps
-        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loja.endereco)}`;
+    try {
+        // Carrega o arquivo JSON local com os dados reais que você forneceu
+        // CORREÇÃO: Usando fetch local para o JSON fornecido pelo usuário
+        const response = await fetch('../js/lojas.json');
+        
+        if (!response.ok) throw new Error("Falha ao ler o arquivo JSON das lojas");
+        
+        const lojas = await response.json();
+        const listaLojas = Array.isArray(lojas) ? lojas : [];
 
-        return `
-            <div class="col-lg-10 mb-4">
-                <div class="store-card">
-                    <div class="row g-0">
-                        <div class="col-md-5">
-                            <img src="${loja.imagem}" class="store-img" alt="${loja.nome}" onerror="this.src='img/logo_pequena4.png'">
+        if (listaLojas.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center p-3 text-muted small"><i class="bi bi-info-circle me-1"></i> Nenhuma unidade física cadastrada no momento.</div>';
+            return;
+        }
+
+        // CORREÇÃO MÁXIMA: Geração da estrutura de GRADE PREMIUM alinhada com o HTML unificado
+        container.innerHTML = listaLojas.map(l => {
+            // Sincroniza os nomes de colunas do JSON real fornecido pelo usuário
+            const nomeLoja = l.nome_loja || 'Unidade Care';
+            const endereco = l.endereco || 'Endereço Indisponível';
+            const telefone = l.telefone || '(11) 0000-0000';
+            const referencia = l.referencia ? ` <span class="text-secondary opacity-75">(${l.referencia})</span>` : '';
+            // Substitua 'unidade_placeholder.jpg' pelos nomes reais das suas imagens na pasta img
+            const imgUrl = l.img_loja ? `../img/${l.img_loja}` : '../img/unidade_placeholder.jpg';
+            const mapsUrl = l.link_google_maps || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`;
+
+            return `
+                <div class="col-md-6 col-lg-5 col-xl-4">
+                    <div class="store-card shadow-sm p-0">
+                        <div class="store-img-container shadow-sm border-bottom border-light">
+                            <span class="store-badge border">Unidade Física</span>
+                            <img src="${imgUrl}" class="store-img" alt="Unidade ${nomeLoja}" loading="lazy">
                         </div>
-                        
-                        <div class="col-md-7 info-unidade d-flex flex-column justify-content-center">
-                            <h3 class="fw-bold text-brand mb-3">${loja.nome}</h3>
+                        <div class="info-unidade h-100 d-flex flex-column justify-content-start p-4 p-lg-5">
+                            <h3 class="fw-bold text-dark mb-1">Unidade ${nomeLoja}</h3>
+                            <p class="text-muted small mb-4 fw-medium"><i class="bi bi-headset me-2 text-danger opacity-50"></i>Central: ${telefone}</p>
                             
-                            <a href="${mapsUrl}" target="_blank" class="address-box mb-4">
-                                <div class="small fw-bold text-brand text-uppercase mb-1">Endereço (Toque para abrir o GPS):</div>
-                                <div class="text-dark"><i class="bi bi-geo-alt-fill me-2 text-brand"></i>${loja.endereco}</div>
+                            <a href="${mapsUrl}" target="_blank" class="address-box mb-4 shadow-sm" title="Abrir rota no mapa">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-geo-alt-fill text-danger fs-5 me-3 mt-1"></i>
+                                    <div>
+                                        <strong class="text-dark d-block small mb-1 fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Endereço de Retirada:</strong>
+                                        <span class="small text-secondary" style="line-height: 1.4;">${endereco}${referencia}</span>
+                                    </div>
+                                </div>
                             </a>
                             
-                            <div class="mb-4">
-                                <span class="small fw-bold text-secondary d-block">Telefone:</span>
-                                <span class="fs-4 fw-bold text-dark">${loja.telefone}</span>
-                            </div>
-
-                            <div>
-                                <a href="https://wa.me/55${loja.telefone.replace(/\D/g, '')}" target="_blank" class="btn-whatsapp">
-                                    <i class="bi bi-whatsapp me-2"></i>CHAMAR NO WHATSAPP
+                            <div class="mt-auto text-end text-md-start">
+                                <a href="https://wa.me/55${telefone.replace(/\D/g,'')}" target="_blank" class="btn-whatsapp rounded-pill shadow-sm small fw-semibold">
+                                    <i class="bi bi-whatsapp"></i> Falar no Balcão
                                 </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    } catch (error) {
+        console.error("Erro crítico ao carregar unidades físicas do Neon:", error);
+        container.innerHTML = '<p class="text-danger small p-3 text-center">Falha operacional ao processar a lista de unidades físicas.</p>';
+    }
 }
-
-// Executa na hora!
-document.addEventListener('DOMContentLoaded', renderizarLojas);
