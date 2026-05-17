@@ -23,7 +23,7 @@ const appointmentData = {
 if (!appointmentData.cliente_id) {
     sessionStorage.setItem('url_retorno_agendamento', window.location.href);
     alert("Para realizar um agendamento, é necessário estar logado. Vamos te redirecionar!");
-    window.location.href = 'login.html'; // CORREÇÃO: Aponta direto para a raiz
+    window.location.href = 'login.html'; // Aponta direto para a raiz
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,7 +36,7 @@ function init() {
     setupEventListeners();
 }
 
-// --- PASSO 1: CARREGAR SERVIÇOS (PREÇOS OCULTADOS DA INTERFACE) ---
+// --- PASSO 1: CARREGAR SERVIÇOS (PREÇOS 100% OCULTADOS DA INTERFACE) ---
 async function loadServices() {
     const select = document.getElementById('service-select');
     if (!select) return;
@@ -53,8 +53,8 @@ async function loadServices() {
         listaServicos.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id_servico;
-            opt.dataset.preco = s.preco_servico; // Mantido em background de forma invisível
-            opt.textContent = s.nome_servico;   // CORREÇÃO: Exibe apenas o nome, sem preço!
+            opt.dataset.preco = s.preco_servico; // Guardado oculto nos bastidores para o Neon
+            opt.textContent = s.nome_servico;   // CORREÇÃO EXIGIDA: Apenas o nome na tela!
             select.appendChild(opt);
         });
     } catch (e) {
@@ -166,23 +166,31 @@ async function fetchAvailableSlots(dateStr) {
     }
 }
 
-// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS DO LOGADO ---
+// --- PASSO 4: CARREGAR PETS (BLINDADO CONTRA FALHAS DE ROTA) ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     if (!select) return;
 
+    // CORREÇÃO CRÍTICA: Inicializa as opções base garantidas ANTES do fetch para não quebrar a tela
+    select.innerHTML = `
+        <option value="" disabled selected>Para qual pet será o atendimento?</option>
+        <option value="NEW">➕ Cadastrar Outro / Novo Pet</option>
+    `;
+
     try {
         const res = await fetch(`${API_BASE_URL}/api/pets/usuario/${appointmentData.cliente_id}`);
-        const data = await res.json();
-        const listaPets = Array.isArray(data) ? data : [];
-        
-        select.innerHTML = '<option value="" disabled selected>Para qual pet será o atendimento?</option>';
-        listaPets.forEach(p => {
-            select.add(new Option(p.nome_pet, p.id_pet));
-        });
-        select.add(new Option("➕ Cadastrar Outro / Novo Pet", "NEW"));
+        if (res.ok) {
+            const data = await res.json();
+            const listaPets = Array.isArray(data) ? data : [];
+            
+            // Injeta os pets existentes logo acima da opção de criar um novo
+            listaPets.forEach(p => {
+                const opt = new Option(p.nome_pet, p.id_pet);
+                select.insertBefore(opt, select.lastChild);
+            });
+        }
     } catch (e) { 
-        console.error("Erro ao puxar pets:", e); 
+        console.warn("⚠️ API de consulta de pets offline ou pendente. Mantendo fluxo de cadastro ativo."); 
     }
 }
 
@@ -202,14 +210,14 @@ function gerarResSummary() {
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
     const nomePet = isNewPet ? document.getElementById('nome_pet').value : selectPet.options[selectPet.selectedIndex].text;
 
-    // Resumo final limpo sem nenhuma menção a preços ou valores financeiros
+    // Resumo final premium e limpo de qualquer cifrão ou preço
     document.getElementById('confirmation-summary').innerHTML = `
         <div class="row g-3">
             <div class="col-6"><small class="text-muted d-block">SERVIÇO ESCOLHIDO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
             <div class="col-6"><small class="text-muted d-block">UNIDADE FÍSICA</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
             <div class="col-6"><small class="text-muted d-block">DATA SELECIONADA</small> <strong class="text-dark">${appointmentData.data.split('-').reverse().join('/')}</strong></div>
             <div class="col-6"><small class="text-muted d-block">HORÁRIO DA TOSA</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
-            <div class="col-12 border-top pt-2"><small class="text-muted d-block">ANIMAL VINCULADO</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
+            <div class="col-12 border-top pt-2"><small class="text-muted d-block">COMPANHEIRO ANIMAL</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
         </div>
     `;
 }
@@ -244,7 +252,10 @@ function setupEventListeners() {
     };
 
     document.querySelectorAll('.btn-prev').forEach(b => {
-        b.onclick = () => showStep(currentStep - 1);
+        b.onclick = (e) => {
+            e.preventDefault();
+            showStep(currentStep - 1);
+        };
     });
 
     document.getElementById('prevMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
@@ -284,7 +295,7 @@ async function confirmAppointment() {
 
         if (res.ok) {
             alert("✨ Tudo pronto! O seu agendamento foi confirmado.");
-            window.location.href = 'meus_agendamentos.html'; // CORREÇÃO: Redireciona na raiz
+            window.location.href = 'meus_agendamentos.html';
         } else {
             const err = await res.json().catch(() => ({}));
             alert("Ops: " + (err.error || "Falha ao registrar horário."));
