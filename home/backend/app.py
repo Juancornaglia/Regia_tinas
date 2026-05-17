@@ -996,61 +996,63 @@ def listar_produtos_loja():
 
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
-    """Processa o agendamento convertendo tipos e tratando novos pets em lote no Neon"""
+    """Processa o agendamento com Transação Segura (Rollback) e conexão direta ao Neon"""
+    conn = None
+    cur = None
     try:
         d = request.get_json()
         if not d:
             return jsonify({"error": "Dados do agendamento não recebidos."}), 400
             
-        # BLINDAGEM DE TIPOS: Força a conversão para inteiro
         id_servico = int(d['id_servico'])
         id_loja = int(d['id_loja'])
+
+        # Abre uma conexão direta para garantir a transação completa
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
             
         # 1. BUSCA PREÇO E DURACAO DO SERVICO
-        # CORREÇÃO: Utilizando a mesma estrutura limpa que já validamos antes
-        sql_serv = "SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s"
-        serv = executar_query(sql_serv, (id_servico,))
+        cur.execute('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (id_servico,))
+        serv = cur.fetchone()
         if not serv:
             return jsonify({"error": "O serviço selecionado não foi localizado na base."}), 404
             
-        preco = serv[0]['preco_servico']
-        dur = serv[0]['duracao_media_minutos'] or 30
+        preco = serv['preco_servico']
+        dur = serv['duracao_media_minutos'] or 30
 
         # 2. TRATAMENTO DE DATAS ROBUSTO
-        # CORREÇÃO CRÍTICA: Convertendo a string "YYYY-MM-DDTHH:MM:SS" de forma 100% segura
-        inicio_str = d['data_hora_inicio'].split('.')[0] # Remove milissegundos se existirem
+        inicio_str = d['data_hora_inicio'].split('.')[0] 
         inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M:%S')
         fim = inicio + timedelta(minutes=dur)
 
-        # 3. TRATAMENTO DE NOVO PET
+        # 3. TRATAMENTO DO NOVO PET COM CAPTURA EXATA DE ID
         id_pet = d.get('id_pet')
         novo_pet_dados = d.get('novo_pet')
 
         if not id_pet and novo_pet_dados:
-            sql_novo_pet = """
+            cur.execute("""
                 INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
                 VALUES (%s, %s, 'Cão', %s, %s, 'Cadastrado automaticamente no agendamento')
                 RETURNING id_pet
-            """
-            res_pet = executar_query(sql_novo_pet, (
+            """, (
                 d['id_cliente'],
                 novo_pet_dados.get('nome', 'Pet Sem Nome'),
                 novo_pet_dados.get('raca', 'SRD'),
                 novo_pet_dados.get('porte', 'Médio')
             ))
+            # fetchone() captura exatamente a linha recém-criada
+            res_pet = cur.fetchone()
             if res_pet:
-                id_pet = res_pet[0]['id_pet']
+                id_pet = res_pet['id_pet']
             else:
-                return jsonify({"error": "Falha ao registrar a nova ficha do pet."}), 500
+                raise Exception("O banco inseriu o pet, mas não devolveu o ID.")
 
         # 4. INSERÇÃO DO AGENDAMENTO FINAL
-        sql_agendar = """
+        cur.execute("""
             INSERT INTO public.agendamentos 
             (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
             VALUES (%s, %s, %s, %s, %s, %s, 'pendente', %s, %s)
-        """
-        
-        executar_query(sql_agendar, (
+        """, (
             d['id_cliente'], 
             int(id_pet) if id_pet else None, 
             id_loja, 
@@ -1061,49 +1063,19 @@ def post_agendamento():
             d.get('observacoes', '')
         ))
         
+        # Salva tudo de uma vez só!
+        conn.commit()
         return jsonify({"status": "sucesso", "mensagem": "Agendamento registrado com sucesso!"}), 201
         
     except Exception as e:
+        # Se QUALQUER coisa der errado (falha no agendamento, formato errado), 
+        # ele desfaz a criação do pet para não sujar o seu banco!
+        if conn: conn.rollback()
         print(f"❌ ERRO CRÍTICO NO AGENDAMENTO: {e}")
-        return jsonify({"error": f"Erro no servidor: {str(e)}"}), 500
-@app.route('/api/login', methods=['POST'])
-def login():
-    try:
-        dados = request.get_json()
-        if not dados:
-            return jsonify({"status": "erro", "mensagem": "Dados não recebidos"}), 400
-            
-        email = dados.get('email')
-        senha_digitada = dados.get('senha') 
-        
-        # Busca o perfil na tabela 'perfis'
-        sql = 'SELECT id, nome_completo, role, senha FROM public.perfis WHERE email = %s AND ativo = true'
-        usuario_res = executar_query(sql, (email,))
-        
-        if usuario_res:
-            usuario = usuario_res[0]
-            senha_db = usuario['senha']
-            senha_valida = False
-            
-            # Checa se é Hash ou Texto Puro (Suporte para Carlos e Admin)
-            if senha_db and (senha_db.startswith('scrypt') or senha_db.startswith('pbkdf2')):
-                senha_valida = check_password_hash(senha_db, senha_digitada)
-            else:
-                senha_valida = (str(senha_db) == str(senha_digitada))
-
-            if senha_valida:
-                return jsonify({
-                    "status": "sucesso",
-                    "id": str(usuario['id']), # UUID para String seguro
-                    "nome": usuario['nome_completo'],
-                    "role": str(usuario['role']).lower() # BLINDAGEM: Garante letra minúscula para o JS não quebrar!
-                }), 200
-        
-        return jsonify({"status": "erro", "mensagem": "E-mail ou senha incorretos"}), 401
-            
-    except Exception as e:
-        print(f"ERRO CRÍTICO NO LOGIN: {str(e)}") 
-        return jsonify({"status": "erro", "mensagem": "Erro interno no servidor"}), 500
+        return jsonify({"error": f"Erro interno no servidor: {str(e)}"}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
     
 @app.route('/api/auth/cadastro', methods=['POST'])
 def criar_conta():
