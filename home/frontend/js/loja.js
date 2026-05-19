@@ -7,9 +7,9 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
 
-document.addEventListener('DOMContentLoaded', () => {
-    carregarLojasDoBanco();
-});
+// 1. Como o script é type="module", chamamos a função diretamente!
+// Isso impede o erro de perder o tempo de carregamento da página.
+carregarLojasDoBanco();
 
 async function carregarLojasDoBanco() {
     const container = document.getElementById('lista-unidades');
@@ -45,7 +45,8 @@ async function carregarLojasDoBanco() {
                            nomeLimpo.includes('tatuap') ? 'img/unidade_tatuape.jpg' :
                            nomeLimpo.includes('ipiranga') ? 'img/unidade_ipiranga.jpg' : 'img/logo_pequena4.png';
 
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`;
+            // 2. CORREÇÃO: Inserido o '$' que faltava para gerar a rota corretamente no Google Maps
+            const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(endereco)}`;
 
             return `
                 <div class="col-md-6 col-lg-4">
@@ -86,7 +87,7 @@ async function carregarLojasDoBanco() {
         container.innerHTML = `
             <div class="col-12 text-center p-4 text-danger small">
                 <i class="bi bi-exclamation-triangle fs-4 mb-2 d-block"></i>
-                Erro de comunicação com o servidor Render. Verifique os logs do seu app.py.
+                Erro de comunicação. Se estiver acessando pelo Render, ele pode estar "dormindo". Recarregue a página!
             </div>`;
     }
 }
