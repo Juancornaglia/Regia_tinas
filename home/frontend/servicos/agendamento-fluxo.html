@@ -135,63 +135,48 @@
             </div>
 
             <div id="step-4" class="step">
-                
-                <div id="auth-barrier-view" class="text-center py-4" style="display: none;">
-                    <div class="bg-light rounded-circle d-inline-block p-4 mb-4">
-                        <i class="bi bi-person-lock display-3 text-muted"></i>
-                    </div>
-                    <h3 class="fw-bold text-dark">Falta Pouco!</h3>
-                    <p class="text-muted mb-4 px-md-5">Sua vaga já está pré-selecionada. Para escolher qual pet será atendido, precisamos que você acesse a sua conta ou faça um cadastro super rápido.</p>
-                    <button type="button" onclick="salvarProgressoELogar()" class="btn btn-brand btn-lg rounded-pill shadow-sm">Entrar ou Cadastrar <i class="bi bi-box-arrow-in-right ms-2"></i></button>
-                    <div class="mt-5 pt-4 border-top text-start">
-                        <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar aos horários</button>
-                    </div>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-hearts text-brand fs-4"></i></div>
+                    <h3 class="fw-bold mb-0 text-dark">Quem é o fofinho(a)?</h3>
                 </div>
-
-                <div id="logged-in-view" style="display: none;">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-hearts text-brand fs-4"></i></div>
-                        <h3 class="fw-bold mb-0 text-dark">Quem é o fofinho(a)?</h3>
+                <form id="pet-info-form">
+                    <div class="mb-4" id="select-pet-container">
+                        <label class="form-label text-muted small fw-semibold">Animais Vinculados à Sua Conta</label>
+                        <select class="form-select form-select-lg" id="select-pet" required></select>
                     </div>
-                    <form id="pet-info-form">
-                        <div class="mb-4" id="select-pet-container">
-                            <label class="form-label text-muted small fw-semibold">Animais Vinculados à Sua Conta</label>
-                            <select class="form-select form-select-lg" id="select-pet" required></select>
-                        </div>
-                        
-                        <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
-                            <h6 class="fw-bold text-dark mb-3">➕ Ficha do Novo Amiguinho</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label small text-muted">Nome do Pet *</label>
-                                    <input type="text" id="nome_pet" class="form-control bg-white">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small text-muted">Raça (Opcional)</label>
-                                    <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Poodle, Golden, SRD">
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label small text-muted">Porte *</label>
-                                    <select id="porte" class="form-select bg-white">
-                                        <option value="Pequeno">Pequeno (Até 10kg)</option>
-                                        <option value="Médio" selected>Médio (11kg a 25kg)</option>
-                                        <option value="Grande">Grande (Acima de 25kg)</option>
-                                    </select>
-                                </div>
+                    
+                    <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
+                        <h6 class="fw-bold text-dark mb-3">➕ Ficha do Novo Amiguinho</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Nome do Pet *</label>
+                                <input type="text" id="nome_pet" class="form-control bg-white">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Raça (Opcional)</label>
+                                <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Poodle, Golden, SRD">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted">Porte *</label>
+                                <select id="porte" class="form-select bg-white">
+                                    <option value="Pequeno">Pequeno (Até 10kg)</option>
+                                    <option value="Médio" selected>Médio (11kg a 25kg)</option>
+                                    <option value="Grande">Grande (Acima de 25kg)</option>
+                                </select>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="mb-4">
-                            <label class="form-label text-muted small fw-semibold">Notas e Recomendações de Cuidado</label>
-                            <textarea id="observacoes" class="form-control" rows="3" placeholder="Ex: Alergia a perfumes, restrições médicas, ou corte específico..."></textarea>
-                        </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-semibold">Notas e Recomendações de Cuidado</label>
+                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Ex: Alergia a perfumes, restrições médicas, ou corte específico..."></textarea>
+                    </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-5">
-                            <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                            <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Reserva <i class="bi bi-search ms-2"></i></button>
-                        </div>
-                    </form>
-                </div>
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
+                        <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Reserva <i class="bi bi-search ms-2"></i></button>
+                    </div>
+                </form>
             </div>
 
             <div id="step-5" class="step">

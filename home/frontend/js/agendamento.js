@@ -1,6 +1,6 @@
 /**
  * js/agendamento.js - Motor de Fluxo de Agendamento (Regia & Tinas Care)
- * Versão Inteligente de Conversão - Login exigido apenas no final
+ * Versão Linha Dura: Exige Login Obrigatório Antes de Tudo
  */
 
 // 1. CONFIGURAÇÃO DE AMBIENTE
@@ -24,9 +24,14 @@ const appointmentData = {
     id_pet: null
 };
 
-// ATENÇÃO: A barreira de autenticação do topo foi REMOVIDA para permitir a escolha inicial!
+// 3. BARREIRA DE AUTENTICAÇÃO LINHA DURA
+if (!appointmentData.cliente_id) {
+    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
+    alert("🔒 Acesso Restrito! Para iniciar um agendamento, por favor faça o login ou cadastre-se.");
+    window.location.href = 'login.html'; 
+}
 
-// 3. DISPARO INICIAL
+// 4. DISPARO INICIAL (Só roda se passar da barreira acima)
 document.addEventListener('DOMContentLoaded', () => {
     initSchedulingSystem();
 });
@@ -168,7 +173,7 @@ async function fetchAvailableSlots(dateStr) {
     }
 }
 
-// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS DO LOGADO (E INTELIGÊNCIA DE ZERO PETS) ---
+// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS E INTELIGÊNCIA DE ZERO PETS ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     const containerSelect = document.getElementById('select-pet-container');
@@ -189,7 +194,7 @@ async function loadUserPets() {
             newPetFields.style.display = 'block';
             appointmentData.id_pet = null;
         } else {
-            // INTELIGÊNCIA: Se tem pet, mostra os pets dela e o botão de adicionar mais um.
+            // Se tem pet, mostra os pets dela e o botão de adicionar mais um.
             containerSelect.style.display = 'block';
             newPetFields.style.display = 'none';
             select.innerHTML = '<option value="" disabled selected>Para qual pet será o atendimento?</option>';
@@ -208,40 +213,16 @@ async function loadUserPets() {
     }
 }
 
-// --- CONTROLE CENTRAL DO ASSISTENTE E VERIFICAÇÃO DE LOGIN ---
+// --- CONTROLE CENTRAL DO ASSISTENTE ---
 function showStep(n) {
     document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
     const progressBar = document.getElementById('step-progressbar');
     if (progressBar) progressBar.style.width = `${(n / 5) * 100}%`;
     currentStep = n;
 
-    if (n === 4) handleAuthBarrier();
+    if (n === 4) loadUserPets(); // Carrega os pets do usuário que já está logado
     if (n === 5) renderConfirmationSummary();
 }
-
-function handleAuthBarrier() {
-    const userId = localStorage.getItem('usuario_id');
-    const authView = document.getElementById('auth-barrier-view');
-    const loggedInView = document.getElementById('logged-in-view');
-
-    if (!userId) {
-        // NÃO ESTÁ LOGADO: Mostra a "Aba" de Cadastro/Login
-        authView.style.display = 'block';
-        loggedInView.style.display = 'none';
-    } else {
-        // ESTÁ LOGADO: Mostra os Pets dele
-        authView.style.display = 'none';
-        loggedInView.style.display = 'block';
-        appointmentData.cliente_id = userId;
-        loadUserPets();
-    }
-}
-
-// Função chamada pelo botão "Entrar ou Cadastrar" no passo 4
-window.salvarProgressoELogar = function() {
-    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    window.location.href = 'login.html'; // Vai para o login e depois volta pra cá
-};
 
 function renderConfirmationSummary() {
     const selectPet = document.getElementById('select-pet');
