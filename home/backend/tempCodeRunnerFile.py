@@ -373,16 +373,9 @@ def buscar_produtos():
         preco_min = request.args.get('preco_min')
         preco_max = request.args.get('preco_max')
 
-        # CORREÇÃO VITAL: Trocado o "SELECT *" pelas colunas explícitas com ::float
-        # Isso impede que o erro do Decimal quebre o jsonify!
-        sql = """
-            SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
-                   marca, preco::float, preco_promocional::float, quantidade_estoque, 
-                   descricao, status_produto 
-            FROM public.produtos 
-            WHERE ativo = true AND status_produto = 'Ativo'
-        """
+        sql = "SELECT * FROM public.produtos WHERE ativo = true AND status_produto = 'Ativo'"
         params = []
+
 
         if termo:
             sql += " AND (nome_produto ILIKE %s OR marca ILIKE %s OR descricao ILIKE %s)"
@@ -397,7 +390,7 @@ def buscar_produtos():
             sql += " AND marca = %s"
             params.append(marca)
 
-        # Considera dinamicamente o preço promocional se ele for menor que o de tabela
+        # CORREÇÃO 2: Considera dinamicamente o preço promocional se ele for menor que o de tabela
         if preco_min:
             sql += " AND LEAST(preco, COALESCE(preco_promocional, preco)) >= %s"
             params.append(float(preco_min))
@@ -915,7 +908,7 @@ def buscar_horarios_livres():
 def listar_produtos_loja():
     """Retorna todos os produtos ativos do banco de dados Neon para a vitrine digital"""
     try:
-        
+        # CORREÇÃO: Usamos ::float nos preços para o jsonify() do Flask não travar (Erro de Decimal)
         sql = """
             SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
                    marca, preco::float, preco_promocional::float, quantidade_estoque, 

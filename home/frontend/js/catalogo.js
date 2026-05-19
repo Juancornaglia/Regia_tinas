@@ -1,15 +1,15 @@
 /**
- * js/catalogo.js - Vitrine Digital e Catálogo SPA (Single Page Application)
- * Modelo focado em exibição de produtos e consulta de unidades físicas da rede
- * Conectado ao banco Neon + Alinhado com as chaves Regia & Tinas Care
+ * js/catalogo.js - Vitrine Digital e Catálogo SPA
+ * Blindado contra erros de colisão de escopo e imagens corrompidas.
  */
 
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+// CORREÇÃO DE SEGURANÇA: Usando 'var' para evitar Erro Fatal de Colisão com outros scripts
+var API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
 
-let produtosNoEstoque = [];
-let produtoAbertoAtualmente = null;
+var produtosNoEstoque = [];
+var produtoAbertoAtualmente = null;
 
 // ==========================================
 // 1. UTILITÁRIOS DE FORMATAÇÃO E FAVORITOS
@@ -38,7 +38,6 @@ async function carregarVitrine() {
         
         const data = await response.json();
         
-        // Garante a captura correta dos dados vindos do backend Python
         produtosNoEstoque = Array.isArray(data) ? data : (data.produtos || data.data || []);
 
         if (produtosNoEstoque.length === 0) {
@@ -55,7 +54,8 @@ async function carregarVitrine() {
             const nome = p.nome_produto || 'Produto';
             
             let img = p.url_imagem || 'img/logo_pequena4.png';
-            if (img && !img.startsWith('http') && !img.startsWith('img/')) {
+            // BLINDAGEM: Garante que o valor é tratado como Texto antes de testar
+            if (img && !String(img).startsWith('http') && !String(img).startsWith('img/')) {
                 img = 'img/' + img; 
             }
             
@@ -110,13 +110,13 @@ async function carregarVitrine() {
 // 3. LÓGICA DO MODAL DE DETALHES (SPA)
 // ==========================================
 window.abrirDetalhesProduto = (idStr) => {
-    const produto = produtosNoEstoque.find(p => (p.id_produto || p.id).toString() === idStr.toString());
+    const produto = produtosNoEstoque.find(p => String(p.id_produto || p.id) === String(idStr));
     if (!produto) return;
     
     produtoAbertoAtualmente = produto; 
 
     let imgFinal = produto.url_imagem || 'img/logo_pequena4.png';
-    if (!imgFinal.startsWith('http') && !imgFinal.startsWith('img/')) {
+    if (!String(imgFinal).startsWith('http') && !String(imgFinal).startsWith('img/')) {
         imgFinal = 'img/' + imgFinal;
     }
 
@@ -124,7 +124,6 @@ window.abrirDetalhesProduto = (idStr) => {
     const precoPromo = parseFloat(produto.preco_promocional);
     const temPromo = precoPromo && precoPromo < precoBase;
 
-    // Preenche as informações textuais do Modal
     const modalImgElement = document.getElementById('modal-img');
     if (modalImgElement) modalImgElement.src = imgFinal;
     
@@ -147,24 +146,20 @@ window.abrirDetalhesProduto = (idStr) => {
 
     atualizarIconeFavorito(produto.id_produto || produto.id);
 
-    // AUTOMAÇÃO INTELIGENTE: Localiza o antigo botão de compra e altera o texto dinamicamente
     const botoesModal = document.querySelectorAll('#modalProduto button');
     botoesModal.forEach(btn => {
-        // Se for o botão que chama a função de adicionar ao carrinho, altera a cara dele
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('adicionarModalAoCarrinho')) {
             btn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i> VEJA AS UNIDADES DISPONÍVEIS';
-            btn.style.backgroundColor = '#1e272e'; // Tom escuro profissional elegante
+            btn.style.backgroundColor = '#1e272e'; 
         }
     });
 
-    // Abre o Modal do Bootstrap de forma limpa
     const modalElement = document.getElementById('modalProduto');
     if (modalElement) {
         const modalInstance = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
         modalInstance.show();
     }
     
-    // Dispara a consulta de estoques locais no banco Neon
     carregarLojasDisponiveis();
 };
 
@@ -192,9 +187,6 @@ function atualizarIconeFavorito(id) {
     icon.className = favs.includes(parseInt(id, 10)) ? 'bi bi-heart-fill text-danger fs-4' : 'bi bi-heart text-danger fs-4';
 }
 
-/**
- * Consulta a API de Lojas do Neon e lista onde o cliente pode encontrar o item
- */
 async function carregarLojasDisponiveis() {
     const list = document.getElementById('modal-store-list');
     if (!list) return;
@@ -203,7 +195,6 @@ async function carregarLojasDisponiveis() {
         const response = await fetch(`${API_BASE_URL}/api/lojas`);
         const lojas = await response.json();
         
-        // Mapeia todas as lojas ativas cadastradas no seu Neon (Mooca, Tatuapé, etc.)
         if (lojas && lojas.length > 0) {
             list.innerHTML = lojas.map(l => `
                 <li class="text-dark mb-2 fw-medium list-unstyled">
@@ -215,7 +206,6 @@ async function carregarLojasDisponiveis() {
             list.innerHTML = '<li class="text-muted list-unstyled"><i class="bi bi-exclamation-circle me-2"></i>Disponível sob consulta no balcão</li>';
         }
     } catch (e) { 
-        // Fallback elegante caso a rota do Render esteja offline no momento
         list.innerHTML = `
             <li class="text-secondary list-unstyled mb-1"><i class="bi bi-geo-alt me-2"></i>Disponível nas unidades: Mooca, Tatuapé, São Caetano, Ipiranga e Santos.</li>
             <li class="text-muted small list-unstyled mt-2"><i class="bi bi-info-circle me-1"></i>Consulte a quantidade exata via WhatsApp da unidade escolhida.</li>
@@ -228,12 +218,10 @@ async function carregarLojasDisponiveis() {
 // ==========================================
 window.adicionarModalAoCarrinho = () => {
     if (!produtoAbertoAtualmente) return;
-    
-    // Quando o usuário clicar no botão principal, ele avisa que é para retirada física e foca a lista
     alert(`📍 Retirada Física Disponível!\n\nEste produto está em exposição e disponível para pronta entrega nas nossas unidades físicas (Mooca, Tatuapé, São Caetano, Ipiranga e Santos).\n\nConfira os detalhes de contato na aba de unidades abaixo.`);
     
     const listSection = document.getElementById('modal-store-list');
     if (listSection) {
-        listSection.scrollIntoView({ behavior: 'smooth' }); // Faz um scroll suave até a lista de lojas dentro do modal
+        listSection.scrollIntoView({ behavior: 'smooth' }); 
     }
 };
