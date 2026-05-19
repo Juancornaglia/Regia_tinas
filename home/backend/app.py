@@ -481,29 +481,32 @@ def verificar_admin_api(id_usuario):
         print(f"Erro na verificação de admin: {e}")
         return jsonify({"error": "Erro interno", "isAdmin": False}), 500 
 
-@app.route('/api/usuario/redefinir-senha', methods=['POST'])
-def redefinir_senha():
+@app.route('/api/auth/cadastro', methods=['POST'])
+def criar_conta():
     try:
-        dados = request.get_json()
-        email = dados.get('email')
-        nova_senha = dados.get('nova_senha')
-
-        # 1. Verifica se o usuário existe na base
-        usuario = executar_query('SELECT id FROM public.perfis WHERE email = %s', (email,))
+        d = request.get_json()
         
-        if not usuario:
-            return jsonify({"status": "erro", "mensagem": "E-mail não encontrado."}), 404
+        # 1. Verifica se o e-mail já existe no banco
+        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (d['email'],))
+        if existe:
+            # Retorna "error" para o front-end capturar corretamente na mensagem
+            return jsonify({"error": "Este e-mail já está cadastrado. Tente fazer login."}), 409
 
-        # 2. Gera o novo hash da senha redefinida
-        senha_hash = generate_password_hash(nova_senha)
+        # 2. Gera a senha protegida
+        hash_senha = generate_password_hash(d['senha'])
 
-        # 3. Atualiza o banco de dados
-        executar_query('UPDATE public.perfis SET senha = %s WHERE email = %s', (senha_hash, email))
+        # 3. Insere no banco
+        sql = """
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
+            VALUES (%s, %s, %s, 'cliente', true)
+        """
+        executar_query(sql, (d['nome_completo'], d['email'], hash_senha))
         
-        return jsonify({"status": "sucesso", "mensagem": "Senha alterada com sucesso!"}), 200
+        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
+
     except Exception as e:
-        print(f"Erro ao redefinir senha para {email}: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha ao processar a redefinição"}), 500
+        print(f"ERRO NO CADASTRO: {str(e)}")
+        return jsonify({"error": "Erro interno no servidor ao criar conta."}), 500
 
 @app.route('/api/perfil/atualizar', methods=['PUT'])
 @app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
@@ -1010,28 +1013,6 @@ def post_agendamento():
         if cur: cur.close()
         if conn: conn.close()
     
-@app.route('/api/auth/cadastro', methods=['POST'])
-def criar_conta():
-    try:
-        d = request.json
-        # 1. Verifica se o e-mail já existe no banco
-        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (d['email'],))
-        if existe:
-            return jsonify({"mensagem": "Este e-mail já está cadastrado. Tente fazer login."}), 409
-
-        hash_senha = generate_password_hash(d['senha'])
-
-        sql = """
-            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
-            VALUES (%s, %s, %s, 'cliente', true)
-        """
-        executar_query(sql, (d['nome_completo'], d['email'], hash_senha))
-        
-        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
-
-    except Exception as e:
-        print(f"ERRO NO CADASTRO: {str(e)}")
-        return jsonify({"mensagem": "Erro interno no servidor ao criar conta."}), 500
 
 if __name__ == '__main__':
     # Configuração vital para o Render (PORT) e escuta em 0.0.0.0

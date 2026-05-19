@@ -1,76 +1,68 @@
-/**
- * js/loja.js - Gestão Unificada das Unidades Físicas (Regia & Tinas Care)
- * Ajustado para ler direto da pasta raiz do projeto.
- */
-
 document.addEventListener('DOMContentLoaded', () => {
-    carregarLojas();
-});
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const senhaInput = document.getElementById('senha');
+    const togglePassword = document.getElementById('togglePassword');
 
-async function carregarLojas() {
-    const container = document.getElementById('lista-unidades');
-    if (!container) return;
-
-    try {
-        // CORREÇÃO MÁXIMA: Buscando o JSON diretamente na raiz da pasta js/
-        const response = await fetch('js/lojas.json');
-        
-        if (!response.ok) throw new Error("Falha ao ler o arquivo JSON das lojas");
-        
-        const lojas = await response.json();
-        const listaLojas = Array.isArray(lojas) ? lojas : [];
-
-        if (listaLojas.length === 0) {
-            container.innerHTML = '<div class="col-12 text-center p-3 text-muted small">Nenhuma unidade cadastrada no momento.</div>';
-            return;
-        }
-
-        // Monta a grade visual premium idêntica à vibe solicitada
-        container.innerHTML = listaLojas.map(l => {
-            const nomeLoja = l.nome_loja || 'Unidade Care';
-            const endereco = l.endereco || 'Endereço Indisponível';
-            const telefone = l.telefone || '(11) 0000-0000';
+    // 1. Lógica para Mostrar/Esconder a Senha no ícone do olhinho
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function () {
+            // Alterna o tipo do input entre 'password' e 'text'
+            const type = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            senhaInput.setAttribute('type', type);
             
-            // Tratamento dinâmico de fotos (aponta para img/ na raiz)
-            const imgUrl = l.nome_loja.toLowerCase() === 'mooca' ? 'img/unidade_mooca.jpg' : 
-                           l.nome_loja.toLowerCase() === 'tatuapé' ? 'img/unidade_tatuape.jpg' : 
-                           l.nome_loja.toLowerCase() === 'ipiranga' ? 'img/unidade_ipiranga.jpg' : 'img/unidade_placeholder.jpg';
-
-            const mapsUrl = l.link_google_maps || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`;
-
-            return `
-                <div class="col-md-6 col-lg-4">
-                    <div class="store-card shadow-sm p-0">
-                        <div class="store-img-container border-bottom">
-                            <span class="store-badge border">Unidade Física</span>
-                            <img src="${imgUrl}" class="store-img" alt="Unidade ${nomeLoja}" onerror="this.src='img/logo_pequena4.png'; this.style.padding='40px';">
-                        </div>
-                        <div class="info-unidade p-4">
-                            <h4 class="fw-bold text-dark mb-1">Unidade ${nomeLoja}</h4>
-                            <p class="text-muted small mb-3"><i class="bi bi-telephone-fill me-2 text-brand"></i>${telefone}</p>
-                            
-                            <a href="${mapsUrl}" target="_blank" class="address-box mb-3 shadow-sm">
-                                <div class="d-flex align-items-start">
-                                    <i class="bi bi-geo-alt-fill text-danger fs-5 me-3 mt-1"></i>
-                                    <div>
-                                        <strong class="text-dark d-block small mb-1 text-uppercase">Endereço de Retirada:</strong>
-                                        <span class="small text-secondary" style="line-height: 1.4;">${endereco}</span>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <div class="mt-3">
-                                <a href="https://wa.me/55${telefone.replace(/\D/g,'')}" target="_blank" class="btn-whatsapp rounded-pill shadow-sm small fw-semibold">
-                                    <i class="bi bi-whatsapp"></i> Falar no Balcão
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error("Erro crítico ao carregar unidades:", error);
-        container.innerHTML = '<p class="text-danger small p-3 text-center">Falha ao processar a lista de unidades físicas.</p>';
+            // Alterna o ícone do Bootstrap
+            this.classList.toggle('bi-eye-slash-fill');
+            this.classList.toggle('bi-eye-fill');
+        });
     }
-}
+
+    // 2. Lógica de Autenticação e Redirecionamento de Perfis
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // Evita que a página recarregue ao clicar em "Entrar"
+
+            const email = emailInput.value.trim().toLowerCase();
+            const senha = senhaInput.value;
+
+            // Validação básica
+            if (!email || !senha) {
+                alert("Por favor, preencha seu e-mail e senha.");
+                return;
+            }
+
+            /* * SIMULAÇÃO DE BANCO DE DADOS
+             * Como é o Frontend, estamos simulando as rotas baseadas no e-mail.
+             * Depois, isso será substituído pela chamada real da sua API (fetch/axios).
+             */
+            
+            // Regra para login de ADMINISTRADOR
+            if (email === 'admin@regiatinas.com' && senha === 'admin123') {
+                localStorage.setItem('usuarioLogado', JSON.stringify({ perfil: 'admin', nome: 'Administrador' }));
+                alert("Acesso autorizado. Redirecionando para o Painel do Administrador...");
+                // Ajuste os '../' abaixo dependendo de onde o painel admin está salvo
+                window.location.href = '../../admin/painel_admin.html'; 
+            } 
+            
+            // Regra para login de PROFISSIONAL / FUNCIONÁRIO
+            else if (email === 'funcionario@regiatinas.com' && senha === 'func123') {
+                localStorage.setItem('usuarioLogado', JSON.stringify({ perfil: 'funcionario', nome: 'Profissional' }));
+                alert("Acesso autorizado. Redirecionando para sua Agenda...");
+                window.location.href = '../../funcionario/painel_profissional.html'; 
+            } 
+            
+            // Regra para login de USUÁRIO COMUM (Cliente do Petshop/E-commerce)
+            else if (email === 'cliente@gmail.com' && senha === 'cliente123') {
+                localStorage.setItem('usuarioLogado', JSON.stringify({ perfil: 'cliente', nome: 'Cliente' }));
+                alert("Bem-vindo(a) ao Regia & Tinas Care!");
+                window.location.href = '../../index.html'; 
+            } 
+            
+            // Tratamento de Erro
+            else {
+                alert("Credenciais inválidas! Tente novamente ou crie uma conta.");
+                senhaInput.value = ''; // Limpa o campo de senha para tentar de novo
+            }
+        });
+    }
+});
