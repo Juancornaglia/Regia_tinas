@@ -1,37 +1,40 @@
 /**
  * js/agendamento.js - Motor de Fluxo de Agendamento (Regia & Tinas Care)
- * Versão Linha Dura: Exige Login Obrigatório Antes de Tudo
+ * Versão: BLOQUEIO TOTAL E CADASTRO DE PET INTEGRADO
  */
 
-// 1. CONFIGURAÇÃO DE AMBIENTE
+// 1. A PORTA DE FERRO (BLOQUEIO IMEDIATO)
+const userId = localStorage.getItem('usuario_id');
+
+// Se o usuário não existir, ou se o navegador salvar como "null" / "undefined", chuta ele pro login!
+if (!userId || userId === 'null' || userId === 'undefined' || userId.trim() === '') {
+    // Salva a página atual para o login saber pra onde devolver o cliente depois
+    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
+    alert("🔒 Acesso Restrito! Para iniciar um agendamento, faça o login na sua conta.");
+    window.location.href = 'login.html'; 
+}
+
+// 2. CONFIGURAÇÃO DE AMBIENTE E ESTADO GLOBAL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
 
-// 2. ESTADO GLOBAL DA SESSÃO DE AGENDAMENTO
 let currentStep = 1;
 let calendarDate = new Date(); 
 
 const appointmentData = {
-    cliente_id: localStorage.getItem('usuario_id'),
+    cliente_id: userId, // Já pega o ID validado na barreira acima
     loja_id: null,
     loja_nome: null,
     servico_id: null,
     servico_nome: null,
     servico_preco: 0,
-    data: null,      // Formato: YYYY-MM-DD
-    horario: null,   // Formato: HH:MM
+    data: null,      
+    horario: null,   
     id_pet: null
 };
 
-// 3. BARREIRA DE AUTENTICAÇÃO LINHA DURA
-if (!appointmentData.cliente_id) {
-    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    alert("🔒 Acesso Restrito! Para iniciar um agendamento, por favor faça o login ou cadastre-se.");
-    window.location.href = 'login.html'; 
-}
-
-// 4. DISPARO INICIAL (Só roda se passar da barreira acima)
+// 3. DISPARO INICIAL (Só roda se o cara passou da barreira de login)
 document.addEventListener('DOMContentLoaded', () => {
     initSchedulingSystem();
 });
@@ -173,7 +176,7 @@ async function fetchAvailableSlots(dateStr) {
     }
 }
 
-// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS E INTELIGÊNCIA DE ZERO PETS ---
+// --- PASSO 4: LÓGICA DO PET (ESCOLHER EXISTENTE OU CRIAR NOVO) ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     const containerSelect = document.getElementById('select-pet-container');
@@ -188,13 +191,13 @@ async function loadUserPets() {
         const listaPets = Array.isArray(data) ? data : [];
         
         if (listaPets.length === 0) {
-            // INTELIGÊNCIA: Se a pessoa não tem pet, esconde a caixa de seleção e já mostra o formulário direto!
+            // INTELIGÊNCIA: Se não tiver nenhum pet, abre a ficha de cadastro automaticamente
             containerSelect.style.display = 'none';
-            select.innerHTML = `<option value="NEW" selected>Meu Primeiro Pet</option>`;
+            select.innerHTML = `<option value="NEW" selected>Novo Pet</option>`;
             newPetFields.style.display = 'block';
             appointmentData.id_pet = null;
         } else {
-            // Se tem pet, mostra os pets dela e o botão de adicionar mais um.
+            // INTELIGÊNCIA: Mostra a lista e deixa ele escolher ou adicionar um novo
             containerSelect.style.display = 'block';
             newPetFields.style.display = 'none';
             select.innerHTML = '<option value="" disabled selected>Para qual pet será o atendimento?</option>';
@@ -203,7 +206,7 @@ async function loadUserPets() {
                 const opt = new Option(p.nome_pet, p.id_pet);
                 select.appendChild(opt);
             });
-            select.appendChild(new Option("➕ Cadastrar Outro / Novo Pet", "NEW"));
+            select.appendChild(new Option("➕ Cadastrar Outro Pet Agora", "NEW"));
         }
     } catch (e) { 
         console.warn("API de pets indisponível. Forçando novo cadastro."); 
@@ -220,7 +223,7 @@ function showStep(n) {
     if (progressBar) progressBar.style.width = `${(n / 5) * 100}%`;
     currentStep = n;
 
-    if (n === 4) loadUserPets(); // Carrega os pets do usuário que já está logado
+    if (n === 4) loadUserPets(); // Quando chega no passo 4, roda a lógica do Pet
     if (n === 5) renderConfirmationSummary();
 }
 
