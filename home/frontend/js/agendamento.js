@@ -1,6 +1,6 @@
 /**
  * js/agendamento.js - Motor de Fluxo de Agendamento (Regia & Tinas Care)
- * Versão Limpa, Otimizada e Sincronizada com a Raiz do Projeto
+ * Versão Inteligente de Conversão - Login exigido apenas no final
  */
 
 // 1. CONFIGURAÇÃO DE AMBIENTE
@@ -24,14 +24,9 @@ const appointmentData = {
     id_pet: null
 };
 
-// 3. BARREIRA DE AUTENTICAÇÃO (Sincronizada com a Raiz)
-if (!appointmentData.cliente_id) {
-    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    alert("Para realizar um agendamento, é necessário estar logado. Vamos te redirecionar!");
-    window.location.href = 'login.html'; 
-}
+// ATENÇÃO: A barreira de autenticação do topo foi REMOVIDA para permitir a escolha inicial!
 
-// 4. DISPARO INICIAL
+// 3. DISPARO INICIAL
 document.addEventListener('DOMContentLoaded', () => {
     initSchedulingSystem();
 });
@@ -42,7 +37,7 @@ function initSchedulingSystem() {
     bindInterfaceEvents();
 }
 
-// --- PASSO 1: BUSCAR SERVIÇOS NO NEON (PREÇOS OCULTOS) ---
+// --- PASSO 1: BUSCAR SERVIÇOS NO NEON ---
 async function loadServicesCatalog() {
     const select = document.getElementById('service-select');
     if (!select) return;
@@ -59,8 +54,8 @@ async function loadServicesCatalog() {
         servicos.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id_servico;
-            opt.dataset.preco = s.preco_servico; // Mantido em background para auditoria do Neon
-            opt.textContent = s.nome_servico;   // Exibe estritamente o nome do procedimento
+            opt.dataset.preco = s.preco_servico; 
+            opt.textContent = s.nome_servico;  
             select.appendChild(opt);
         });
     } catch (e) {
@@ -173,51 +168,86 @@ async function fetchAvailableSlots(dateStr) {
     }
 }
 
-// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS DO LOGADO ---
+// --- PASSO 4: CARREGAR PETS AUTOMÁTICOS DO LOGADO (E INTELIGÊNCIA DE ZERO PETS) ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
+    const containerSelect = document.getElementById('select-pet-container');
+    const newPetFields = document.getElementById('new-pet-fields');
     if (!select) return;
 
-    // Inicialização tática limpa antes da requisição externa
-    select.innerHTML = `
-        <option value="" disabled selected>Para qual pet será o atendimento?</option>
-        <option value="NEW">➕ Cadastrar Outro / Novo Pet</option>
-    `;
+    select.innerHTML = '<option value="" disabled selected>Buscando no sistema...</option>';
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/pets/usuario/${appointmentData.cliente_id}`);
-        if (res.ok) {
-            const data = await res.json();
-            const listaPets = Array.isArray(data) ? data : [];
+        const data = res.ok ? await res.json() : [];
+        const listaPets = Array.isArray(data) ? data : [];
+        
+        if (listaPets.length === 0) {
+            // INTELIGÊNCIA: Se a pessoa não tem pet, esconde a caixa de seleção e já mostra o formulário direto!
+            containerSelect.style.display = 'none';
+            select.innerHTML = `<option value="NEW" selected>Meu Primeiro Pet</option>`;
+            newPetFields.style.display = 'block';
+            appointmentData.id_pet = null;
+        } else {
+            // INTELIGÊNCIA: Se tem pet, mostra os pets dela e o botão de adicionar mais um.
+            containerSelect.style.display = 'block';
+            newPetFields.style.display = 'none';
+            select.innerHTML = '<option value="" disabled selected>Para qual pet será o atendimento?</option>';
             
-            // Adiciona acima da opção de criar novo pet
             listaPets.forEach(p => {
                 const opt = new Option(p.nome_pet, p.id_pet);
-                select.insertBefore(opt, select.lastChild);
+                select.appendChild(opt);
             });
+            select.appendChild(new Option("➕ Cadastrar Outro / Novo Pet", "NEW"));
         }
     } catch (e) { 
-        console.warn("API de listagem de pets em contingência."); 
+        console.warn("API de pets indisponível. Forçando novo cadastro."); 
+        containerSelect.style.display = 'none';
+        select.innerHTML = `<option value="NEW" selected>Cadastrar Pet Manual</option>`;
+        newPetFields.style.display = 'block';
     }
 }
 
-// --- CONTROLE CENTRAL DO ASSISTENTE (PASSO A PASSO) ---
+// --- CONTROLE CENTRAL DO ASSISTENTE E VERIFICAÇÃO DE LOGIN ---
 function showStep(n) {
     document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
     const progressBar = document.getElementById('step-progressbar');
     if (progressBar) progressBar.style.width = `${(n / 5) * 100}%`;
     currentStep = n;
 
-    if (n === 4) loadUserPets();
+    if (n === 4) handleAuthBarrier();
     if (n === 5) renderConfirmationSummary();
 }
+
+function handleAuthBarrier() {
+    const userId = localStorage.getItem('usuario_id');
+    const authView = document.getElementById('auth-barrier-view');
+    const loggedInView = document.getElementById('logged-in-view');
+
+    if (!userId) {
+        // NÃO ESTÁ LOGADO: Mostra a "Aba" de Cadastro/Login
+        authView.style.display = 'block';
+        loggedInView.style.display = 'none';
+    } else {
+        // ESTÁ LOGADO: Mostra os Pets dele
+        authView.style.display = 'none';
+        loggedInView.style.display = 'block';
+        appointmentData.cliente_id = userId;
+        loadUserPets();
+    }
+}
+
+// Função chamada pelo botão "Entrar ou Cadastrar" no passo 4
+window.salvarProgressoELogar = function() {
+    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
+    window.location.href = 'login.html'; // Vai para o login e depois volta pra cá
+};
 
 function renderConfirmationSummary() {
     const selectPet = document.getElementById('select-pet');
     const isNewPet = selectPet ? selectPet.value === 'NEW' : true;
     const nomePet = isNewPet ? document.getElementById('nome_pet').value : selectPet.options[selectPet.selectedIndex].text;
 
-    // Layout limpo sem cifrões para cumprir a regra de design oculto de preço
     document.getElementById('confirmation-summary').innerHTML = `
         <div class="row g-3">
             <div class="col-6"><small class="text-muted d-block">SERVIÇO</small> <strong class="text-dark">${appointmentData.servico_nome}</strong></div>
@@ -304,7 +334,7 @@ async function executeFinalBooking() {
 
         if (res.ok) {
             alert("✨ Perfeito! O seu agendamento foi gravado com sucesso.");
-            window.location.href = 'meus_agendamentos.html'; // Sincronizado para a raiz
+            window.location.href = 'meus_agendamentos.html';
         } else {
             const err = await res.json().catch(() => ({}));
             alert("Ops: " + (err.error || "Falha ao registrar horário."));
