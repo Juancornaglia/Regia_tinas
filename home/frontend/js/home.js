@@ -1,7 +1,7 @@
 // 1. CONFIGURAÇÕES GERAIS
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://regia-tinas.onrender.com"; // <-- SEU LINK REAL
+    : "https://regia-tinas.onrender.com"; 
 
 const REGIA_TINAS_SELECTED_STORE_KEY = 'regia_tinas_selected_store';
 
@@ -43,7 +43,6 @@ export function formatPrice(price) {
 }
 
 export function createProductCard(produto) { 
-    // Garante compatibilidade se o backend enviar 'id' em vez de 'id_produto'
     const idProduto = produto.id_produto || produto.id;
     if (!produto || !idProduto) return ''; 
     
@@ -59,13 +58,14 @@ export function createProductCard(produto) {
     const productLink = `busca.html?id=${idProduto}`; 
     
     let imageUrl = produto.url_imagem;
-    if (imageUrl && !imageUrl.startsWith('http')) {
+    
+    // CORREÇÃO: Verifica se não começa por http E também se não começa já por img/
+    if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('img/')) {
         imageUrl = `img/${produto.url_imagem}`; 
     }
-    // Usando a sua logo como imagem padrão caso o produto não tenha foto
-    if (!imageUrl || imageUrl.trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
     
-    // A MÁGICA ESTÁ AQUI: this.onerror=null impede o loop infinito de piscadas!
+    if (!imageUrl || String(imageUrl).trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
+    
     return `
         <div class="card h-100 product-card shadow-sm position-relative mx-2" style="min-width: 220px; max-width: 250px; border: none; border-radius: 12px;">
             <button class="btn btn-light rounded-circle shadow-sm btn-favorite position-absolute top-0 end-0 m-2 ${isFavorite ? 'active' : ''}" data-product-id="${idProduto}" style="z-index: 10;">
@@ -85,7 +85,7 @@ export function createProductCard(produto) {
                     <p class="card-text price fs-5 fw-bold mb-0" style="color: #FE8697;">${formatPrice(displayPrice)}</p>
                 </div>
                 <a href="${productLink}" class="btn w-100 text-white fw-bold rounded-pill" style="background-color: #FE8697;">
-                    <i class="bi bi-cart-plus me-1"></i> Comprar
+                    <i class="bi bi-cart-plus me-1"></i> Ver Produto
                 </a>
             </div>
         </div>
@@ -107,14 +107,14 @@ async function loadProducts(containerId, filterType) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
         
-        // CORREÇÃO: Verificação de erro ANTES de tentar ler o JSON
         if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
         
         const allProducts = await response.json();
-        let produtos = allProducts; 
+        
+        // CORREÇÃO: Criar uma cópia isolada do array para que os filtros não interfiram uns com os outros
+        let produtos = [...allProducts]; 
 
         if (filterType === 'ofertas') {
-            // SEGURANÇA: ParseFloat garante que a comparação matemática funciona mesmo se vier String do Neon
             produtos = produtos.filter(p => {
                 const original = parseFloat(p.preco) || 0;
                 const promo = parseFloat(p.preco_promocional) || 0;
@@ -127,7 +127,7 @@ async function loadProducts(containerId, filterType) {
         }
 
         if (produtos.length > 0) {
-            container.classList.add('d-flex', 'flex-nowrap'); // Para o carrossel funcionar
+            container.classList.add('d-flex', 'flex-nowrap'); 
             container.innerHTML = produtos.slice(0, 8).map(createProductCard).join('');
             updateFavoriteButtons();
         } else {

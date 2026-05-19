@@ -86,7 +86,7 @@ function configurarOuvintesDeFiltros() {
     document.getElementById('brand-filters')?.addEventListener('change', executarFiltragem);
 }
 
-function ejecutarFiltragem() {
+function executarFiltragem() {
     const container = document.getElementById('search-results');
     if (!container) return;
 
