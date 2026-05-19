@@ -19,7 +19,6 @@
             --text-main: #2c3e50;
             --text-muted: #64748b;
             --card-shadow: 0 16px 40px rgba(242, 145, 159, 0.08), 0 6px 16px rgba(0, 0, 0, 0.02);
-            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; color: var(--text-main); }
@@ -68,131 +67,142 @@
     </nav>
 
     <main class="container my-5">
-        <div class="text-center mb-5">
-            <p class="small text-muted fw-bold text-uppercase mb-3">Sua vaga em tempo real no Neon DB</p>
-            <div class="progress mx-auto" style="max-width: 600px;">
-                <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
-            </div>
+        
+        <div id="login-block" class="card card-agendamento p-5 text-center mx-auto" style="max-width: 600px; display: none;">
+            <i class="bi bi-shield-lock-fill text-brand display-1 mb-4"></i>
+            <h2 class="fw-bold text-dark mb-3">Identificação Necessária</h2>
+            <p class="text-muted mb-5">Para iniciarmos o seu agendamento e localizarmos o cadastro do seu pet, você precisa acessar a sua conta.</p>
+            <button onclick="irParaLogin()" class="btn btn-brand btn-lg w-100 py-3 rounded-pill shadow-sm">
+                Fazer Login ou Cadastrar <i class="bi bi-box-arrow-in-right ms-2"></i>
+            </button>
         </div>
 
-        <div id="agendamento-wizard" class="card card-agendamento p-4 p-md-5 mx-auto" style="max-width: 850px;">
-            
-            <div id="step-1" class="step active">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-scissors text-brand fs-4"></i></div>
-                    <h3 class="fw-bold mb-0 text-dark">O que vamos fazer hoje?</h3>
-                </div>
-                <div class="mb-4">
-                    <select class="form-select form-select-lg" id="service-select">
-                        <option value="" selected disabled>Carregando serviços...</option>
-                    </select>
-                </div>
-                <div class="text-end mt-5">
-                    <button id="nextButtonStep1" class="btn btn-brand btn-lg" disabled>Avançar <i class="bi bi-arrow-right ms-2"></i></button>
+        <div id="agendamento-wizard" style="display: none;">
+            <div class="text-center mb-5">
+                <p class="small text-muted fw-bold text-uppercase mb-3">Sua vaga em tempo real no Neon DB</p>
+                <div class="progress mx-auto" style="max-width: 600px;">
+                    <div class="progress-bar" id="step-progressbar" style="width: 20%"></div>
                 </div>
             </div>
 
-            <div id="step-2" class="step">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-geo-alt-fill text-brand fs-4"></i></div>
-                    <h3 class="fw-bold mb-0 text-dark">Onde será o atendimento?</h3>
-                </div>
-                <div class="mb-4">
-                    <select class="form-select form-select-lg" id="store-select">
-                        <option value="" selected disabled>Carregando unidades...</option>
-                    </select>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-5">
-                    <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                    <button id="nextButtonStep2" class="btn btn-brand btn-lg" disabled>Ver Calendário <i class="bi bi-calendar-date ms-2"></i></button>
-                </div>
-            </div>
-
-            <div id="step-3" class="step">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-clock-history text-brand fs-4"></i></div>
-                    <h3 class="fw-bold mb-0 text-dark">Escolha o melhor momento</h3>
-                </div>
-                <div class="row g-4 mt-2">
-                    <div class="col-md-7">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <button id="prevMonthButton" class="btn btn-sm btn-light border p-2"><i class="bi bi-chevron-left"></i></button>
-                            <h5 id="calendar-month-year" class="mb-0 fw-bold text-dark text-capitalize">...</h5>
-                            <button id="nextMonthButton" class="btn btn-sm btn-light border p-2"><i class="bi bi-chevron-right"></i></button>
-                        </div>
-                        <div id="calendar-grid" class="mt-2"></div>
+            <div class="card card-agendamento p-4 p-md-5 mx-auto" style="max-width: 850px;">
+                
+                <div id="step-1" class="step active">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-scissors text-brand fs-4"></i></div>
+                        <h3 class="fw-bold mb-0 text-dark">O que vamos fazer hoje?</h3>
                     </div>
-                    <div class="col-md-5 ps-md-4 border-start">
-                        <div id="time-slots-container">
-                            <p class="small text-muted text-center py-5">Selecione uma data ao lado.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
-                    <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                    <button id="nextButtonStep3" class="btn btn-brand btn-lg" disabled>Quem é o Pet? <i class="bi bi-paw-fill ms-2"></i></button>
-                </div>
-            </div>
-
-            <div id="step-4" class="step">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-hearts text-brand fs-4"></i></div>
-                    <h3 class="fw-bold mb-0 text-dark">Quem é o fofinho(a)?</h3>
-                </div>
-                <form id="pet-info-form">
-                    <div class="mb-4" id="select-pet-container">
-                        <label class="form-label text-muted small fw-semibold">Animais Vinculados à Sua Conta</label>
-                        <select class="form-select form-select-lg" id="select-pet" required></select>
-                    </div>
-                    
-                    <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
-                        <h6 class="fw-bold text-dark mb-3">➕ Ficha do Novo Amiguinho</h6>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted">Nome do Pet *</label>
-                                <input type="text" id="nome_pet" class="form-control bg-white">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted">Raça (Opcional)</label>
-                                <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Poodle, Golden, SRD">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small text-muted">Porte *</label>
-                                <select id="porte" class="form-select bg-white">
-                                    <option value="Pequeno">Pequeno (Até 10kg)</option>
-                                    <option value="Médio" selected>Médio (11kg a 25kg)</option>
-                                    <option value="Grande">Grande (Acima de 25kg)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="mb-4">
-                        <label class="form-label text-muted small fw-semibold">Notas e Recomendações de Cuidado</label>
-                        <textarea id="observacoes" class="form-control" rows="3" placeholder="Ex: Alergia a perfumes, restrições médicas, ou corte específico..."></textarea>
+                        <select class="form-select form-select-lg" id="service-select">
+                            <option value="" selected disabled>Carregando serviços...</option>
+                        </select>
                     </div>
+                    <div class="text-end mt-5">
+                        <button id="nextButtonStep1" class="btn btn-brand btn-lg" disabled>Avançar <i class="bi bi-arrow-right ms-2"></i></button>
+                    </div>
+                </div>
 
+                <div id="step-2" class="step">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-geo-alt-fill text-brand fs-4"></i></div>
+                        <h3 class="fw-bold mb-0 text-dark">Onde será o atendimento?</h3>
+                    </div>
+                    <div class="mb-4">
+                        <select class="form-select form-select-lg" id="store-select">
+                            <option value="" selected disabled>Carregando unidades...</option>
+                        </select>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center mt-5">
                         <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
-                        <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Reserva <i class="bi bi-search ms-2"></i></button>
+                        <button id="nextButtonStep2" class="btn btn-brand btn-lg" disabled>Ver Calendário <i class="bi bi-calendar-date ms-2"></i></button>
                     </div>
-                </form>
-            </div>
-
-            <div id="step-5" class="step">
-                <div class="text-center mb-4">
-                    <i class="bi bi-check-circle-fill text-success display-4"></i>
-                    <h3 class="fw-bold mt-2 text-dark">Confirme seus Dados</h3>
                 </div>
-                <div id="confirmation-summary" class="summary-box p-4 mb-5 shadow-sm"></div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn-prev"><i class="bi bi-pencil me-2"></i>Corrigir</button>
-                    <button type="button" id="confirmButton" class="btn btn-success btn-lg px-5 py-3 fw-bold rounded-pill shadow">
-                        CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>
-                    </button>
+
+                <div id="step-3" class="step">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-clock-history text-brand fs-4"></i></div>
+                        <h3 class="fw-bold mb-0 text-dark">Escolha o melhor momento</h3>
+                    </div>
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-7">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <button id="prevMonthButton" class="btn btn-sm btn-light border p-2"><i class="bi bi-chevron-left"></i></button>
+                                <h5 id="calendar-month-year" class="mb-0 fw-bold text-dark text-capitalize">...</h5>
+                                <button id="nextMonthButton" class="btn btn-sm btn-light border p-2"><i class="bi bi-chevron-right"></i></button>
+                            </div>
+                            <div id="calendar-grid" class="mt-2"></div>
+                        </div>
+                        <div class="col-md-5 ps-md-4 border-start">
+                            <div id="time-slots-container">
+                                <p class="small text-muted text-center py-5">Selecione uma data ao lado.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                        <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
+                        <button id="nextButtonStep3" class="btn btn-brand btn-lg" disabled>Quem é o Pet? <i class="bi bi-paw-fill ms-2"></i></button>
+                    </div>
+                </div>
+
+                <div id="step-4" class="step">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-brand bg-opacity-10 p-3 rounded-circle me-3"><i class="bi bi-hearts text-brand fs-4"></i></div>
+                        <h3 class="fw-bold mb-0 text-dark">Quem é o fofinho(a)?</h3>
+                    </div>
+                    <form id="pet-info-form">
+                        <div class="mb-4" id="select-pet-container">
+                            <label class="form-label text-muted small fw-semibold">Animais Vinculados à Sua Conta</label>
+                            <select class="form-select form-select-lg" id="select-pet" required></select>
+                        </div>
+                        
+                        <div id="new-pet-fields" style="display: none;" class="bg-light p-4 rounded-4 mb-4 border">
+                            <h6 class="fw-bold text-dark mb-3">➕ Ficha do Novo Amiguinho</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">Nome do Pet *</label>
+                                    <input type="text" id="nome_pet" class="form-control bg-white">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">Raça (Opcional)</label>
+                                    <input type="text" id="raca" class="form-control bg-white" placeholder="Ex: Poodle, Golden, SRD">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted">Porte *</label>
+                                    <select id="porte" class="form-select bg-white">
+                                        <option value="Pequeno">Pequeno (Até 10kg)</option>
+                                        <option value="Médio" selected>Médio (11kg a 25kg)</option>
+                                        <option value="Grande">Grande (Acima de 25kg)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-semibold">Notas e Recomendações de Cuidado</label>
+                            <textarea id="observacoes" class="form-control" rows="3" placeholder="Ex: Alergia a perfumes, restrições médicas, ou corte específico..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-5">
+                            <button type="button" class="btn-prev"><i class="bi bi-arrow-left me-2"></i>Voltar</button>
+                            <button type="submit" id="nextButtonStep4" class="btn btn-brand btn-lg">Revisar Reserva <i class="bi bi-search ms-2"></i></button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="step-5" class="step">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-check-circle-fill text-success display-4"></i>
+                        <h3 class="fw-bold mt-2 text-dark">Confirme seus Dados</h3>
+                    </div>
+                    <div id="confirmation-summary" class="summary-box p-4 mb-5 shadow-sm"></div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn-prev"><i class="bi bi-pencil me-2"></i>Corrigir</button>
+                        <button type="button" id="confirmButton" class="btn btn-success btn-lg px-5 py-3 fw-bold rounded-pill shadow">
+                            CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-
         </div>
     </main>
 

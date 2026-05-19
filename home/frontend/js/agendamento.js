@@ -1,29 +1,19 @@
 /**
  * js/agendamento.js - Motor de Fluxo de Agendamento (Regia & Tinas Care)
- * Versão: BLOQUEIO TOTAL E CADASTRO DE PET INTEGRADO
+ * Versão Final: EXIGE LOGIN ABSOLUTO ANTES DE INICIAR QUALQUER PASSO.
  */
 
-// 1. A PORTA DE FERRO (BLOQUEIO IMEDIATO)
-const userId = localStorage.getItem('usuario_id');
-
-// Se o usuário não existir, ou se o navegador salvar como "null" / "undefined", chuta ele pro login!
-if (!userId || userId === 'null' || userId === 'undefined' || userId.trim() === '') {
-    // Salva a página atual para o login saber pra onde devolver o cliente depois
-    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    alert("🔒 Acesso Restrito! Para iniciar um agendamento, faça o login na sua conta.");
-    window.location.href = 'login.html'; 
-}
-
-// 2. CONFIGURAÇÃO DE AMBIENTE E ESTADO GLOBAL
+// 1. CONFIGURAÇÃO DE AMBIENTE E ESTADO GLOBAL
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com"; 
 
 let currentStep = 1;
 let calendarDate = new Date(); 
+const userId = localStorage.getItem('usuario_id');
 
 const appointmentData = {
-    cliente_id: userId, // Já pega o ID validado na barreira acima
+    cliente_id: userId,
     loja_id: null,
     loja_nome: null,
     servico_id: null,
@@ -34,18 +24,34 @@ const appointmentData = {
     id_pet: null
 };
 
-// 3. DISPARO INICIAL (Só roda se o cara passou da barreira de login)
+// 2. DISPARO INICIAL COM VALIDAÇÃO LINHA DURA
 document.addEventListener('DOMContentLoaded', () => {
-    initSchedulingSystem();
+    
+    // Se o usuário não existir ou o login for inválido, bloqueia tudo na hora.
+    if (!userId || userId === 'null' || userId === 'undefined' || userId.trim() === '') {
+        document.getElementById('agendamento-wizard').style.display = 'none';
+        document.getElementById('login-block').style.display = 'block';
+    } else {
+        // Se estiver logado, esconde o bloco de login, mostra o agendamento e carrega o sistema.
+        document.getElementById('login-block').style.display = 'none';
+        document.getElementById('agendamento-wizard').style.display = 'block';
+        initSchedulingSystem();
+    }
 });
 
+// Função acionada pelo botão do HTML quando o cara está bloqueado
+window.irParaLogin = function() {
+    sessionStorage.setItem('url_retorno_agendamento', window.location.href);
+    window.location.href = 'login.html'; 
+};
+
+// --- INICIALIZAÇÃO DO AGENDAMENTO (SÓ RODA SE ESTIVER LOGADO) ---
 function initSchedulingSystem() {
     loadServicesCatalog();
     loadPhysicalStores();
     bindInterfaceEvents();
 }
 
-// --- PASSO 1: BUSCAR SERVIÇOS NO NEON ---
 async function loadServicesCatalog() {
     const select = document.getElementById('service-select');
     if (!select) return;
@@ -67,12 +73,10 @@ async function loadServicesCatalog() {
             select.appendChild(opt);
         });
     } catch (e) {
-        console.error("Erro ao processar catálogo de serviços:", e);
         select.innerHTML = '<option value="">Erro operacional ao buscar serviços.</option>';
     }
 }
 
-// --- PASSO 2: BUSCAR LOJAS NO BANCO ---
 async function loadPhysicalStores() {
     const select = document.getElementById('store-select');
     if (!select) return;
@@ -90,12 +94,10 @@ async function loadPhysicalStores() {
             select.appendChild(opt);
         });
     } catch (e) {
-        console.error("Erro ao carregar lojas físicas:", e);
         select.innerHTML = '<option value="">Erro ao buscar filiais.</option>';
     }
 }
 
-// --- PASSO 3: GERENCIADOR DO CALENDÁRIO DINÂMICO ---
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYearLabel = document.getElementById('calendar-month-year');
@@ -176,7 +178,7 @@ async function fetchAvailableSlots(dateStr) {
     }
 }
 
-// --- PASSO 4: LÓGICA DO PET (ESCOLHER EXISTENTE OU CRIAR NOVO) ---
+// --- PASSO 4: CARREGAR PETS (USUÁRIO GARANTIDO QUE ESTÁ LOGADO NESTA ETAPA) ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     const containerSelect = document.getElementById('select-pet-container');
@@ -191,13 +193,11 @@ async function loadUserPets() {
         const listaPets = Array.isArray(data) ? data : [];
         
         if (listaPets.length === 0) {
-            // INTELIGÊNCIA: Se não tiver nenhum pet, abre a ficha de cadastro automaticamente
             containerSelect.style.display = 'none';
             select.innerHTML = `<option value="NEW" selected>Novo Pet</option>`;
             newPetFields.style.display = 'block';
             appointmentData.id_pet = null;
         } else {
-            // INTELIGÊNCIA: Mostra a lista e deixa ele escolher ou adicionar um novo
             containerSelect.style.display = 'block';
             newPetFields.style.display = 'none';
             select.innerHTML = '<option value="" disabled selected>Para qual pet será o atendimento?</option>';
@@ -209,21 +209,20 @@ async function loadUserPets() {
             select.appendChild(new Option("➕ Cadastrar Outro Pet Agora", "NEW"));
         }
     } catch (e) { 
-        console.warn("API de pets indisponível. Forçando novo cadastro."); 
         containerSelect.style.display = 'none';
         select.innerHTML = `<option value="NEW" selected>Cadastrar Pet Manual</option>`;
         newPetFields.style.display = 'block';
     }
 }
 
-// --- CONTROLE CENTRAL DO ASSISTENTE ---
+// --- NAVEGAÇÃO ENTRE OS PASSOS ---
 function showStep(n) {
     document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
     const progressBar = document.getElementById('step-progressbar');
     if (progressBar) progressBar.style.width = `${(n / 5) * 100}%`;
     currentStep = n;
 
-    if (n === 4) loadUserPets(); // Quando chega no passo 4, roda a lógica do Pet
+    if (n === 4) loadUserPets();
     if (n === 5) renderConfirmationSummary();
 }
 
@@ -243,7 +242,6 @@ function renderConfirmationSummary() {
     `;
 }
 
-// --- CAPTURA DE COMPORTAMENTOS (LISTENERS) ---
 function bindInterfaceEvents() {
     document.getElementById('service-select').onchange = (e) => {
         appointmentData.servico_id = e.target.value;
