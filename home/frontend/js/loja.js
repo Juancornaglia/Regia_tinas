@@ -39,21 +39,18 @@ async function carregarLojasDoBanco() {
             const endereco = l.endereco || 'Endereço não informado';
             const fone = l.telefone || '(11) 99999-9999';
             
-            // Filtro inteligente para mapear a foto correta com base no nome da loja na raiz 'img/'
-            const nomeLimpo = nome.toLowerCase();
-            const imgUrl = nomeLimpo.includes('mooca') ? 'img/unidade_mooca.jpg' :
-                           nomeLimpo.includes('tatuap') ? 'img/unidade_tatuape.jpg' :
-                           nomeLimpo.includes('ipiranga') ? 'img/unidade_ipiranga.jpg' : 'img/logo_pequena4.png';
+            // CORREÇÃO 1: Forçando todas as lojas a usarem a mesma imagem padrão
+            const imgUrl = '../img/loja7.png';
 
-            // 2. CORREÇÃO: Inserido o '$' que faltava para gerar a rota corretamente no Google Maps
-            const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(endereco)}`;
+            // CORREÇÃO 2: Ajuste da URL do Google Maps para o formato correto de busca
+            const mapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(endereco)}`;
 
             return `
                 <div class="col-md-6 col-lg-4">
                     <div class="store-card shadow-sm p-0">
                         <div class="store-img-container">
                             <span class="store-badge border bg-white fw-bold">Unidade Integrada</span>
-                            <img src="${imgUrl}" class="store-img" alt="Unidade ${nome}" onerror="this.src='img/logo_pequena4.png'; this.style.padding='40px';">
+                            <img src="${imgUrl}" class="store-img" alt="Unidade ${nome}" onerror="this.src='../img/logo_pequena4.png'; this.style.padding='40px';">
                         </div>
                         <div class="info-unidade p-4">
                             <div class="mb-3">
