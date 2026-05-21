@@ -1,18 +1,22 @@
 import os
-import psycopg2 
-import traceback 
-from datetime import datetime, time, timedelta 
-from psycopg2.extras import RealDictCursor 
-from flask import Flask, send_from_directory, jsonify, request, redirect, url_for
+import traceback
+from datetime import datetime, time, timedelta
+import psycopg2
+
+# Flask e Extensões
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
-from flask import Flask, send_from_directory 
-from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime, timedelta
+from psycopg2.extras import RealDictCursor
+
+# Segurança e Banco de Dados
+from werkzeug.security import generate_password_hash, check_password_hash
 from db.neon_db import executar_query 
-from flask import Flask, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash # Importação unificada no topo
-import os
+
+# Inicialização
+app = Flask(__name__)
+CORS(app)
+load_dotenv()
 
 load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,80 +81,37 @@ def servir_paginas(path):
 def login():
     try:
         dados = request.get_json()
-        email = dados.get('email')
+        email = dados.get('email').lower() # Força minúsculo para comparar
         senha = dados.get('senha')
         
-        user = executar_query("SELECT id, nome_completo, senha, role FROM public.perfis WHERE email = %s AND ativo = true", (email,))
+        # 1. Busca apenas pelo e-mail para ver se ele existe
+        user = executar_query("SELECT id, nome_completo, senha, role, ativo FROM public.perfis WHERE email = %s", (email,))
         
-        if user and check_password_hash(user[0]['senha'], senha):
-            return jsonify({
-                "id": str(user[0]['id']), # Garantia de envio como string
-                "nome": user[0]['nome_completo'],
-                "role": user[0]['role']
-            }), 200
+        if not user:
+            print(f"DEBUG: E-mail {email} não encontrado no banco.")
+            return jsonify({"error": "E-mail não cadastrado."}), 401
             
-        return jsonify({"error": "E-mail ou senha incorretos."}), 401
+        usuario = user[0]
+        
+        # 2. Verifica se está ativo
+        if not usuario['ativo']:
+            print(f"DEBUG: Usuário {email} está inativo.")
+            return jsonify({"error": "Conta inativa. Contate o suporte."}), 401
+            
+        # 3. Validação de senha
+        if check_password_hash(usuario['senha'], senha):
+            return jsonify({
+                "id": str(usuario['id']),
+                "nome": usuario['nome_completo'],
+                "role": usuario['role']
+            }), 200
+        else:
+            print(f"DEBUG: Senha incorreta para {email}")
+            return jsonify({"error": "Senha incorreta."}), 401
+            
     except Exception as e:
         print(f"❌ ERRO CRÍTICO NO LOGIN: {e}")
         return jsonify({"error": "Erro interno no servidor."}), 500
-
-# --- ROTA DE CADASTRO ---
-@app.route('/api/auth/cadastro', methods=['POST'])
-def criar_conta():
-    try:
-        d = request.get_json()
-        
-        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (d['email'],))
-        if existe:
-            return jsonify({"error": "Este e-mail já está cadastrado."}), 409
-
-        hash_senha = generate_password_hash(d['senha'])
-
-        sql = """
-            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
-            VALUES (%s, %s, %s, 'cliente', true)
-        """
-        executar_query(sql, (d['nome_completo'], d['email'], hash_senha))
-        
-        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
-    except Exception as e:
-        print(f"❌ ERRO NO CADASTRO: {str(e)}")
-        return jsonify({"error": "Erro interno ao criar conta."}), 500
-
-# --- ROTA DE ATUALIZAÇÃO ---
-@app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
-def atualizar_perfil(id_usuario):
-    try:
-        dados = request.get_json()
-        nome_completo = dados.get('nome_completo')
-        telefone = dados.get('telefone')
-
-        sql = '''
-            UPDATE public.perfis 
-            SET nome_completo = %s, telefone = %s 
-            WHERE id::text = %s
-        '''
-        
-        executar_query(sql, (nome_completo, telefone, id_usuario))
-        return jsonify({"status": "sucesso", "mensagem": "Dados atualizados!"}), 200
-        
-    except Exception as e:
-        print(f"❌ ERRO CRÍTICO AO ATUALIZAR PERFIL: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha ao atualizar dados."}), 500
-
-# --- ROTA DE CONSULTA ---
-@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
-def get_usuario_dados(id_usuario):
-    try:
-        sql = "SELECT nome_completo, telefone, email FROM public.perfis WHERE id::text = %s"
-        user = executar_query(sql, (id_usuario,))
-        
-        if user:
-            return jsonify(user[0]), 200
-        return jsonify({"error": "Usuário não encontrado"}), 404
-    except Exception as e:
-        print(f"❌ ERRO AO BUSCAR DADOS: {e}")
-        return jsonify({"error": "Erro interno ao processar dados."}), 500
 
 
 
