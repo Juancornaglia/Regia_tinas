@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
@@ -65,4 +66,48 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+=======
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email,
+                senha
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.mensagem);
+            return;
+        }
+
+        // REDIRECIONAMENTO PELO CARGO
+        if (data.role === 'admin') {
+            window.location.href = '../admin/dashboard.html';
+        } 
+        
+        else if (data.role === 'funcionario') {
+            window.location.href = '../funcionario/dash_funcionario.html';
+        } 
+        
+        else {
+            window.location.href = '../usuario/perfil.html';
+        }
+
+    } catch (error) {
+        console.error(error);
+        alert('Erro ao conectar com o servidor');
+    }
+>>>>>>> 081b402 (Atualizacao do projeto)
 });
