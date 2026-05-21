@@ -10,6 +10,9 @@ from flask import Flask, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta
 from db.neon_db import executar_query 
+from flask import Flask, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash # Importação unificada no topo
+import os
 
 load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -69,6 +72,69 @@ def servir_usuario(path):
 def servir_paginas(path):
     return send_from_directory(FRONTEND_DIR, path)
 
+
+@app.route('/api/auth/cadastro', methods=['POST'])
+def criar_conta():
+    try:
+        d = request.get_json()
+        
+        # 1. Verifica e-mail
+        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (d['email'],))
+        if existe:
+            return jsonify({"error": "Este e-mail já está cadastrado."}), 409
+
+        # 2. Hash da senha
+        hash_senha = generate_password_hash(d['senha'])
+
+        # 3. Insere com garantia do campo ativo
+        sql = """
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
+            VALUES (%s, %s, %s, 'cliente', true)
+        """
+        executar_query(sql, (d['nome_completo'], d['email'], hash_senha))
+        
+        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
+    except Exception as e:
+        print(f"ERRO NO CADASTRO: {str(e)}")
+        return jsonify({"error": "Erro interno ao criar conta."}), 500
+
+@app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
+def atualizar_perfil(id_usuario):
+    try:
+        dados = request.get_json()
+        nome_completo = dados.get('nome_completo')
+        telefone = dados.get('telefone')
+
+        # Removido o filtro 'AND ativo = true' temporariamente para testar se é ele que trava
+        sql = '''
+            UPDATE public.perfis 
+            SET nome_completo = %s, telefone = %s 
+            WHERE id::text = %s
+        '''
+        
+        executar_query(sql, (nome_completo, telefone, id_usuario))
+        return jsonify({"status": "sucesso", "mensagem": "Dados atualizados!"}), 200
+        
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO AO ATUALIZAR PERFIL: {e}")
+        return jsonify({"status": "erro", "mensagem": "Falha interna no servidor."}), 500
+
+@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
+def get_usuario_dados(id_usuario):
+    try:
+        # Forçando o id para texto na query para evitar erro de UUID
+        sql = "SELECT nome_completo, telefone, email FROM public.perfis WHERE id::text = %s"
+        user = executar_query(sql, (id_usuario,))
+        
+        if user and len(user) > 0:
+            return jsonify(user[0]), 200
+        return jsonify({"error": "Usuário não encontrado"}), 404
+    except Exception as e:
+        print(f"Erro ao buscar dados: {e}")
+        return jsonify({"error": "Erro ao buscar dados do usuário"}), 500
+
+
+
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
 def get_agendamentos_usuario(id_usuario):
     conn = None
@@ -100,21 +166,7 @@ def get_agendamentos_usuario(id_usuario):
         if cur: cur.close()
         if conn: conn.close()
 
-@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
-def get_usuario_dados(id_usuario):
-    try:
 
-        sql = "SELECT nome_completo, telefone, email FROM public.perfis WHERE id = %s"
-        user = executar_query(sql, (id_usuario,))
-        
-        if user and len(user) > 0:
-            return jsonify(user[0]), 200
-        return jsonify({"error": "Usuário não encontrado"}), 404
-    except Exception as e:
-        print(f"Erro ao buscar dados do usuário: {e}")
-        return jsonify({"error": str(e)}), 500
-    
-    from werkzeug.security import check_password_hash
 
 @app.route('/api/servicos', methods=['GET'])
 def listar_servicos_agendamento():
@@ -483,67 +535,6 @@ def verificar_admin_api(id_usuario):
         print(f"Erro na verificação de admin: {e}")
         return jsonify({"error": "Erro interno", "isAdmin": False}), 500 
 
-@app.route('/api/auth/cadastro', methods=['POST'])
-def criar_conta():
-    try:
-        d = request.get_json()
-        
-        # 1. Verifica se o e-mail já existe no banco
-        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (d['email'],))
-        if existe:
-            # Retorna "error" para o front-end capturar corretamente na mensagem
-            return jsonify({"error": "Este e-mail já está cadastrado. Tente fazer login."}), 409
-
-        # 2. Gera a senha protegida
-        hash_senha = generate_password_hash(d['senha'])
-
-        # 3. Insere no banco
-        sql = """
-            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo) 
-            VALUES (%s, %s, %s, 'cliente', true)
-        """
-        executar_query(sql, (d['nome_completo'], d['email'], hash_senha))
-        
-        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
-
-    except Exception as e:
-        print(f"ERRO NO CADASTRO: {str(e)}")
-        return jsonify({"error": "Erro interno no servidor ao criar conta."}), 500
-
-@app.route('/api/perfil/atualizar', methods=['PUT'])
-@app.route('/api/usuario/atualizar-perfil/<id_usuario>', methods=['PUT'])
-def atualizar_perfil(id_usuario=None):
-    """
-    Rota Unificada de Atualização Cadastral.
-    Suporta tanto a passagem do ID via URL quanto dentro do payload JSON do Frontend.
-    """
-    try:
-        dados = request.get_json()
-        if not dados:
-            return jsonify({"status": "erro", "mensagem": "Dados cadastrais não recebidos."}), 400
-            
-        user_id = id_usuario if id_usuario else dados.get('id')
-        
-        if not user_id:
-            return jsonify({"status": "erro", "mensagem": "Identificador único do tutor ausente na requisição."}), 400
-            
-        nome_completo = dados.get('nome_completo')
-        telefone = dados.get('telefone')
-
-        sql = '''
-            UPDATE public.perfis 
-            SET nome_completo = %s, telefone = %s 
-            WHERE id = %s AND ativo = true
-        '''
-        
-        # Executa a atualização segura no Neon
-        executar_query(sql, (nome_completo, telefone, user_id))
-        
-        return jsonify({"status": "sucesso", "mensagem": "Dados cadastrais atualizados com sucesso no Neon!"}), 200
-        
-    except Exception as e:
-        print(f"❌ ERRO CRÍTICO AO ATUALIZAR PERFIL DO TUTOR: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha interna ao processar a atualização no servidor."}), 500
 
 @app.route('/api/filtros', methods=['GET'])
 def get_filtros():
