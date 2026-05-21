@@ -83,34 +83,33 @@ def login():
         email = dados.get('email', '').lower().strip()
         senha = dados.get('senha', '')
         
-        # Busca no banco
         user = executar_query("SELECT id, nome_completo, senha, role, ativo FROM public.perfis WHERE email = %s", (email,))
         
         if not user:
-            print(f"LOGIN ERRO: E-mail {email} não encontrado.")
             return jsonify({"error": "Credenciais inválidas"}), 401
             
         usuario = user[0]
         
-        if not usuario.get('ativo', True):
-            return jsonify({"error": "Conta inativa."}), 401
+        # 1. Tenta verificar se é um Hash (Usuários novos/normais)
+        if usuario['senha'].startswith('pbkdf2:sha256:'):
+            senha_valida = check_password_hash(usuario['senha'], senha)
+        else:
+            # 2. Se não for hash, compara direto (Usuários cadastrados manualmente)
+            senha_valida = (usuario['senha'] == senha)
             
-        if check_password_hash(usuario['senha'], senha):
+        if senha_valida:
             return jsonify({
                 "id": str(usuario['id']),
                 "nome": usuario['nome_completo'],
                 "role": usuario['role']
             }), 200
-        else:
-            print(f"LOGIN ERRO: Senha incorreta para {email}")
-            return jsonify({"error": "Credenciais inválidas"}), 401
+            
+        return jsonify({"error": "Credenciais inválidas"}), 401
             
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO NO LOGIN: {e}")
-        return jsonify({"error": "Erro interno no servidor."}), 500
-
-
-
+        print(f"❌ ERRO NO LOGIN: {e}")
+        return jsonify({"error": "Erro interno."}), 500
+    
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
 def get_agendamentos_usuario(id_usuario):
     conn = None
