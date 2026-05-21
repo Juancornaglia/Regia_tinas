@@ -11,7 +11,7 @@ from psycopg2.extras import RealDictCursor
 
 # Segurança e Banco de Dados
 from werkzeug.security import generate_password_hash, check_password_hash
-from db.neon_db import executar_query 
+from db.neon_db import executar_query, get_db_connection
 
 # Inicialização
 app = Flask(__name__)
@@ -76,29 +76,25 @@ def servir_usuario(path):
 def servir_paginas(path):
     return send_from_directory(FRONTEND_DIR, path)
 
-# --- ROTA DE LOGIN ---
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
         dados = request.get_json()
-        email = dados.get('email').lower() # Força minúsculo para comparar
-        senha = dados.get('senha')
+        email = dados.get('email', '').lower().strip()
+        senha = dados.get('senha', '')
         
-        # 1. Busca apenas pelo e-mail para ver se ele existe
+        # Busca no banco
         user = executar_query("SELECT id, nome_completo, senha, role, ativo FROM public.perfis WHERE email = %s", (email,))
         
         if not user:
-            print(f"DEBUG: E-mail {email} não encontrado no banco.")
-            return jsonify({"error": "E-mail não cadastrado."}), 401
+            print(f"LOGIN ERRO: E-mail {email} não encontrado.")
+            return jsonify({"error": "Credenciais inválidas"}), 401
             
         usuario = user[0]
         
-        # 2. Verifica se está ativo
-        if not usuario['ativo']:
-            print(f"DEBUG: Usuário {email} está inativo.")
-            return jsonify({"error": "Conta inativa. Contate o suporte."}), 401
+        if not usuario.get('ativo', True):
+            return jsonify({"error": "Conta inativa."}), 401
             
-        # 3. Validação de senha
         if check_password_hash(usuario['senha'], senha):
             return jsonify({
                 "id": str(usuario['id']),
@@ -106,8 +102,8 @@ def login():
                 "role": usuario['role']
             }), 200
         else:
-            print(f"DEBUG: Senha incorreta para {email}")
-            return jsonify({"error": "Senha incorreta."}), 401
+            print(f"LOGIN ERRO: Senha incorreta para {email}")
+            return jsonify({"error": "Credenciais inválidas"}), 401
             
     except Exception as e:
         print(f"❌ ERRO CRÍTICO NO LOGIN: {e}")
