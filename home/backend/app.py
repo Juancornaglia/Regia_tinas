@@ -116,37 +116,6 @@ def get_usuario_dados(id_usuario):
     
     from werkzeug.security import check_password_hash
 
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-
-    try:
-        d = request.json
-
-        sql = """
-            SELECT id, nome_completo, email, senha, role
-            FROM public.perfis
-            WHERE email = %s
-        """
-
-        usuario = executar_query(sql, (d['email'],), fetchone=True)
-
-        if not usuario:
-            return jsonify({"mensagem": "Email não encontrado"}), 404
-
-        senha_correta = check_password_hash(usuario['senha'], d['senha'])
-
-        if not senha_correta:
-            return jsonify({"mensagem": "Senha incorreta"}), 401
-
-        return jsonify({
-            "mensagem": "Login realizado com sucesso",
-            "role": usuario['role']
-        }), 200
-
-    except Exception as e:
-        print(str(e))
-        return jsonify({"mensagem": "Erro interno"}), 500
-
 @app.route('/api/servicos', methods=['GET'])
 def listar_servicos_agendamento():
     """Retorna os serviços ativos para o select do agendamento"""

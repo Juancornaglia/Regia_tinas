@@ -1,113 +1,111 @@
-<<<<<<< HEAD
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('loginForm');
-    const emailInput = document.getElementById('email');
-    const senhaInput = document.getElementById('senha');
-    const togglePassword = document.getElementById('togglePassword');
+/**
+ * js/login.js - Sistema de Autenticação Regia & Tinas Care
+ * Gerencia o acesso diferenciado por cargos (Admin, Funcionário, Cliente)
+ */
 
-    // 1. Lógica para Mostrar/Esconder a Senha no ícone do olhinho
-    if (togglePassword) {
-        togglePassword.addEventListener('click', function () {
-            // Alterna o tipo do input entre 'password' e 'text'
-            const type = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            senhaInput.setAttribute('type', type);
-            
-            // Alterna o ícone do Bootstrap
+// 1. CONFIGURAÇÃO DA URL DINÂMICA
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+    ? "http://localhost:5000" 
+    : "https://regia-tinas.onrender.com";
+
+document.addEventListener('DOMContentLoaded', () => { 
+    const loginForm = document.getElementById('loginForm'); 
+    const togglePassword = document.getElementById('togglePassword'); 
+    const passwordInput = document.getElementById('senha'); 
+    const emailInput = document.getElementById('email'); 
+    const rememberCheckbox = document.getElementById('remember'); 
+    
+    // Verificação de segurança para o botão
+    const submitButton = loginForm?.querySelector('button[type="submit"]');
+
+    // 2. LEMBRAR DE MIM
+    if (localStorage.getItem('lembrar_email') && emailInput) { 
+        emailInput.value = localStorage.getItem('lembrar_email'); 
+        if (rememberCheckbox) rememberCheckbox.checked = true; 
+    }
+
+    // 3. LÓGICA DO OLHINHO DE SENHA
+    if (togglePassword && passwordInput) { 
+        togglePassword.addEventListener('click', function () { 
+            const isPassword = passwordInput.type === 'password'; 
+            passwordInput.type = isPassword ? 'text' : 'password'; 
             this.classList.toggle('bi-eye-slash-fill');
-            this.classList.toggle('bi-eye-fill');
-        });
+            this.classList.toggle('bi-eye-fill'); 
+            this.style.color = isPassword ? '#FE8697' : '#888'; 
+        }); 
     }
 
-    // 2. Lógica de Autenticação e Redirecionamento de Perfis
-    if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // Evita que a página recarregue ao clicar em "Entrar"
+    // 4. ENVIO DO FORMULÁRIO E REDIRECIONAMENTO POR CARGO
+    if (loginForm) { 
+        loginForm.addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            
+            const email = emailInput.value.trim(); 
+            const password = passwordInput.value;
 
-            const email = emailInput.value.trim().toLowerCase();
-            const senha = senhaInput.value;
-
-            // Validação básica
-            if (!email || !senha) {
-                alert("Por favor, preencha seu e-mail e senha.");
-                return;
+            // Salva ou remove o e-mail no navegador dependendo do checkbox
+            if (rememberCheckbox && rememberCheckbox.checked) {
+                localStorage.setItem('lembrar_email', email);
+            } else {
+                localStorage.removeItem('lembrar_email');
             }
 
-            /* * SIMULAÇÃO DE BANCO DE DADOS
-             * Como é o Frontend, estamos simulando as rotas baseadas no e-mail.
-             * Depois, isso será substituído pela chamada real da sua API (fetch/axios).
-             */
-            
-            // Regra para login de ADMINISTRADOR
-            if (email === 'admin@regiatinas.com' && senha === 'admin123') {
-                localStorage.setItem('usuarioLogado', JSON.stringify({ perfil: 'admin', nome: 'Administrador' }));
-                alert("Acesso autorizado. Redirecionando para o Painel do Administrador...");
-                // Ajuste os '../' abaixo dependendo de onde o painel admin está salvo
-                window.location.href = '../../admin/painel_admin.html'; 
+            // Interface: Bloqueia o botão para evitar cliques duplos
+            submitButton.disabled = true; 
+            submitButton.textContent = 'ACESSANDO...';
+
+            try { 
+                // Envia os dados para o app.py no Render ou Localhost
+                const response = await fetch(`${API_BASE_URL}/api/login`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ email: email, senha: password }) 
+                });
+
+                const data = await response.json().catch(() => null);
+
+                // TRATAMENTO DE ERROS DO SERVIDOR (DSN, 500, 404)
+                if (!response.ok) {
+                    let errorMessage = "E-mail ou senha incorretos.";
+                    
+                    if (data && (data.mensagem || data.error)) {
+                        errorMessage = data.mensagem || data.error;
+                    } else if (response.status === 500) {
+                        errorMessage = "Erro na conexão com o banco de dados. Verifique a URL no Render.";
+                    } else if (response.status === 404) {
+                        errorMessage = "Servidor não encontrado.";
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                // SUCESSO: GRAVA A SESSÃO NO NAVEGADOR
+                // (Sem 'token' vazio que causava a expulsão da página)
+                localStorage.setItem('usuario_id', data.id); 
+                localStorage.setItem('usuario_nome', data.nome); 
+                localStorage.setItem('usuario_role', data.role);
+
+                console.log("Login realizado com sucesso! Cargo:", data.role);
+
+                // CATRACA INTELIGENTE (REDIRECIONAMENTO POR CARGO)
+                if (data.role === 'admin') { 
+                    window.location.href = '../admin/dashboard.html'; 
+                } 
+                else if (data.role === 'funcionario') { 
+                    // Garante o envio do Carlos para a página operacional
+                    window.location.href = '../admin/funcionario.html'; 
+                } 
+                else { 
+                    // Clientes comuns
+                    window.location.href = 'perfil.html'; 
+                } 
+            } catch (error) { 
+                console.error('Erro de Autenticação:', error.message); 
+                alert(`Ops! ${error.message}`); 
+            } finally { 
+                // Libera o botão novamente caso dê erro
+                submitButton.disabled = false; 
+                submitButton.textContent = 'ENTRAR'; 
             } 
-            
-            // Regra para login de PROFISSIONAL / FUNCIONÁRIO
-            else if (email === 'funcionario@regiatinas.com' && senha === 'func123') {
-                localStorage.setItem('usuarioLogado', JSON.stringify({ perfil: 'funcionario', nome: 'Profissional' }));
-                alert("Acesso autorizado. Redirecionando para sua Agenda...");
-                window.location.href = '../../funcionario/painel_profissional.html'; 
-            } 
-            
-            // Regra para login de USUÁRIO COMUM (Cliente do Petshop/E-commerce)
-            else if (email === 'cliente@gmail.com' && senha === 'cliente123') {
-                localStorage.setItem('usuarioLogado', JSON.stringify({ perfil: 'cliente', nome: 'Cliente' }));
-                alert("Bem-vindo(a) ao Regia & Tinas Care!");
-                window.location.href = '../../index.html'; 
-            } 
-            
-            // Tratamento de Erro
-            else {
-                alert("Credenciais inválidas! Tente novamente ou crie uma conta.");
-                senhaInput.value = ''; // Limpa o campo de senha para tentar de novo
-            }
-        });
-    }
-=======
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById('email').value;
-    const senha = document.getElementById('senha').value;
-
-    try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email,
-                senha
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.mensagem);
-            return;
-        }
-
-        // REDIRECIONAMENTO PELO CARGO
-        if (data.role === 'admin') {
-            window.location.href = '../admin/dashboard.html';
-        } 
-        
-        else if (data.role === 'funcionario') {
-            window.location.href = '../funcionario/dash_funcionario.html';
-        } 
-        
-        else {
-            window.location.href = '../usuario/perfil.html';
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert('Erro ao conectar com o servidor');
-    }
->>>>>>> 081b402 (Atualizacao do projeto)
+        }); 
+    } 
 });
