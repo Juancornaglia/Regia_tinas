@@ -110,46 +110,60 @@ def login():
         print(f"❌ ERRO NO LOGIN: {e}")
         return jsonify({"error": "Erro interno."}), 500
     
-# --- ADICIONAR FAVORITO ---
-@app.route('/api/favoritos/adicionar', methods=['POST'])
-def adicionar_favorito():
+@app.route('/api/favoritos', methods=['POST'])
+def add_favorito():
+    """Adiciona um produto aos favoritos do usuário logado."""
     try:
-        dados = request.get_json()
+        data = request.get_json()
+        id_usuario = data.get('id_usuario')
+        id_produto = data.get('id_produto')
+        
+        if not id_usuario or not id_produto:
+            return jsonify({"error": "Usuário e produto são obrigatórios."}), 400
+            
+        # ON CONFLICT impede erros se ele clicar 2x no mesmo coração
         sql = """
-            INSERT INTO public.favoritos (id_usuario, id_produto) 
-            VALUES (%s, %s) 
-            ON CONFLICT (id_usuario, id_produto) DO NOTHING
+            INSERT INTO public.favoritos (id_usuario, id_produto)
+            VALUES (%s, %s)
+            ON CONFLICT ON CONSTRAINT unique_usuario_produto DO NOTHING
         """
-        executar_query(sql, (dados['id_usuario'], dados['id_produto']))
-        return jsonify({"mensagem": "Favoritado!"}), 201
+        executar_query(sql, (id_usuario, id_produto))
+        
+        return jsonify({"message": "Produto salvo nos favoritos!"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Erro ao adicionar favorito: {e}")
+        return jsonify({"error": "Erro interno ao adicionar."}), 500
 
-# --- LISTAR FAVORITOS DO USUÁRIO ---
 @app.route('/api/favoritos/<id_usuario>', methods=['GET'])
-def listar_favoritos(id_usuario):
+def get_favoritos(id_usuario):
+    """Busca todos os produtos favoritados de um usuário."""
     try:
-        # Traz os produtos que o usuário favoritou
         sql = """
-            SELECT p.* FROM public.produtos p
+            SELECT p.id_produto, p.nome_produto, p.preco, p.url_imagem
+            FROM public.produtos p
             JOIN public.favoritos f ON p.id_produto = f.id_produto
             WHERE f.id_usuario = %s
         """
         favoritos = executar_query(sql, (id_usuario,))
-        return jsonify(favoritos if favoritos else []), 200
+        return jsonify(favoritos), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Erro ao buscar favoritos: {e}")
+        return jsonify({"error": "Erro interno ao buscar."}), 500
 
-# --- REMOVER FAVORITO ---
 @app.route('/api/favoritos/remover', methods=['DELETE'])
-def remover_favorito():
+def remove_favorito():
+    """Remove um produto dos favoritos."""
     try:
-        dados = request.get_json()
+        data = request.get_json()
+        id_usuario = data.get('id_usuario')
+        id_produto = data.get('id_produto')
+        
         sql = "DELETE FROM public.favoritos WHERE id_usuario = %s AND id_produto = %s"
-        executar_query(sql, (dados['id_usuario'], dados['id_produto']))
-        return jsonify({"mensagem": "Removido!"}), 200
+        executar_query(sql, (id_usuario, id_produto))
+        return jsonify({"message": "Favorito removido!"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Erro ao remover favorito: {e}")
+        return jsonify({"error": "Erro interno ao remover."}), 500
 
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
 def get_agendamentos_usuario(id_usuario):

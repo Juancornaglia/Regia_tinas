@@ -1,8 +1,31 @@
-/**
- * js/busca.js - Lógica Unificada para a página de resultados, catálogo e vitrine de detalhes
- * Totalmente adaptado para o modelo de Vitrine Digital (Sem carrinho/compras online)
- * Alinhado com o catalogo.js e livre de caminhos órfãos (../)
- */
+// Função para Salvar Favorito Clicando no Coração
+window.favoritarProduto = async function(idProduto) {
+    const userId = localStorage.getItem('usuario_id');
+    
+    // 1. SE NÃO ESTIVER LOGADO -> REDIRECIONA PRO LOGIN
+    if (!userId) {
+        alert("Ops! Para salvar seus favoritos, você precisa fazer login.");
+        window.location.href = 'usuario/login.html'; // Ajuste o caminho dependendo de onde o JS for chamado
+        return;
+    }
+    
+    // 2. SE ESTIVER LOGADO -> SALVA NO BANCO
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/favoritos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_usuario: userId, id_produto: idProduto })
+        });
+        
+        if (response.ok) {
+            alert("💖 Produto salvo nos favoritos!");
+        } else {
+            console.error("Erro na resposta da API de favoritos.");
+        }
+    } catch (error) {
+        console.error("Erro ao favoritar:", error);
+    }
+}
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
