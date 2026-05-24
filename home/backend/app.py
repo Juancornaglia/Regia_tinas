@@ -1,25 +1,20 @@
 import os
 import traceback
-from datetime import datetime, time, timedelta
+import random
+import string
 import psycopg2
+from datetime import datetime, time, timedelta
+from psycopg2.extras import RealDictCursor
 
 # Flask e Extensões
 from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
-from psycopg2.extras import RealDictCursor
-import random
-import string
-from werkzeug.security import generate_password_hash
 
 # Segurança e Banco de Dados
 from werkzeug.security import generate_password_hash, check_password_hash
 from db.neon_db import executar_query, get_db_connection
 
-# Inicialização
-app = Flask(__name__)
-CORS(app)
-load_dotenv()
 
 load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
