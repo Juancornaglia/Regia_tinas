@@ -16,6 +16,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // ==========================================
+    // ENCERRAMENTO DE SESSÃO (LOGOUT)
+    // ==========================================
+    const logoutBtn = document.getElementById('logout-button');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('Deseja realmente sair da sua conta?')) {
+                localStorage.clear(); // Limpa a memória do ID
+                sessionStorage.clear();
+                window.location.href = '../index.html'; // Manda de volta pra loja desconectado
+            }
+        });
+    }
+
     // Carrega os pets inicialmente assim que a página abre
     await carregarPets(clienteId);
 
@@ -31,7 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             btnSalvar.disabled = true;
             btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Salvando no Neon...';
 
-            // Monta o payload idêntico ao esperado pelas tabelas do Neon
             const novoPet = {
                 id_tutor: clienteId,
                 nome_pet: document.getElementById('nome_pet').value.trim(),
@@ -51,7 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (res.ok) {
                     alert(`🐾 ${novoPet.nome_pet} foi cadastrado com sucesso!`);
                     
-                    // Fecha o modal do Bootstrap de forma segura e limpa
                     const modalEl = document.getElementById('petModal');
                     if (modalEl) {
                         const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
@@ -59,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     
                     form.reset();
-                    await carregarPets(clienteId); // CORREÇÃO 1: Atualiza a lista na tela instantaneamente sem dar reload na página!
+                    await carregarPets(clienteId); 
                 } else {
                     const errData = await res.json().catch(() => null);
                     alert(`Ops: ${errData?.error || "Erro ao cadastrar pet. Verifique os dados fornecidos."}`);
@@ -106,7 +118,6 @@ async function carregarPets(id) {
             const raca = pet.raca || 'SDR (Sem Raça Definida)';
             const porte = pet.porte || 'Não Informado';
             const especie = pet.especie || 'Cão';
-            // Se o campo observações vier nulo ou vazio, trata com elegância
             const obs = pet.observacoes || pet.observacoes_cliente || 'Nenhuma restrição ou observação informada.';
 
             return `
@@ -162,7 +173,6 @@ window.removerPet = async (idPet) => {
         
         if (res.ok) {
             alert("✅ Pet removido com sucesso!");
-            // CORREÇÃO 3: Captura o ID da sessão e atualiza a lista na hora, mantendo o comportamento SPA perfeito
             const clienteId = localStorage.getItem('usuario_id');
             await carregarPets(clienteId);
         } else {

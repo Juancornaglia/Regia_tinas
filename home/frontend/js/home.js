@@ -1,4 +1,30 @@
-// Função para Salvar Favorito Clicando no Coração
+// ========================================================
+// PONTE DE IDENTIFICAÇÃO DO CLIENTE (Reconhece login no Header)
+// ========================================================
+document.addEventListener('DOMContentLoaded', () => {
+    verificarEstadoLogin();
+});
+
+function verificarEstadoLogin() {
+    const userId = localStorage.getItem('usuario_id');
+    const userName = localStorage.getItem('usuario_nome');
+    const loginButton = document.getElementById('btn-login-header');
+
+    // Se o botão existir no HTML e o usuário estiver logado no localStorage
+    if (loginButton && userId) {
+        // Pega o primeiro nome para a saudação
+        const primeiroNome = userName ? userName.split(' ')[0] : 'Conta';
+        
+        // Altera o visual do botão para algo personalizado
+        loginButton.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> Olá, ${primeiroNome}`;
+        
+        // Muda o destino do link para o painel do cliente
+        loginButton.href = 'usuario/perfil.html'; 
+        
+        // Opcional: Adiciona uma classe CSS para destacar que ele está logado
+        loginButton.style.fontWeight = '600';
+    }
+}
 window.favoritarProduto = async function(idProduto) {
     const userId = localStorage.getItem('usuario_id');
     

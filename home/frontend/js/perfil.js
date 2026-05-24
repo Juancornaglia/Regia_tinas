@@ -239,14 +239,20 @@ async function carregarAgendamentos(id) {
             return;
         }
 
-        tbody.innerHTML = listaAgendas.map(ag => {
+            tbody.innerHTML = listaAgendas.map(ag => {
             // CORREÇÃO: Nomes de colunas do SELECT mapeados com perfeição (nome_pet / nome_servico)
             const pet = ag.nome_pet || 'Meu Pet';
             const servico = ag.nome_servico || 'Serviço';
             const status = ag.status || 'pendente';
             
-            // Formata a data e hora recebidas de forma limpa e nativa do Brasil
-            const dataFinal = new Date(ag.data_hora_inicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+            // Formata a data com trava contra erros (Invalid Date)
+            let dataFinal = "Data a confirmar";
+            if (ag.data_hora_inicio) {
+                const dataObj = new Date(ag.data_hora_inicio);
+                if (!isNaN(dataObj)) {
+                    dataFinal = dataObj.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                }
+            }
 
             return `
                 <tr>
