@@ -119,29 +119,29 @@ async function inicializarCatalogoEBusca(termoInicial) {
     const container = document.getElementById('search-results');
     if (!container) return;
 
-    container.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border brand-pink" role="status"></div><p class="mt-2 text-muted small">Carregando pet-produtos...</p></div>';
+    container.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        // CONSTRUTOR DE URL DINÂMICO
+        let url = `${API_BASE_URL}/api/busca?q=${encodeURIComponent(termoInicial)}`;
+        
+        // Adiciona filtros se existirem valores selecionados
+        const cat = Array.from(document.querySelectorAll('#category-filters input:checked')).map(i => i.value);
+        if (cat.length > 0) url += `&categoria=${cat.join(',')}`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
         
-        const data = await response.json();
+        todosOsProdutos = await response.json();
         
-        // Garante a captura da lista independente se o Python envelopou a resposta ou não
-        todosOsProdutos = Array.isArray(data) ? data : (data.produtos || data.data || []);
-
-        // Gera os filtros na barra lateral dinamicamente com os dados reais do Neon
-        gerarFiltrosLaterais(todosOsProdutos);
-        
-        // Ativa os ouvintes de clique no slider de preço e nos checkboxes
-        configurarOuvintesDeFiltros();
-
-        // Executa a primeira filtragem baseada no termo digitado (ex: ?q=banana)
-        executarFiltragem();
-
+        // Renderiza
+        if (todosOsProdutos.length > 0) {
+            container.innerHTML = todosOsProdutos.map(createProductCard).join('');
+        } else {
+            container.innerHTML = '<p class="text-center w-100">Nenhum produto encontrado com esses filtros.</p>';
+        }
     } catch (e) {
-        console.error("Erro ao carregar busca:", e);
-        container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Erro ao processar catálogo de produtos.</p></div>';
+        console.error("Erro na busca:", e);
     }
 }
 
