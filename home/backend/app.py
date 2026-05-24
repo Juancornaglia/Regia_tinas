@@ -8,6 +8,9 @@ from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
+import random
+import string
+from werkzeug.security import generate_password_hash
 
 # Segurança e Banco de Dados
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -83,32 +86,35 @@ def login():
         email = dados.get('email', '').lower().strip()
         senha = dados.get('senha', '')
         
+        # Busca o usuário pelo e-mail
         user = executar_query("SELECT id, nome_completo, senha, role, ativo FROM public.perfis WHERE email = %s", (email,))
         
         if not user:
-            return jsonify({"error": "Credenciais inválidas"}), 401
+            return jsonify({"error": "Usuário não encontrado"}), 401
             
         usuario = user[0]
+        senha_db = usuario['senha']
         
-        # 1. Tenta verificar se é um Hash (Usuários novos/normais)
-        if usuario['senha'].startswith('pbkdf2:sha256:'):
-            senha_valida = check_password_hash(usuario['senha'], senha)
+        # DIAGNÓSTICO: Como verificar se a senha está correta
+        # Se a senha no banco começa com 'pbkdf2:', usamos o verificador oficial
+        if senha_db.startswith('pbkdf2:'):
+            if not check_password_hash(senha_db, senha):
+                return jsonify({"error": "Senha incorreta"}), 401
         else:
-            # 2. Se não for hash, compara direto (Usuários cadastrados manualmente)
-            senha_valida = (usuario['senha'] == senha)
-            
-        if senha_valida:
-            return jsonify({
-                "id": str(usuario['id']),
-                "nome": usuario['nome_completo'],
-                "role": usuario['role']
-            }), 200
-            
-        return jsonify({"error": "Credenciais inválidas"}), 401
+            # Caso a senha tenha sido salva como texto puro (ou erro de hash)
+            if senha_db != senha:
+                return jsonify({"error": "Senha incorreta"}), 401
+        
+        # Se passou, retorna os dados
+        return jsonify({
+            "id": str(usuario['id']),
+            "nome": usuario['nome_completo'],
+            "role": usuario['role']
+        }), 200
             
     except Exception as e:
-        print(f"❌ ERRO NO LOGIN: {e}")
-        return jsonify({"error": "Erro interno."}), 500
+        print(f"❌ ERRO CRÍTICO NO LOGIN: {e}")
+        return jsonify({"error": "Erro interno no servidor"}), 500
     
 @app.route('/api/auth/cadastro', methods=['POST'])
 def criar_conta():
@@ -140,9 +146,7 @@ def criar_conta():
         print(f"❌ ERRO NO CADASTRO: {e}")
         return jsonify({"error": "Erro interno ao criar conta."}), 500
     
-import random
-import string
-from werkzeug.security import generate_password_hash
+
 
 @app.route('/api/recuperar-senha', methods=['POST'])
 def solicitar_recuperacao():
