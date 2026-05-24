@@ -1,47 +1,64 @@
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+/**
+ * js/favoritos.js - Motor de Favoritos Conectado ao Banco (Regia & Tinas Care)
+ */
+
+// 1. CONFIGURAÇÕES GERAIS
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
-
-document.addEventListener('DOMContentLoaded', () => {
-    renderFavoritesPage();
-});
 
 const favoritesListContainer = document.getElementById('favorites-list');
 const noFavoritesMessage = document.getElementById('no-favorites-message');
 
+// 2. INICIALIZAÇÃO
+document.addEventListener('DOMContentLoaded', () => {
+    renderFavoritesPage();
+});
+
+// 3. FUNÇÃO PRINCIPAL (BUSCA E RENDERIZA DO BANCO)
 async function renderFavoritesPage() {
+    if (!favoritesListContainer) return;
+
     const userId = localStorage.getItem('usuario_id');
     
     // Trava de Segurança: Se não tem ID, manda pro Login
     if (!userId) {
         alert("Para ver seus favoritos, você precisa fazer login primeiro!");
-        window.location.href = '../usuario/login.html'; // Ajuste o caminho se necessário
+        window.location.href = '../usuario/login.html';
         return;
     }
 
     try {
+        console.log("Buscando favoritos para o usuário:", userId);
         const response = await fetch(`${API_BASE_URL}/api/favoritos/${userId}`);
+        
+        // Se o servidor responder erro, trata no catch
+        if (!response.ok) throw new Error(`Erro ${response.status}: ${await response.text()}`);
+        
         const favoriteProducts = await response.json();
 
-        // Se a lista vier vazia ou der erro
-        if (!favoriteProducts || favoriteProducts.length === 0 || favoriteProducts.error) {
+        // Lógica de lista vazia
+        if (!favoriteProducts || favoriteProducts.length === 0) {
             favoritesListContainer.style.display = 'none';
-            noFavoritesMessage.style.display = 'block';
+            if (noFavoritesMessage) noFavoritesMessage.style.display = 'block';
             return;
         }
 
-        // Se tiver produtos, monta os cards na tela
+        // Renderização
         favoritesListContainer.style.display = 'grid'; 
-        noFavoritesMessage.style.display = 'none';
+        if (noFavoritesMessage) noFavoritesMessage.style.display = 'none';
         favoritesListContainer.innerHTML = favoriteProducts.map(createFavoriteCard).join('');
         
     } catch (error) {
-        console.error("Erro ao carregar favoritos:", error);
-        favoritesListContainer.innerHTML = `<h5 class="text-danger text-center w-100">Erro ao buscar favoritos. Tente novamente mais tarde.</h5>`;
+        console.error("❌ ERRO NO FAVORITOS:", error);
+        favoritesListContainer.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <h5 class="text-danger">Erro ao carregar favoritos: ${error.message}</h5>
+            </div>`;
     }
 }
 
-// Monta o HTML de cada card do produto favorito
+// 4. MONTA O HTML DE CADA CARD
 function createFavoriteCard(produto) {
     const precoFormatado = parseFloat(produto.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     
@@ -67,7 +84,7 @@ function createFavoriteCard(produto) {
     `;
 }
 
-// Função para remover produto (Ativada pelo botão Remover)
+// 5. FUNÇÃO PARA REMOVER DO BANCO
 window.removerFavorito = async function(idProduto) {
     const userId = localStorage.getItem('usuario_id');
     
@@ -79,9 +96,11 @@ window.removerFavorito = async function(idProduto) {
         });
         
         if (response.ok) {
-            renderFavoritesPage(); // Recarrega a tela na mesma hora
+            renderFavoritesPage(); // Recarrega a lista após remover
+        } else {
+            alert("Erro ao remover favorito.");
         }
     } catch(error) {
         console.error("Erro ao remover:", error);
     }
-}
+};
