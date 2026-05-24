@@ -991,7 +991,6 @@ def buscar_horarios_livres():
 def listar_produtos_loja():
     """Retorna todos os produtos ativos do banco de dados Neon para a vitrine digital"""
     try:
-        
         sql = """
             SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
                    marca, preco::float, preco_promocional::float, quantidade_estoque, 
@@ -1002,6 +1001,9 @@ def listar_produtos_loja():
         """
         
         produtos = executar_query(sql)
+        
+        # Log de depuração para verificar se o banco retorna algo
+        print(f"DEBUG: Produtos encontrados no Neon: {len(produtos) if produtos else 0}")
         
         return jsonify(produtos if produtos else []), 200
         

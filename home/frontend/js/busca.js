@@ -1,7 +1,5 @@
-// ==========================================
-// BUSCA.JS - Versão Corrigida e Blindada
-// ==========================================
-
+alert("O busca.js foi carregado com sucesso!");
+console.log("O motor de busca do Regia & Tinas está rodando.");
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
