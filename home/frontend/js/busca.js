@@ -1,4 +1,55 @@
-// Função para Salvar Favorito Clicando no Coração
+// ==========================================
+// BUSCA.JS - Versão Corrigida e Blindada
+// ==========================================
+
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+    ? "http://localhost:5000" 
+    : "https://regia-tinas.onrender.com";
+
+let todosOsProdutos = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idProduto = urlParams.get('id');
+    const termo = urlParams.get('q') || '';
+
+    // Verifica se os elementos existem ANTES de rodar a lógica
+    if (idProduto) {
+        await carregarDetalhesProduto(idProduto);
+    } else {
+        // Modo Vitrine/Busca
+        alternarModoVisualizacao('busca');
+        const termDisplay = document.getElementById('term-display');
+        if (termDisplay) termDisplay.innerText = termo ? `"${termo}"` : "Todos os produtos";
+        await inicializarCatalogoEBusca(termo);
+    }
+});
+
+async function inicializarCatalogoEBusca(termoInicial) {
+    const container = document.getElementById('search-results');
+    if (!container) {
+        console.error("ERRO: Elemento 'search-results' não encontrado no HTML!");
+        return;
+    }
+
+    container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+        
+        const data = await response.json();
+        todosOsProdutos = Array.isArray(data) ? data : (data.produtos || []);
+
+        gerarFiltrosLaterais(todosOsProdutos);
+        configurarOuvintesDeFiltros();
+        executarFiltragem();
+    } catch (e) {
+        console.error("Erro crítico na busca:", e);
+        container.innerHTML = '<div class="col-12 text-center py-5 text-danger">Erro ao carregar catálogo.</div>';
+    }
+}
+
 window.favoritarProduto = async function(idProduto) {
     const userId = localStorage.getItem('usuario_id');
     
