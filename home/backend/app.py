@@ -513,8 +513,6 @@ def editar_produto(id_produto):
         print(f"Erro ao editar produto {id_produto}: {e}")
         return jsonify({"error": "Falha ao atualizar os dados do produto"}), 500
 
-
-
 @app.route('/api/busca', methods=['GET'])
 def buscar_produtos():
     try:
