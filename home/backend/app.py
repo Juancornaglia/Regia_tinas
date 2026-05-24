@@ -81,35 +81,32 @@ def login():
         email = dados.get('email', '').lower().strip()
         senha = dados.get('senha', '')
         
-        # Busca o usuário pelo e-mail
         user = executar_query("SELECT id, nome_completo, senha, role, ativo FROM public.perfis WHERE email = %s", (email,))
         
         if not user:
-            return jsonify({"error": "Usuário não encontrado"}), 401
+            return jsonify({"error": "Credenciais inválidas"}), 401
             
         usuario = user[0]
-        senha_db = usuario['senha']
         
-        # DIAGNÓSTICO: Como verificar se a senha está correta
-        # Se a senha no banco começa com 'pbkdf2:', usamos o verificador oficial
-        if senha_db.startswith('pbkdf2:'):
-            if not check_password_hash(senha_db, senha):
-                return jsonify({"error": "Senha incorreta"}), 401
+        # 1. Tenta verificar se é um Hash (Agora aceita pbkdf2 e scrypt)
+        if usuario['senha'].startswith(('pbkdf2:', 'scrypt:')):
+            senha_valida = check_password_hash(usuario['senha'], senha)
         else:
-            # Caso a senha tenha sido salva como texto puro (ou erro de hash)
-            if senha_db != senha:
-                return jsonify({"error": "Senha incorreta"}), 401
-        
-        # Se passou, retorna os dados
-        return jsonify({
-            "id": str(usuario['id']),
-            "nome": usuario['nome_completo'],
-            "role": usuario['role']
-        }), 200
+            # 2. Se não for hash, compara direto (senhas velhas em texto puro)
+            senha_valida = (usuario['senha'] == senha)
+            
+        if senha_valida:
+            return jsonify({
+                "id": str(usuario['id']),
+                "nome": usuario['nome_completo'],
+                "role": usuario['role']
+            }), 200
+            
+        return jsonify({"error": "Credenciais inválidas"}), 401
             
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO NO LOGIN: {e}")
-        return jsonify({"error": "Erro interno no servidor"}), 500
+        print(f"❌ ERRO NO LOGIN: {e}")
+        return jsonify({"error": "Erro interno."}), 500
     
 @app.route('/api/auth/cadastro', methods=['POST'])
 def criar_conta():
