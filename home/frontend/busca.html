@@ -1,116 +1,147 @@
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-    ? "http://localhost:5000" 
-    : "https://regia-tinas.onrender.com";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo e Busca - Regia & Tinas Care</title>
+    <link rel="icon" type="image/png" href="img/logo_pequena4.png">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --brand-pink: #FE8697; --brand-pink-hover: #e57585; --bg-light: #f8f9fa; }
+        body { background-color: var(--bg-light); font-family: 'Poppins', sans-serif; }
 
-let todosOsProdutos = [];
+        /* --- NAVBAR --- */
+        .navbar-custom { background-color: var(--brand-pink); height: 65px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1050; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .navbar-container { display: flex; align-items: center; position: relative; width: 100%; padding: 0 15px; }
+        .search-form-bar { background: white; border-radius: 25px; overflow: hidden; flex-grow: 1; max-width: 500px; position: relative; margin: 0 auto; }
+        .search-form-bar input { border: none; padding: 8px 20px; width: 100%; outline: none; }
+        .btn-search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--brand-pink); }
+        .back-arrow { color: white; font-size: 2.2rem; text-decoration: none; z-index: 10; }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const idProduto = urlParams.get('id');
-    const termo = urlParams.get('q') || '';
-
-    if (idProduto) {
-        await carregarDetalhesProduto(idProduto);
-    } else {
-        alternarModoVisualizacao('busca');
-        const termDisplay = document.getElementById('term-display');
-        if (termDisplay) termDisplay.innerText = termo ? `"${termo}"` : "Todos os produtos";
-        await inicializarCatalogoEBusca(termo);
-    }
-});
-
-async function inicializarCatalogoEBusca(termoInicial) {
-    const container = document.getElementById('search-results');
-    if (!container) return;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        if (!response.ok) throw new Error("Erro na API");
-        todosOsProdutos = await response.json();
+        /* --- FILTROS --- */
+        .filter-card { border: none; border-radius: 20px; position: sticky; top: 85px; }
+        .filter-title { font-weight: 700; color: var(--brand-pink); border-bottom: 2px solid #f1f1f1; padding-bottom: 10px; margin-bottom: 20px; }
         
-        gerarFiltrosLaterais(todosOsProdutos);
-        configurarOuvintesDeFiltros();
-        executarFiltragem();
-    } catch (e) {
-        console.error("Erro na busca:", e);
-        container.innerHTML = '<p class="text-center text-danger">Erro ao carregar produtos.</p>';
-    }
-}
+        /* --- PRODUTOS --- */
+        .product-card { border: none; border-radius: 20px; transition: 0.3s; cursor: pointer; background: white; overflow: hidden; height: 100%; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .img-container { height: 180px; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
+        
+        /* --- MODAL --- */
+        .modal-content { border-radius: 30px; border: none; }
+        .btn-buy { background: var(--brand-pink); color: white; border-radius: 30px; font-weight: 700; padding: 12px; border: none; transition: 0.2s; }
+        .btn-buy:hover { background: var(--brand-pink-hover); }
+    </style>
+</head>
+<body>
 
-function gerarFiltrosLaterais(produtos) {
-    const catBox = document.getElementById('category-filters');
-    const brandBox = document.getElementById('brand-filters');
-    
-    if (catBox) {
-        const categorias = [...new Set(produtos.map(p => p.tipo_produto).filter(Boolean))];
-        catBox.innerHTML = '<label class="fw-bold small mb-2 text-secondary">Categorias</label>' + 
-            categorias.map(c => `<div class="form-check"><input class="form-check-input" type="checkbox" value="${c}"> <label class="form-check-label small">${c}</label></div>`).join('');
-    }
-    if (brandBox) {
-        const marcas = [...new Set(produtos.map(p => p.marca).filter(Boolean))];
-        brandBox.innerHTML = '<label class="fw-bold small mb-2 text-secondary">Marcas</label>' + 
-            marcas.map(m => `<div class="form-check"><input class="form-check-input" type="checkbox" value="${m}"> <label class="form-check-label small">${m}</label></div>`).join('');
-    }
-}
+    <header class="navbar-custom">
+        <div class="container navbar-container">
+            <a href="index.html" class="back-arrow"><i class="bi bi-arrow-left-short"></i></a>
+            
+            <form class="search-form-bar shadow-sm" action="busca.html" method="GET">
+                <input type="search" name="q" id="search-input-page" placeholder="Pesquisar pet-produto...">
+                <button class="btn-search-icon" type="submit"><i class="bi bi-search"></i></button>
+            </form>
 
-function configurarOuvintesDeFiltros() {
-    document.querySelectorAll('input').forEach(input => input.addEventListener('change', executarFiltragem));
-    document.getElementById('price-range')?.addEventListener('input', (e) => {
-        document.getElementById('price-value').innerText = `R$ ${e.target.value}`;
-        executarFiltragem();
-    });
-}
+            <a class="text-white ms-3 position-relative" href="carrinho.html">
+                <i class="bi bi-cart3 fs-4"></i>
+            </a>
+        </div>
+    </header>
 
-function executarFiltragem() {
-    const container = document.getElementById('search-results');
-    const termo = new URLSearchParams(window.location.search).get('q')?.toLowerCase() || '';
-    const cats = Array.from(document.querySelectorAll('#category-filters input:checked')).map(i => i.value);
-    const brands = Array.from(document.querySelectorAll('#brand-filters input:checked')).map(i => i.value);
-    const maxPreco = parseFloat(document.getElementById('price-range')?.value) || 500;
+    <main class="container my-5">
+        
+        <div id="secao-busca-catalogo">
+            <div class="row">
+                <aside class="col-lg-3 d-none d-lg-block" id="sidebar-filtros">
+                    <div class="bg-white p-4 filter-card shadow-sm">
+                        <h5 class="filter-title"><i class="bi bi-sliders me-1"></i> Filtros</h5>
+                        
+                        <div class="mb-4">
+                            <label class="fw-bold small mb-2 text-secondary">Categoria</label>
+                            <div id="category-filters" class="small">
+                                 <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+                        </div>
 
-    const filtrados = todosOsProdutos.filter(p => {
-        const nome = (p.nome_produto || '').toLowerCase();
-        const matchTermo = termo === '' || nome.includes(termo);
-        const matchCat = cats.length === 0 || cats.includes(p.tipo_produto);
-        const matchBrand = brands.length === 0 || brands.includes(p.marca);
-        return matchTermo && matchCat && matchBrand && parseFloat(p.preco) <= maxPreco;
-    });
+                        <div class="mb-4">
+                            <label class="fw-bold small mb-2 text-secondary">Marca</label>
+                            <div id="brand-filters" class="small">
+                                 <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+                        </div>
 
-    document.getElementById('results-count').innerText = `${filtrados.length} itens encontrados`;
-    container.innerHTML = filtrados.length > 0 ? filtrados.map(createProductCard).join('') : '<p>Nenhum produto.</p>';
-}
+                        <div>
+                            <label class="fw-bold small mb-2 text-secondary">Preço Máximo</label>
+                            <input type="range" class="form-range" id="price-range" min="0" max="500" step="10">
+                            <div class="d-flex justify-content-between small fw-bold text-muted">
+                                <span>R$ 0</span>
+                                <span id="price-value">R$ 500</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
 
-function createProductCard(p) {
-    const id = p.id_produto || p.id;
-    let img = p.url_imagem;
-    if (img && !img.startsWith('http') && !img.startsWith('img/')) img = 'img/' + img;
-    
-    return `
-        <div class="col-md-4 mb-4">
-            <div class="product-card p-3" onclick="window.location.href='busca.html?id=${id}'">
-                <img src="${img || 'img/logo_pequena4.png'}" class="img-fluid" style="height: 150px; object-fit: contain;">
-                <h6 class="fw-bold mt-2">${p.nome_produto}</h6>
-                <p style="color: #FE8697;">R$ ${parseFloat(p.preco).toFixed(2)}</p>
+                <section class="col-lg-9">
+                    <div class="mb-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="fw-bold h4 mb-1">Resultados para: <span id="term-display" style="color: var(--brand-pink);"></span></h2>
+                            <p id="results-count" class="text-muted small fw-bold mb-0"></p>
+                        </div>
+                    </div>
+
+                    <div id="search-results" class="row row-cols-2 row-cols-md-3 g-4"></div>
+                </section>
             </div>
         </div>
-    `;
-}
 
-async function carregarDetalhesProduto(id) {
-    alternarModoVisualizacao('detalhe');
-    const container = document.getElementById('product-detail-container');
-    const prod = todosOsProdutos.find(p => String(p.id_produto || p.id) === String(id));
-    if (!prod) { container.innerHTML = "Produto não encontrado."; return; }
-    
-    container.innerHTML = `<h3>${prod.nome_produto}</h3><p>${prod.descricao || ''}</p><button onclick="history.back()" class="btn btn-secondary">Voltar</button>`;
-}
+        <div id="product-detail-container" style="display: none;"></div>
 
-function alternarModoVisualizacao(modo) {
-    const s = document.getElementById('secao-busca-catalogo');
-    const d = document.getElementById('product-detail-container');
-    if (modo === 'detalhe') { s.style.display = 'none'; d.style.display = 'block'; }
-    else { s.style.display = 'block'; d.style.display = 'none'; }
-}
+    </main>
 
-window.adicionarModalAoCarrinho = () => alert("📍 Disponível nas unidades físicas!");
-window.toggleFavorito = () => alert("💖 Favoritado!");
+    <div class="modal fade" id="modalProduto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow-lg p-3">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center mb-3 mb-md-0">
+                            <img id="modal-img" src="" class="img-fluid rounded-3 p-2" style="max-height: 280px; object-fit: contain;" onerror="this.src='img/logo_pequena4.png'">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span id="modal-categoria" class="badge text-white" style="background-color: var(--brand-pink);"></span>
+                                <button class="btn p-0 border-0" onclick="window.toggleFavorito()">
+                                    <i id="modal-fav-icon" class="bi bi-heart text-danger fs-4"></i>
+                                </button>
+                            </div>
+                            <h4 id="modal-nome" class="fw-bold text-dark mb-1"></h4>
+                            <p class="text-muted small mb-3">Marca: <span id="modal-marca" class="fw-bold"></span> | Cód: #<span id="modal-codigo"></span></p>
+                            <div id="modal-preco-box" class="fs-3 fw-bold mb-3" style="color: var(--brand-pink);"></div>
+                            <p id="modal-descricao" class="text-secondary small mb-4"></p>
+                            <div class="mb-4">
+                                <label class="fw-bold small mb-1 text-muted"><i class="bi bi-geo-alt-fill text-success me-1"></i>Disponibilidade imediata:</label>
+                                <ul id="modal-store-list" class="list-unstyled small ps-0 mb-0"></ul>
+                            </div>
+                            <button class="btn btn-buy w-100 rounded-pill py-2" onclick="window.adicionarModalAoCarrinho()">
+                                <i class="bi bi-cart-plus me-1"></i> Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/busca.js"></script>
+</body>
+</html>
