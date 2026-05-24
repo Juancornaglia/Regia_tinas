@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="../css/auth.css">
 
     <style>
-        /* PADRONIZAÇÃO DO DESIGN */
         :root {
             --brand-pink: #FE8697;
         }
@@ -41,7 +40,6 @@
             font-family: 'Poppins', sans-serif;
         }
 
-        /* Estilo para os ícones de olho */
         .eye-icon {
             position: absolute;
             right: 15px;
@@ -59,7 +57,6 @@
             padding-right: 45px;
         }
 
-        /* Botão Sólido Branco com Texto Rosa */
         .btn-solid {
             background-color: #ffffff;
             color: var(--brand-pink); 
@@ -142,7 +139,9 @@
                 
                 <form id="resetPasswordForm">
                     <div class="input-group">
-                        <input type="text" id="verification_code" placeholder="Código de 6 dígitos (Ex: 123456)" maxlength="6" required style="text-align: center; letter-spacing: 2px; font-weight: bold;">
+                        <input type="text" id="verification_code" placeholder="Código de 6 dígitos" 
+                               maxlength="6" autocomplete="off" required 
+                               style="text-align: center; letter-spacing: 5px; font-weight: bold; font-size: 1.2rem;">
                     </div>
 
                     <div class="input-group">
@@ -161,12 +160,10 @@
     </div>
 
     <script>
-        // Lógica para mostrar/esconder senha
         document.querySelectorAll('.toggle-password').forEach(item => {
             item.addEventListener('click', function() {
                 const targetId = this.getAttribute('data-target');
                 const input = document.getElementById(targetId);
-                
                 if (input.type === 'password') {
                     input.type = 'text';
                     this.classList.remove('bi-eye-fill');
@@ -179,7 +176,6 @@
             });
         });
     </script>
-
     <script src="../js/redefinir_senha.js" type="module"></script>
 </body>
 </html>

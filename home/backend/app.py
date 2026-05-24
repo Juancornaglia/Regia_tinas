@@ -110,6 +110,77 @@ def login():
         print(f"❌ ERRO NO LOGIN: {e}")
         return jsonify({"error": "Erro interno."}), 500
     
+@app.route('/api/auth/cadastro', methods=['POST'])
+def criar_conta():
+    try:
+        d = request.get_json()
+        nome = d.get('nome_completo')
+        email = d.get('email', '').lower().strip()
+        senha = d.get('senha')
+
+        # 1. Verifica se o e-mail já existe
+        existe = executar_query("SELECT id FROM public.perfis WHERE email = %s", (email,))
+        if existe:
+            return jsonify({"error": "Este e-mail já está cadastrado. Tente fazer login."}), 409
+
+        # 2. Gera a senha protegida (Hash)
+        hash_senha = generate_password_hash(senha)
+
+        # 3. Insere no banco
+        # Note que adicionei 'cliente' como role padrão e ativo como true
+        sql = """
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo)
+            VALUES (%s, %s, %s, 'cliente', true)
+        """
+        executar_query(sql, (nome, email, hash_senha))
+        
+        return jsonify({"mensagem": "Conta criada com sucesso!"}), 201
+
+    except Exception as e:
+        print(f"❌ ERRO NO CADASTRO: {e}")
+        return jsonify({"error": "Erro interno ao criar conta."}), 500
+    
+import random
+import string
+from werkzeug.security import generate_password_hash
+
+@app.route('/api/recuperar-senha', methods=['POST'])
+def solicitar_recuperacao():
+    dados = request.get_json()
+    email = dados.get('email', '').lower().strip()
+    
+    # Gera um código aleatório de 6 dígitos
+    codigo = ''.join(random.choices(string.digits, k=6))
+    
+    # Salva o código no banco vinculado ao e-mail
+    sql = "UPDATE public.perfis SET codigo_recuperacao = %s WHERE email = %s"
+    resultado = executar_query(sql, (codigo, email))
+    
+    # Aqui você imprimiria o código no console para testes ou enviaria por e-mail no futuro
+    print(f"🔑 CÓDIGO DE RECUPERAÇÃO PARA {email}: {codigo}")
+    
+    return jsonify({"mensagem": "Código gerado com sucesso!"}), 200
+
+@app.route('/api/redefinir-senha', methods=['POST'])
+def redefinir_senha():
+    dados = request.get_json()
+    email = dados.get('email', '').lower().strip()
+    codigo = dados.get('codigo')
+    nova_senha = dados.get('nova_senha')
+    
+    # Valida se o código confere
+    user = executar_query("SELECT id FROM public.perfis WHERE email = %s AND codigo_recuperacao = %s", (email, codigo))
+    
+    if not user:
+        return jsonify({"error": "Código inválido ou expirado."}), 401
+    
+    # Atualiza a senha e limpa o código
+    hash_senha = generate_password_hash(nova_senha)
+    sql = "UPDATE public.perfis SET senha = %s, codigo_recuperacao = NULL WHERE email = %s"
+    executar_query(sql, (hash_senha, email))
+    
+    return jsonify({"mensagem": "Senha alterada com sucesso!"}), 200
+    
 @app.route('/api/favoritos', methods=['POST'])
 def add_favorito():
     """Adiciona um produto aos favoritos do usuário logado."""
@@ -545,25 +616,7 @@ def finalizar_pedido():
         if cur: cur.close()
         if conn: conn.close()
 
-@app.route('/api/auth/verificar-admin/<id_usuario>', methods=['GET'])
-def verificar_admin_api(id_usuario): 
-    try:
-        # Busca o cargo do usuário usando o UUID
-        resultado = executar_query('SELECT role FROM public.perfis WHERE id = %s', (id_usuario,))
-        
-        if resultado and len(resultado) > 0:
-            usuario = resultado[0]
-            is_admin = (usuario['role'] == 'admin')
-            return jsonify({
-                "isAdmin": is_admin, 
-                "role": usuario['role']
-            }), 200
-            
-        return jsonify({"isAdmin": False, "message": "Usuário não encontrado"}), 404
-            
-    except Exception as e:
-        print(f"Erro na verificação de admin: {e}")
-        return jsonify({"error": "Erro interno", "isAdmin": False}), 500 
+
 
 
 @app.route('/api/filtros', methods=['GET'])
