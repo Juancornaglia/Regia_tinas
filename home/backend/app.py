@@ -203,8 +203,8 @@ def add_favorito():
 
 @app.route('/api/favoritos/<id_usuario>', methods=['GET'])
 def get_favoritos(id_usuario):
-    """Busca todos os produtos favoritados de um usuário."""
     try:
+        # Importante: Verifique se o banco tem essa query exatamente
         sql = """
             SELECT p.id_produto, p.nome_produto, p.preco, p.url_imagem
             FROM public.produtos p
@@ -212,9 +212,10 @@ def get_favoritos(id_usuario):
             WHERE f.id_usuario = %s
         """
         favoritos = executar_query(sql, (id_usuario,))
-        return jsonify(favoritos), 200
+        print(f"DEBUG: Favoritos encontrados para {id_usuario}: {favoritos}") # ISSO VAI APARECER NO LOG DO RENDER
+        return jsonify(favoritos if favoritos else []), 200
     except Exception as e:
-        print(f"Erro ao buscar favoritos: {e}")
+        print(f"❌ ERRO AO BUSCAR FAVORITOS: {e}")
         return jsonify({"error": "Erro interno ao buscar."}), 500
 
 @app.route('/api/favoritos/remover', methods=['DELETE'])

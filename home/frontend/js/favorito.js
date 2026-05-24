@@ -17,14 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 3. FUNÇÃO PRINCIPAL (BUSCA E RENDERIZA DO BANCO)
 async function renderFavoritesPage() {
-    if (!favoritesListContainer) return;
-
     const userId = localStorage.getItem('usuario_id');
+    console.log("ID do Usuário no LocalStorage:", userId); // Olhe o console!
     
-    // Trava de Segurança: Se não tem ID, manda pro Login
-    if (!userId) {
-        alert("Para ver seus favoritos, você precisa fazer login primeiro!");
-        window.location.href = '../usuario/login.html';
+    if (!userId || userId === "null" || userId === "undefined") {
+        console.error("ID de usuário inválido!");
         return;
     }
 
