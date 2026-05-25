@@ -56,27 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // 1. GESTÃO DOS DADOS PESSOAIS DO TUTOR
 // ==========================================
 async function carregarDadosUsuario(id) {
-    console.log("DEBUG: Iniciando busca de dados para o usuário ID:", id);
-    
-    if (!id || id === "null") {
-        console.error("DEBUG: ID de usuário inválido no LocalStorage!");
-        return;
-    }
+    if (!id || id === "null") return;
 
     try {
-        const url = `${API_BASE_URL}/api/usuario/dados/${id}`;
-        console.log("DEBUG: Chamando API:", url);
-        
-        const response = await fetch(url);
-        
-        // Se der erro, vamos ver o que o servidor respondeu
-        if (!response.ok) {
-            const erroTexto = await response.text();
-            throw new Error(`Servidor respondeu com ${response.status}: ${erroTexto}`);
-        }
+        const response = await fetch(`${API_BASE_URL}/api/usuario/dados/${id}`);
+        if (!response.ok) throw new Error(`Erro ao carregar dados`);
         
         const data = await response.json();
-        console.log("DEBUG: Dados recebidos com sucesso:", data);
         
         const inputNome = document.getElementById('nome_completo');
         const inputTelefone = document.getElementById('telefone');
@@ -88,7 +74,7 @@ async function carregarDadosUsuario(id) {
         
     } catch (error) {
         console.error("❌ ERRO CRÍTICO NO PERFIL:", error);
-        showToast("Erro ao carregar dados: " + error.message, "erro");
+        showToast("Erro ao carregar dados.", "erro");
     }
 }
 
@@ -116,7 +102,6 @@ async function salvarPerfil(id) {
             showToast("✨ Dados pessoais atualizados com sucesso!", "sucesso");
             localStorage.setItem('usuario_nome', payload.nome_completo);
             
-            // Atualiza dinamicamente a saudação do cabeçalho
             const greetingElement = document.getElementById('user-greeting');
             if (greetingElement) greetingElement.innerHTML = `Tutor(a) <span class="text-white">${payload.nome_completo.split(' ')[0]}</span>`;
         } else {
@@ -132,7 +117,7 @@ async function salvarPerfil(id) {
 }
 
 // ==========================================
-// 2. GESTÃO INTEGRADA DE PETS (VISÃO RESUMIDA)
+// 2. GESTÃO INTEGRADA DE PETS
 // ==========================================
 async function carregarPets(id) {
     const container = document.getElementById('lista-pets');
@@ -152,20 +137,15 @@ async function carregarPets(id) {
 
         container.innerHTML = listaPets.map(pet => {
             const idPet = pet.id_pet || pet.id;
-            const nome = pet.nome_pet || 'Meu Pet';
-            const raca = pet.raca || 'SRD';
-            const especie = pet.especie || 'Cão';
-            const porte = pet.porte || 'Médio';
-
             return `
                 <div class="col-md-6 mb-3">
-                    <div class="d-flex align-items-center p-3 border border-light-subtle rounded-4 bg-white shadow-sm" style="border-left: 5px solid #FE8697 !important; transition: 0.2s;">
+                    <div class="d-flex align-items-center p-3 border border-light-subtle rounded-4 bg-white shadow-sm" style="border-left: 5px solid #FE8697 !important;">
                         <div class="flex-grow-1">
-                            <h6 class="fw-bold text-dark mb-1">${nome}</h6>
-                            <small class="text-muted fw-medium">${especie} • <span class="text-secondary">${raca}</span></small>
+                            <h6 class="fw-bold text-dark mb-1">${pet.nome_pet || 'Meu Pet'}</h6>
+                            <small class="text-muted fw-medium">${pet.especie || 'Cão'} • <span class="text-secondary">${pet.raca || 'SRD'}</span></small>
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-light text-dark border rounded-pill px-2 py-1 mb-2 d-inline-block small fw-semibold" style="font-size: 0.72rem;">${porte}</span>
+                            <span class="badge bg-light text-dark border rounded-pill px-2 py-1 mb-2 d-inline-block small fw-semibold" style="font-size: 0.72rem;">${pet.porte || 'Médio'}</span>
                             <button class="btn btn-sm btn-link text-danger p-0 d-block ms-auto me-1 border-0" onclick="window.confirmarExclusaoPet('${idPet}')" title="Excluir Pet">
                                 <i class="bi bi-trash3-fill"></i>
                             </button>
@@ -185,7 +165,6 @@ async function cadastrarPet(e, id) {
     const btn = e.target.querySelector('button[type="submit"]');
     if (!btn) return;
 
-    // CORREÇÃO: IDs dos inputs mapeados perfeitamente com os novos seletores do perfil.html
     const payload = {
         id_tutor: id,
         nome_pet: document.getElementById('input_nome_pet').value.trim(),
@@ -206,18 +185,14 @@ async function cadastrarPet(e, id) {
         if (response.ok) {
             showToast(`🐾 ${payload.nome_pet} foi registrado na sua conta!`, "sucesso");
             e.target.reset();
-            
-            // Fecha a aba retrátil do cadastro de forma suave através da função local do HTML
             if (typeof window.toggleFormPet === 'function') window.toggleFormPet();
-            else if (document.getElementById('sessao-cadastro-pet')) document.getElementById('sessao-cadastro-pet').style.display = 'none';
-
-            await carregarPets(id); // Recarrega os minicards instantaneamente
+            await carregarPets(id);
         } else {
-            alert("Erro ao salvar o pet. Verifique as informações preenchidas.");
+            alert("Erro ao salvar o pet.");
         }
     } catch (error) {
         console.error(error);
-        showToast("Erro de ligação com a nuvem do Neon.", "erro");
+        showToast("Erro de ligação com a nuvem.", "erro");
     } finally {
         btn.disabled = false;
     }
@@ -230,11 +205,9 @@ window.confirmarExclusaoPet = async (idPet) => {
         if (response.ok) {
             showToast("Pet removido da conta.", "sucesso");
             await carregarPets(localStorage.getItem('usuario_id'));
-        } else {
-            alert("Não foi possível excluir o pet.");
         }
     } catch (error) {
-        showToast("Erro ao processar pedido de exclusão.", "erro");
+        showToast("Erro ao processar exclusão.", "erro");
     }
 };
 
@@ -247,45 +220,26 @@ async function carregarAgendamentos(id) {
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/agendamentos/cliente/${id}`);
-        const agendamentos = await response.json();
-        const listaAgendas = Array.isArray(agendamentos) ? agendamentos : [];
+        const listaAgendas = await response.json();
 
         if (listaAgendas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-secondary small"><i class="bi bi-info-circle me-1"></i> Você não possui históricos ou agendamentos ativos na rede.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-secondary small"><i class="bi bi-info-circle me-1"></i> Nenhum agendamento encontrado.</td></tr>';
             return;
         }
 
-            tbody.innerHTML = listaAgendas.map(ag => {
-            // CORREÇÃO: Nomes de colunas do SELECT mapeados com perfeição (nome_pet / nome_servico)
-            const pet = ag.nome_pet || 'Meu Pet';
-            const servico = ag.nome_servico || 'Serviço';
-            const status = ag.status || 'pendente';
-            
-            // Formata a data com trava contra erros (Invalid Date)
-            let dataFinal = "Data a confirmar";
-            if (ag.data_hora_inicio) {
-                const dataObj = new Date(ag.data_hora_inicio);
-                if (!isNaN(dataObj)) {
-                    dataFinal = dataObj.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-                }
-            }
-
+        tbody.innerHTML = listaAgendas.map(ag => {
+            const dataFinal = ag.data_hora_inicio ? new Date(ag.data_hora_inicio).toLocaleString('pt-BR') : "Data a confirmar";
             return `
                 <tr>
                     <td class="fw-semibold text-secondary">${dataFinal}</td>
-                    <td><span class="badge bg-light text-dark border px-2 py-1 rounded-pill small"><i class="bi bi-paw-fill me-1 text-danger opacity-50"></i>${pet}</span></td>
-                    <td class="fw-medium text-dark">${servico}</td>
-                    <td>
-                        <span class="badge ${getStatusBadgeClass(status)} text-uppercase px-3 py-1-5 rounded-pill small fw-bold">
-                            ${status}
-                        </span>
-                    </td>
+                    <td><span class="badge bg-light text-dark border px-2 py-1 rounded-pill small">${ag.nome_pet || 'Meu Pet'}</span></td>
+                    <td class="fw-medium text-dark">${ag.nome_servico || 'Serviço'}</td>
+                    <td><span class="badge ${getStatusBadgeClass(ag.status || 'pendente')} text-uppercase px-3 py-1-5 rounded-pill small fw-bold">${ag.status || 'pendente'}</span></td>
                 </tr>
             `;
         }).join('');
     } catch (error) {
-        console.error(error);
-        tbody.innerHTML = '<tr><td colspan="4" class="text-danger text-center small p-4">Erro de conexão ao carregar a grade de horários.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-danger text-center small p-4">Erro ao carregar agendamentos.</td></tr>';
     }
 }
 
@@ -300,7 +254,7 @@ function getStatusBadgeClass(status) {
 }
 
 // ==========================================
-// 4. CONTROLADOR DOS TOASTS PREMIUM DE TELA
+// 4. CONTROLADOR DE TOASTS
 // ==========================================
 function showToast(mensagem, tipo = "sucesso") {
     const toastEl = document.getElementById('liveToast');
@@ -308,16 +262,10 @@ function showToast(mensagem, tipo = "sucesso") {
     
     if (!toastEl || !msgEl) return;
 
-    // CORREÇÃO: Removido o termo 'mensaje' que causava o ReferenceError
     msgEl.innerText = mensagem;
-    
-    // Altera a cor de fundo com base no tipo de feedback dinamicamente
-    if (tipo === "erro" || tipo === "deletar") {
-        toastEl.className = "toast align-items-center text-white bg-danger border-0 rounded-4";
-    } else {
-        toastEl.className = "toast align-items-center text-white bg-dark border-0 rounded-4";
-    }
+    toastEl.className = (tipo === "erro") 
+        ? "toast align-items-center text-white bg-danger border-0 rounded-4" 
+        : "toast align-items-center text-white bg-dark border-0 rounded-4";
 
-    const bootstrapToast = bootstrap.Toast.getInstance(toastEl) || new bootstrap.Toast(toastEl);
-    bootstrapToast.show();
+    new bootstrap.Toast(toastEl).show();
 }

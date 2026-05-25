@@ -59,13 +59,6 @@ function renderizarVitrine(produtos) {
     container.innerHTML = produtos.map(p => `
         <div class="col">
             <div class="product-card shadow-sm border position-relative">
-                <button class="btn btn-light rounded-circle btn-favorite position-absolute top-0 end-0 m-2" 
-                        onclick="event.stopPropagation(); toggleFavorito(${p.id_produto})" 
-                        data-product-id="${p.id_produto}"
-                        style="z-index: 10;">
-                    <i class="bi bi-heart text-danger"></i>
-                </button>
-
                 <div onclick="abrirModalProduto(${p.id_produto})" style="cursor: pointer;">
                     <div class="img-container">
                         <img src="${p.url_imagem || 'img/logo_pequena4.png'}" alt="${p.nome_produto}" class="product-img" onerror="this.src='img/logo_pequena4.png'">
@@ -102,33 +95,7 @@ function aplicarFiltros() {
     renderizarVitrine(produtosFiltrados);
 }
 
-// 4. FAVORITOS
-window.toggleFavorito = async function(idProduto) {
-    const userId = localStorage.getItem('usuario_id');
-    if (!userId) {
-        alert("Ops! Faça login para salvar seus favoritos. 🐾");
-        window.location.href = '../usuario/login.html';
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/favoritos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_usuario: userId, id_produto: parseInt(idProduto, 10) })
-        });
-
-        if (response.ok) {
-            alert("💖 Produto salvo nos favoritos!");
-        } else {
-            alert("Erro ao salvar favorito.");
-        }
-    } catch (error) {
-        console.error("Erro ao favoritar:", error);
-    }
-};
-
-// 5. MODAL
+// 4. MODAL
 window.abrirModalProduto = async function(idProduto) {
     produtoAtualModal = todosOsProdutos.find(p => p.id_produto === idProduto);
     if (!produtoAtualModal) return;
