@@ -50,34 +50,27 @@ async function carregarProdutos(termoBusca) {
 // --- 2. ESTOQUE (COM DEBUG) --- //
 async function verificarEstoque(idProduto) {
     const storeList = document.getElementById('modal-store-list');
-    storeList.innerHTML = `<li>Verificando disponibilidade...</li>`;
+    storeList.innerHTML = `<li>Buscando...</li>`;
     
     try {
-        const url = `${API_BASE_URL}/api/produtos/${idProduto}/estoque`;
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-            console.error("DEBUG: Rota de estoque falhou:", url);
-            throw new Error();
-        }
-        
+        const res = await fetch(`${API_BASE_URL}/api/produtos/${idProduto}/estoque`);
         const estoque = await res.json();
-        console.log("DEBUG: Estoque recebido para o ID " + idProduto + ":", estoque);
+        
+        // ESTA LINHA VAI TE SALVAR:
+        console.log("DEBUG: O que o servidor enviou de estoque?", estoque); 
 
         if (estoque.length === 0) {
-            storeList.innerHTML = `<li class="text-danger">Produto sem estoque.</li>`;
+            storeList.innerHTML = `<li class="text-danger">Produto esgotado.</li>`;
             return;
         }
 
         storeList.innerHTML = estoque.map(e => {
-            // Verifique se os campos abaixo (nome_loja, quantidade) existem no JSON
-            const nomeLoja = e.nome_loja || "Loja desconhecida";
-            const qtd = e.quantidade || 0;
-            return `<li class="p-2 border-bottom">${nomeLoja}: ${qtd} unid.</li>`;
+            // VERIFIQUE SE O NOME DA COLUNA NO BANCO É 'nome_loja' OU 'nome'
+            // O log acima vai te dizer exatamente qual é a chave correta
+            return `<li class="p-2 border-bottom">${e.nome_loja || 'Loja'}: ${e.quantidade || 0} unid.</li>`;
         }).join('');
-
     } catch (error) {
-        storeList.innerHTML = `<li class="text-muted">Sistema de estoque offline no momento.</li>`;
+        storeList.innerHTML = `<li class="text-muted">Sistema indisponível.</li>`;
     }
 }
 
@@ -160,7 +153,8 @@ function renderizarVitrine(produtos) {
                     <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
                     <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco_venda).toFixed(2).replace('.', ',')}</span>
+                        <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}
+                        </span>
                         <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
                     </div>
                 </div>
@@ -171,20 +165,27 @@ function renderizarVitrine(produtos) {
 
 // --- 3. MODAL E LÓGICA DE LOJAS (MATRIZ EM DESTAQUE) --- //
 window.abrirModalProduto = async function(idProduto) {
+    // 1. Localiza o produto no array global
     produtoAtualModal = todosOsProdutos.find(p => p.id_produto === idProduto);
     if (!produtoAtualModal) return;
 
+    // 2. Preenche todos os campos do Modal
     document.getElementById('modal-img').src = produtoAtualModal.url_imagem || 'img/logo_pequena4.png';
     document.getElementById('modal-codigo').textContent = produtoAtualModal.id_produto;
     document.getElementById('modal-categoria').textContent = produtoAtualModal.categoria || 'Geral';
     document.getElementById('modal-nome').textContent = produtoAtualModal.nome_produto;
     document.getElementById('modal-marca').textContent = produtoAtualModal.marca || 'Não informada';
-    document.getElementById('modal-preco-box').textContent = `R$ ${parseFloat(produtoAtualModal.preco_venda).toFixed(2).replace('.', ',')}`;
     document.getElementById('modal-descricao').textContent = produtoAtualModal.descricao || 'Nenhuma descrição disponível para este produto.';
 
+    // 3. Aplica a correção do Preço (Prioriza 'preco', depois 'preco_venda', se não existir usa 0)
+    const precoValido = parseFloat(produtoAtualModal.preco || produtoAtualModal.preco_venda || 0);
+    document.getElementById('modal-preco-box').textContent = `R$ ${precoValido.toFixed(2).replace('.', ',')}`;
+
+    // 4. Abre o Modal
     const modal = new bootstrap.Modal(document.getElementById('modalProduto'));
     modal.show();
 
+    // 5. Busca o estoque atualizado
     verificarEstoque(idProduto);
 };
 
