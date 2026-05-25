@@ -1,20 +1,15 @@
-/**
- * js/busca.js - Cérebro Unificado (Catálogo + Busca + Detalhes do Produto)
- * Controla a listagem completa e os filtros sem necessidade de ficheiros duplicados.
- */
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
 
 let todosOsProdutos = [];
-let produtoAtualModal = null; // Guarda o produto que está aberto no modal
+let produtoAtualModal = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const termoBusca = urlParams.get('q') ? urlParams.get('q').toLowerCase() : '';
 
-    // Atualiza o título se houver uma pesquisa
     const termDisplayContainer = document.getElementById('term-display-container');
     const termDisplay = document.getElementById('term-display');
     
@@ -23,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(termDisplay) termDisplay.textContent = urlParams.get('q');
     }
 
-    // Configura o evento do filtro de preço em tempo real
     const priceRange = document.getElementById('price-range');
     const priceValue = document.getElementById('price-value');
     if (priceRange && priceValue) {
@@ -33,11 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Carrega os produtos do banco Neon
     await carregarProdutos(termoBusca);
 });
 
-// --- 1. BUSCA E RENDERIZAÇÃO PRINCIPAL --- //
+// --- 1. CARREGAMENTO DOS PRODUTOS --- //
 async function carregarProdutos(termoBusca) {
     const container = document.getElementById('search-results');
     const resultsCount = document.getElementById('results-count');
@@ -48,7 +41,6 @@ async function carregarProdutos(termoBusca) {
         
         const produtos = await response.json();
         
-        // Filtra inicialmente pela busca da URL (se existir)
         if (termoBusca) {
             todosOsProdutos = produtos.filter(p => 
                 (p.nome_produto && p.nome_produto.toLowerCase().includes(termoBusca)) ||
@@ -56,23 +48,23 @@ async function carregarProdutos(termoBusca) {
                 (p.marca && p.marca.toLowerCase().includes(termoBusca))
             );
         } else {
-            todosOsProdutos = produtos; // Se não houver busca, é o catálogo completo
+            todosOsProdutos = produtos; 
         }
 
         gerarFiltrosLaterais(todosOsProdutos);
-        aplicarFiltros(); // Renderiza a tela
+        aplicarFiltros();
 
     } catch (error) {
         console.error("Erro na busca:", error);
         container.innerHTML = `<div class="col-12 text-center text-danger py-5">
             <i class="bi bi-exclamation-triangle fs-1"></i>
-            <p class="mt-3 fw-bold">Erro ao carregar o catálogo. Tenta novamente mais tarde.</p>
+            <p class="mt-3 fw-bold">Erro ao carregar a vitrine. Tenta novamente mais tarde.</p>
         </div>`;
         resultsCount.textContent = "0 produtos encontrados";
     }
 }
 
-// --- 2. FILTROS LATERAIS DINÂMICOS --- //
+// --- 2. FILTROS --- //
 function gerarFiltrosLaterais(produtos) {
     const categorias = [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
     const marcas = [...new Set(produtos.map(p => p.marca).filter(Boolean))];
@@ -81,7 +73,6 @@ function gerarFiltrosLaterais(produtos) {
     const brandContainer = document.getElementById('brand-filters');
     const priceRange = document.getElementById('price-range');
 
-    // Define o preço máximo dinamicamente com base nos produtos
     if (produtos.length > 0 && priceRange) {
         const maxPreco = Math.max(...produtos.map(p => parseFloat(p.preco_venda) || 0));
         priceRange.max = Math.ceil(maxPreco);
@@ -129,18 +120,19 @@ function renderizarVitrine(produtos) {
     const container = document.getElementById('search-results');
     const resultsCount = document.getElementById('results-count');
     
-    if(resultsCount) resultsCount.textContent = `${produtos.length} produto(s) encontrado(s)`;
+    if(resultsCount) resultsCount.textContent = `${produtos.length} produto(s) no catálogo`;
 
     if (produtos.length === 0) {
         container.innerHTML = `
             <div class="col-12 text-center py-5">
                 <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
                 <h5 class="mt-3 fw-bold text-muted">Nenhum produto encontrado.</h5>
-                <p class="text-muted small">Tenta ajustar os filtros na barra lateral.</p>
+                <p class="text-muted small">Tente ajustar os filtros na barra lateral.</p>
             </div>`;
         return;
     }
 
+    // Nota: Removido o botão de carrinho. Agora o card inteiro convida a ver as lojas.
     container.innerHTML = produtos.map(p => `
         <div class="col">
             <div class="product-card shadow-sm border" onclick="abrirModalProduto(${p.id_produto})">
@@ -151,8 +143,8 @@ function renderizarVitrine(produtos) {
                     <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
                     <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="price-tag">R$ ${parseFloat(p.preco_venda).toFixed(2).replace('.', ',')}</span>
-                        <button class="btn btn-sm btn-brand rounded-circle"><i class="bi bi-bag-plus"></i></button>
+                        <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco_venda).toFixed(2).replace('.', ',')}</span>
+                        <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
                     </div>
                 </div>
             </div>
@@ -160,12 +152,11 @@ function renderizarVitrine(produtos) {
     `).join('');
 }
 
-// --- 3. LÓGICA DO MODAL DE DETALHES --- //
+// --- 3. MODAL E LÓGICA DE LOJAS (MATRIZ EM DESTAQUE) --- //
 window.abrirModalProduto = async function(idProduto) {
     produtoAtualModal = todosOsProdutos.find(p => p.id_produto === idProduto);
     if (!produtoAtualModal) return;
 
-    // Preenche os dados básicos no Modal HTML
     document.getElementById('modal-img').src = produtoAtualModal.url_imagem || 'img/logo_pequena4.png';
     document.getElementById('modal-codigo').textContent = produtoAtualModal.id_produto;
     document.getElementById('modal-categoria').textContent = produtoAtualModal.categoria || 'Geral';
@@ -174,17 +165,15 @@ window.abrirModalProduto = async function(idProduto) {
     document.getElementById('modal-preco-box').textContent = `R$ ${parseFloat(produtoAtualModal.preco_venda).toFixed(2).replace('.', ',')}`;
     document.getElementById('modal-descricao').textContent = produtoAtualModal.descricao || 'Nenhuma descrição disponível para este produto.';
 
-    // Abre o modal do Bootstrap
     const modal = new bootstrap.Modal(document.getElementById('modalProduto'));
     modal.show();
 
-    // Busca o stock em tempo real
     verificarEstoque(idProduto);
 };
 
 async function verificarEstoque(idProduto) {
     const storeList = document.getElementById('modal-store-list');
-    storeList.innerHTML = `<li><span class="spinner-border spinner-border-sm text-secondary"></span> Verificando unidades...</li>`;
+    storeList.innerHTML = `<li><span class="spinner-border spinner-border-sm text-secondary"></span> Buscando no sistema...</li>`;
     
     try {
         const res = await fetch(`${API_BASE_URL}/api/produtos/${idProduto}/estoque`);
@@ -192,60 +181,82 @@ async function verificarEstoque(idProduto) {
         
         const estoque = await res.json();
         if (estoque.length === 0) {
-            storeList.innerHTML = `<li class="text-danger"><i class="bi bi-x-circle me-1"></i> Produto esgotado no momento.</li>`;
+            storeList.innerHTML = `<li class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i> Produto temporariamente esgotado em todas as lojas.</li>`;
             return;
         }
 
-        storeList.innerHTML = estoque.map(e => 
-            `<li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> <b>${e.nome_loja}</b>: ${e.quantidade} unid.</li>`
-        ).join('');
+        // Renderiza a lista de lojas, destacando a principal
+        storeList.innerHTML = estoque.map(e => {
+            // Verifica se o nome da loja é exatamente a principal (ou ID 1 se for Mooca)
+            const nomeLoja = e.nome_loja.trim();
+            const isMatriz = nomeLoja.toLowerCase() === "regia & tinas care" || nomeLoja.toLowerCase() === "mooca";
+            
+            const destaqueHtml = isMatriz 
+                ? `<span class="badge bg-warning text-dark ms-2"><i class="bi bi-star-fill"></i> Matriz</span>` 
+                : '';
+
+            return `
+            <li class="store-item p-3 mb-2 shadow-sm d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1 text-dark fw-bold">${nomeLoja} ${destaqueHtml}</h6>
+                    <small class="text-muted"><i class="bi bi-box-seam me-1"></i> ${e.quantidade} unidades disponíveis</small>
+                </div>
+            </li>`;
+        }).join('');
 
     } catch (error) {
-        storeList.innerHTML = `<li class="text-muted"><i class="bi bi-info-circle me-1"></i> Indisponível para consulta online.</li>`;
+        storeList.innerHTML = `<li class="text-muted"><i class="bi bi-info-circle me-1"></i> Sistema de estoque offline no momento. Tente novamente ou ligue para a loja.</li>`;
     }
 }
 
-// --- 4. FUNÇÕES DE CARRINHO E FAVORITOS (ESCOPO GLOBAL) --- //
-window.adicionarModalAoCarrinho = function() {
-    if (!produtoAtualModal) return;
+// --- 4. FAVORITOS (CONECTADO AO BANCO) --- //
+window.toggleFavorito = async function(idProduto) {
+    const userId = localStorage.getItem('usuario_id');
     
-    // Recupera o carrinho do localStorage ou cria um array vazio
-    let carrinho = JSON.parse(localStorage.getItem('carrinhoRegiaTinas')) || [];
-    
-    // Verifica se já existe
-    const index = carrinho.findIndex(item => item.id_produto === produtoAtualModal.id_produto);
-    
-    if (index > -1) {
-        carrinho[index].quantidade += 1;
-    } else {
-        carrinho.push({
-            id_produto: produtoAtualModal.id_produto,
-            nome: produtoAtualModal.nome_produto,
-            preco: parseFloat(produtoAtualModal.preco_venda),
-            imagem: produtoAtualModal.url_imagem,
-            quantidade: 1
-        });
+    // Verifica se está logado
+    if (!userId) {
+        alert("Ops! Faça login para salvar seus favoritos. 🐾");
+        window.location.href = '../usuario/login.html';
+        return;
     }
 
-    localStorage.setItem('carrinhoRegiaTinas', JSON.stringify(carrinho));
-    alert(`🛒 "${produtoAtualModal.nome_produto}" adicionado ao carrinho com sucesso!`);
-    
-    // Atualiza a bolinha vermelha se a função existir no menu
-    if(typeof atualizarBadgeCarrinho === 'function') atualizarBadgeCarrinho();
-};
-
-window.toggleFavorito = function() {
     const icone = document.getElementById('modal-fav-icon');
-    
-    if (icone.classList.contains('bi-heart')) {
-        icone.classList.remove('bi-heart');
-        icone.classList.add('bi-heart-fill');
-        // Aqui podes colocar a lógica de fetch POST para salvar nos favoritos do Neon DB
-        console.log("Adicionado aos favoritos:", produtoAtualModal.id_produto);
-    } else {
-        icone.classList.remove('bi-heart-fill');
-        icone.classList.add('bi-heart');
-        // Aqui a lógica de DELETE para remover dos favoritos do Neon DB
-        console.log("Removido dos favoritos:", produtoAtualModal.id_produto);
+    const isAdding = icone.classList.contains('bi-heart'); // Verifica se vai adicionar
+
+    try {
+        if (isAdding) {
+            // ENVIA PARA O BANCO
+            const response = await fetch(`${API_BASE_URL}/api/favoritos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_usuario: userId,
+                    id_produto: idProduto
+                })
+            });
+
+            if (response.ok) {
+                icone.classList.remove('bi-heart');
+                icone.classList.add('bi-heart-fill');
+                alert("💖 Produto salvo nos favoritos!");
+            }
+        } else {
+            // REMOVE DO BANCO
+            const response = await fetch(`${API_BASE_URL}/api/favoritos/remover`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_usuario: userId,
+                    id_produto: idProduto
+                })
+            });
+
+            if (response.ok) {
+                icone.classList.remove('bi-heart-fill');
+                icone.classList.add('bi-heart');
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao favoritar:", error);
     }
 };

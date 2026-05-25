@@ -1,30 +1,4 @@
-// ========================================================
-// PONTE DE IDENTIFICAÇÃO DO CLIENTE (Reconhece login no Header)
-// ========================================================
-document.addEventListener('DOMContentLoaded', () => {
-    verificarEstadoLogin();
-});
-
-function verificarEstadoLogin() {
-    const userId = localStorage.getItem('usuario_id');
-    const userName = localStorage.getItem('usuario_nome');
-    const loginButton = document.getElementById('btn-login-header');
-
-    // Se o botão existir no HTML e o usuário estiver logado no localStorage
-    if (loginButton && userId) {
-        // Pega o primeiro nome para a saudação
-        const primeiroNome = userName ? userName.split(' ')[0] : 'Conta';
-        
-        // Altera o visual do botão para algo personalizado
-        loginButton.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> Olá, ${primeiroNome}`;
-        
-        // Muda o destino do link para o painel do cliente
-        loginButton.href = 'usuario/perfil.html'; 
-        
-        // Opcional: Adiciona uma classe CSS para destacar que ele está logado
-        loginButton.style.fontWeight = '600';
-    }
-}
+// Função para Salvar Favorito Clicando no Coração
 window.favoritarProduto = async function(idProduto) {
     const userId = localStorage.getItem('usuario_id');
     
@@ -54,73 +28,113 @@ window.favoritarProduto = async function(idProduto) {
 }
 
 // 1. CONFIGURAÇÕES GERAIS
+// ========================================================
+// MOTOR DE FAVORITOS (CONECTADO AO BANCO NEON)
+// ========================================================
+
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
-    : "https://regia-tinas.onrender.com"; 
+    : "https://regia-tinas.onrender.com";
 
-const REGIA_TINAS_SELECTED_STORE_KEY = 'regia_tinas_selected_store';
+// Variável global para armazenar os IDs dos produtos favoritos do usuário logado
+let userFavorites = [];
 
-// 2. SISTEMA DE FAVORITOS (Atualizado para a nova marca)
-export function getFavorites() { return JSON.parse(localStorage.getItem('regia_tinas_favorites')) || []; }
-function saveFavorites(favorites) { localStorage.setItem('regia_tinas_favorites', JSON.stringify(favorites)); }
+// 1. CARREGAR FAVORITOS DO BANCO AO INICIAR
+async function loadUserFavorites() {
+    const userId = localStorage.getItem('usuario_id');
+    if (!userId) return; // Se não está logado, a lista fica vazia
 
-export function toggleFavorite(productId) { 
-    let favorites = getFavorites();
-    const productIdNum = parseInt(productId, 10);
-    if (isNaN(productIdNum)) return;
-    if (favorites.includes(productIdNum)) {
-        favorites = favorites.filter(id => id !== productIdNum);
-    } else {
-        favorites.push(productIdNum);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/favoritos/${userId}`);
+        if (response.ok) {
+            const data = await response.json();
+            // Salva apenas os IDs num array simples para facilitar a verificação
+            userFavorites = data.map(p => parseInt(p.id_produto, 10));
+            updateFavoriteButtons(); // Atualiza os corações na tela
+        }
+    } catch (error) {
+        console.error("Erro ao carregar favoritos do banco:", error);
     }
-    saveFavorites(favorites);
-    updateFavoriteButtons();
 }
 
-export function updateFavoriteButtons() { 
-    const favorites = getFavorites();
+// 2. TOGGLE DE FAVORITOS (POST/DELETE no Banco)
+export async function toggleFavorite(productId) {
+    const userId = localStorage.getItem('usuario_id');
+    const productIdNum = parseInt(productId, 10);
+
+    if (!userId) {
+        alert("Ops! Faça login para salvar seus favoritos. 🐾");
+        window.location.href = 'usuario/login.html';
+        return;
+    }
+
+    const isFavorite = userFavorites.includes(productIdNum);
+    const method = isFavorite ? 'DELETE' : 'POST';
+    const endpoint = isFavorite ? `${API_BASE_URL}/api/favoritos/remover` : `${API_BASE_URL}/api/favoritos`;
+
+    try {
+        const response = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_usuario: userId, id_produto: productIdNum })
+        });
+
+        if (response.ok) {
+            // Atualiza o array local para refletir a mudança instantaneamente
+            if (isFavorite) {
+                userFavorites = userFavorites.filter(id => id !== productIdNum);
+            } else {
+                userFavorites.push(productIdNum);
+            }
+            updateFavoriteButtons();
+        }
+    } catch (error) {
+        console.error("Erro ao atualizar favorito:", error);
+        alert("Erro ao salvar favorito. Tente novamente.");
+    }
+}
+
+// 3. ATUALIZAR ÍCONES (UI)
+export function updateFavoriteButtons() {
     document.querySelectorAll('.btn-favorite').forEach(button => {
         const productId = parseInt(button.dataset.productId, 10);
-        if (!isNaN(productId)) {
-            button.classList.toggle('active', favorites.includes(productId));
-            const icon = button.querySelector('i');
-            if (icon) {
-                icon.className = favorites.includes(productId) ? 'bi bi-heart-fill text-danger' : 'bi bi-heart text-danger';
-            }
+        const isFav = userFavorites.includes(productId);
+        
+        button.classList.toggle('active', isFav);
+        const icon = button.querySelector('i');
+        if (icon) {
+            icon.className = isFav ? 'bi bi-heart-fill text-danger' : 'bi bi-heart text-danger';
         }
     });
 }
 
-// 3. CRIAÇÃO DOS CARDS DOS PRODUTOS
-export function formatPrice(price) { 
-    if (typeof price !== 'number') return 'Consulte';
-    return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); 
+// 4. CRIAÇÃO DOS CARDS
+export function formatPrice(price) {
+    const valor = parseFloat(price);
+    return isNaN(valor) ? 'Consulte' : valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export function createProductCard(produto) { 
+export function createProductCard(produto) {
     const idProduto = produto.id_produto || produto.id;
-    if (!produto || !idProduto) return ''; 
-    
+    if (!produto || !idProduto) return '';
+
     const originalPrice = parseFloat(produto.preco) || 0;
     const promoPrice = parseFloat(produto.preco_promocional);
     const isPromo = promoPrice && promoPrice < originalPrice;
     const displayPrice = isPromo ? promoPrice : originalPrice;
-    
-    const favorites = getFavorites();
-    const isFavorite = favorites.includes(parseInt(idProduto, 10));
+
+    // Verifica se é favorito usando a lista que carregamos do banco
+    const isFavorite = userFavorites.includes(parseInt(idProduto, 10));
     const heartIconClass = isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart text-danger';
-    
-    const productLink = `busca.html?id=${idProduto}`; 
-    
+
+    const productLink = `busca.html?id=${idProduto}`;
     let imageUrl = produto.url_imagem;
-    
-    // CORREÇÃO: Verifica se não começa por http E também se não começa já por img/
+
     if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('img/')) {
-        imageUrl = `img/${produto.url_imagem}`; 
+        imageUrl = `img/${produto.url_imagem}`;
     }
-    
     if (!imageUrl || String(imageUrl).trim() === "") { imageUrl = 'img/logo_pequena4.png'; }
-    
+
     return `
         <div class="card h-100 product-card shadow-sm position-relative mx-2" style="min-width: 220px; max-width: 250px; border: none; border-radius: 12px;">
             <button class="btn btn-light rounded-circle shadow-sm btn-favorite position-absolute top-0 end-0 m-2 ${isFavorite ? 'active' : ''}" data-product-id="${idProduto}" style="z-index: 10;">
@@ -140,12 +154,17 @@ export function createProductCard(produto) {
                     <p class="card-text price fs-5 fw-bold mb-0" style="color: #FE8697;">${formatPrice(displayPrice)}</p>
                 </div>
                 <a href="${productLink}" class="btn w-100 text-white fw-bold rounded-pill" style="background-color: #FE8697;">
-                    <i class="bi bi-cart-plus me-1"></i> Ver Produto
+                    <i class="bi bi-geo-alt me-1"></i> Ver Lojas
                 </a>
             </div>
         </div>
     `;
 }
+
+// Chamar loadUserFavorites quando a página carregar
+document.addEventListener('DOMContentLoaded', () => {
+    loadUserFavorites();
+});
 
 // 4. CARREGAMENTO DOS PRODUTOS DA API PÚBLICA
 function getSelectedStoreId() {

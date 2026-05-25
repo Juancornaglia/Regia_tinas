@@ -56,22 +56,23 @@ async function renderFavoritesPage() {
 }
 
 // 4. MONTA O HTML DE CADA CARD
+// Dentro da sua função createFavoriteCard(produto)
 function createFavoriteCard(produto) {
-    const precoFormatado = parseFloat(produto.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // Certifique-se de que o campo bate com o que o Python retorna (p.preco_venda)
+    // Se no Python estiver preco_venda, aqui deve ser produto.preco_venda ou produto.preco
+    const preco = produto.preco || produto.preco_venda || 0; 
+    const precoFormatado = parseFloat(preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     
     return `
         <div class="card-favorite">
-            <a href="../ecommerce/detalhes.html?id=${produto.id_produto}" class="card-img-container">
+            <a href="detalhes.html?id=${produto.id_produto}" class="card-img-container">
                 <img src="${produto.url_imagem}" alt="${produto.nome_produto}" onerror="this.src='../img/logo_pequena4.png'">
             </a>
             <div class="card-favorite-body">
-                <a href="../ecommerce/detalhes.html?id=${produto.id_produto}" class="card-title">${produto.nome_produto}</a>
+                <a href="detalhes.html?id=${produto.id_produto}" class="card-title">${produto.nome_produto}</a>
                 <p class="text-brand fw-bold fs-5 mt-2 mb-3">${precoFormatado}</p>
                 
                 <div class="mt-auto d-flex flex-column gap-2">
-                    <button class="btn btn-brand" onclick="alert('Adicionar ao carrinho em breve!')">
-                        <i class="bi bi-cart-plus me-2"></i>Comprar
-                    </button>
                     <button class="remove-btn py-1" onclick="removerFavorito(${produto.id_produto})">
                         <i class="bi bi-trash3 me-1"></i>Remover
                     </button>
@@ -80,24 +81,3 @@ function createFavoriteCard(produto) {
         </div>
     `;
 }
-
-// 5. FUNÇÃO PARA REMOVER DO BANCO
-window.removerFavorito = async function(idProduto) {
-    const userId = localStorage.getItem('usuario_id');
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/favoritos/remover`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_usuario: userId, id_produto: idProduto })
-        });
-        
-        if (response.ok) {
-            renderFavoritesPage(); // Recarrega a lista após remover
-        } else {
-            alert("Erro ao remover favorito.");
-        }
-    } catch(error) {
-        console.error("Erro ao remover:", error);
-    }
-};

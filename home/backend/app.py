@@ -200,15 +200,15 @@ def add_favorito():
 @app.route('/api/favoritos/<id_usuario>', methods=['GET'])
 def get_favoritos(id_usuario):
     try:
-        # Importante: Verifique se o banco tem essa query exatamente
+        # ATENÇÃO: Mudamos para preco_venda AS preco para o Javascript não quebrar
         sql = """
-            SELECT p.id_produto, p.nome_produto, p.preco, p.url_imagem
+            SELECT p.id_produto, p.nome_produto, p.preco_venda AS preco, p.url_imagem
             FROM public.produtos p
             JOIN public.favoritos f ON p.id_produto = f.id_produto
             WHERE f.id_usuario = %s
         """
         favoritos = executar_query(sql, (id_usuario,))
-        print(f"DEBUG: Favoritos encontrados para {id_usuario}: {favoritos}") # ISSO VAI APARECER NO LOG DO RENDER
+        print(f"DEBUG: Favoritos encontrados para {id_usuario}: {favoritos}")
         return jsonify(favoritos if favoritos else []), 200
     except Exception as e:
         print(f"❌ ERRO AO BUSCAR FAVORITOS: {e}")
