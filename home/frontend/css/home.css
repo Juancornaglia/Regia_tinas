@@ -101,9 +101,25 @@ button, input, textarea, select { font-family: inherit; }
 .slider-track { display: flex; overflow-x: auto; gap: 1.5rem; padding-bottom: 1rem; scroll-behavior: smooth; scrollbar-width: none; }
 .slider-track::-webkit-scrollbar { display: none; }
 
-.slider-nav { position: absolute; top: 50%; transform: translateY(-50%); background-color: #fff; border: 1px solid #ddd; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; z-index: 10; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: var(--chateau-purple); }
-.slider-nav.prev-btn { left: -15px; }
-.slider-nav.next-btn { right: -15px; }
+/* Apenas altere o que já existe no seu arquivo CSS, não precisa duplicar */
+.slider-nav { 
+    position: absolute; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    background-color: #fff; 
+    border: 1px solid #ddd; 
+    border-radius: 50%; 
+    width: 45px; 
+    height: 45px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    /* AUMENTE AQUI PARA 100 OU MAIS */
+    z-index: 100; 
+    cursor: pointer; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    color: var(--chateau-purple); 
+}
 
 .product-slider-wrapper > .mb-4 { padding-left: 30px; padding-right: 30px; }
 .container > h2 { padding-left: 30px; }

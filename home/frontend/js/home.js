@@ -157,8 +157,34 @@ async function loadProducts(containerId, filterType) {
     } catch (e) { console.error(e); }
 }
 
-function setupSidebar() { /* Lógica do seu menu */ }
-function setupMediaSliders() { /* Lógica dos seus sliders */ }
+function setupMediaSliders() {
+    const setupSlider = (trackId, prevId, nextId) => {
+        const track = document.getElementById(trackId);
+        const prev = document.getElementById(prevId);
+        const next = document.getElementById(nextId);
+
+        if (!track || !prev || !next) {
+            console.warn(`[REGIA-TINAS] Elemento não encontrado: ${trackId}, ${prevId} ou ${nextId}`);
+            return;
+        }
+
+        next.onclick = () => {
+            console.log("Clicou em NEXT no:", trackId);
+            track.scrollBy({ left: 300, behavior: 'smooth' });
+        };
+        
+        prev.onclick = () => {
+            console.log("Clicou em PREV no:", trackId);
+            track.scrollBy({ left: -300, behavior: 'smooth' });
+        };
+    };
+
+    // Certifique-se de que estes IDs existem no seu index.html
+    setupSlider('ofertas-track', 'ofertas-prev', 'ofertas-next');
+    setupSlider('recomendados-track', 'recomendados-prev', 'recomendados-next');
+    setupSlider('novidades-track', 'novidades-prev', 'novidades-next');
+    setupSlider('mais-vendidos-track', 'mais-vendidos-prev', 'mais-vendidos-next');
+}
 
 // Delegação de clique para os favoritos (importante para funcionar)
 document.body.addEventListener('click', (e) => {
