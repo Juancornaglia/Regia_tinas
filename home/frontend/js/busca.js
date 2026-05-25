@@ -161,7 +161,8 @@ function renderizarVitrine(produtos) {
                         <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
                         <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
                         <div class="d-flex justify-content-between align-items-center mt-3">
-                            <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}</span>
+                            // Procure por esta linha dentro do .map() e altere para:
+                        <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}<span>
                             <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
                         </div>
                     </div>
@@ -291,6 +292,33 @@ window.toggleFavorito = async function(idProduto) {
                 icone.classList.remove('bi-heart-fill');
                 icone.classList.add('bi-heart');
             }
+        }
+    } catch (error) {
+        console.error("Erro ao favoritar:", error);
+    }
+};
+window.toggleFavorito = async function(idProduto) {
+    const userId = localStorage.getItem('usuario_id');
+    if (!userId) {
+        alert("Ops! Faça login para salvar seus favoritos. 🐾");
+        return;
+    }
+
+    try {
+        // Envia o id como número
+        const response = await fetch(`${API_BASE_URL}/api/favoritos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_usuario: userId,
+                id_produto: parseInt(idProduto, 10)
+            })
+        });
+
+        if (response.ok) {
+            alert("💖 Produto salvo nos favoritos!");
+        } else {
+            alert("Erro ao salvar favorito.");
         }
     } catch (error) {
         console.error("Erro ao favoritar:", error);

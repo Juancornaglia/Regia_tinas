@@ -175,9 +175,9 @@ async function loadProducts(containerId, filterType) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // APLICAR AS CLASSES AQUI
-    container.classList.add('d-flex', 'flex-nowrap'); 
-    
+    // Adicione isto: Mostra um aviso enquanto carrega
+    container.innerHTML = '<div class="spinner-border text-pink" role="status"><span class="visually-hidden">Carregando...</span></div>';
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
         const allProducts = await response.json();
