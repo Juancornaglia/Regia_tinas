@@ -54,10 +54,6 @@ def index():
 def busca():
     return send_from_directory(FRONTEND_DIR, 'busca.html')
 
-@app.route('/catalogo')
-def catalogo():
-    return send_from_directory(FRONTEND_DIR, 'catalogo.html')
-
 @app.route('/img/<path:filename>')
 def imagens(filename):
     return send_from_directory(os.path.join(FRONTEND_DIR, 'img'), filename)
