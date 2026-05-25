@@ -142,26 +142,81 @@ function renderizarVitrine(produtos) {
         return;
     }
 
-    // Nota: Removido o botão de carrinho. Agora o card inteiro convida a ver as lojas.
     container.innerHTML = produtos.map(p => `
         <div class="col">
-            <div class="product-card shadow-sm border" onclick="abrirModalProduto(${p.id_produto})">
-                <div class="img-container">
-                    <img src="${p.url_imagem || 'img/logo_pequena4.png'}" alt="${p.nome_produto}" class="product-img" onerror="this.src='img/logo_pequena4.png'">
-                </div>
-                <div class="card-body border-top">
-                    <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
-                    <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}
-                        </span>
-                        <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
+            <div class="product-card shadow-sm border position-relative">
+                
+                <button class="btn btn-light rounded-circle btn-favorite position-absolute top-0 end-0 m-2" 
+                        onclick="event.stopPropagation(); toggleFavorito(${p.id_produto})" 
+                        data-product-id="${p.id_produto}"
+                        style="z-index: 10;">
+                    <i class="bi bi-heart text-danger"></i>
+                </button>
+
+                <div onclick="abrirModalProduto(${p.id_produto})">
+                    <div class="img-container">
+                        <img src="${p.url_imagem || 'img/logo_pequena4.png'}" alt="${p.nome_produto}" class="product-img" onerror="this.src='img/logo_pequena4.png'">
+                    </div>
+                    <div class="card-body border-top">
+                        <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
+                        <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}</span>
+                            <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     `).join('');
 }
+// --- Adicione ou substitua no seu js/busca.js ---
+
+window.toggleFavorito = async function(idProduto) {
+    const userId = localStorage.getItem('usuario_id');
+    
+    if (!userId) {
+        alert("Ops! Faça login para salvar seus favoritos. 🐾");
+        window.location.href = '../usuario/login.html';
+        return;
+    }
+
+    // Seleciona o ícone pelo ID no modal (garanta que o ID seja esse no HTML)
+    const icone = document.getElementById('modal-fav-icon');
+    
+    // Verifica se já está favoritado (pela classe do ícone)
+    const isAdding = icone.classList.contains('bi-heart'); 
+
+    try {
+        const endpoint = isAdding ? `${API_BASE_URL}/api/favoritos` : `${API_BASE_URL}/api/favoritos/remover`;
+        const method = isAdding ? 'POST' : 'DELETE';
+
+        const response = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_usuario: userId,
+                id_produto: idProduto
+            })
+        });
+
+        if (response.ok) {
+            if (isAdding) {
+                icone.classList.remove('bi-heart');
+                icone.classList.add('bi-heart-fill');
+                alert("💖 Produto salvo nos favoritos!");
+            } else {
+                icone.classList.remove('bi-heart-fill');
+                icone.classList.add('bi-heart');
+                alert("💔 Produto removido dos favoritos.");
+            }
+        } else {
+            alert("Erro ao atualizar favorito. Tente novamente.");
+        }
+    } catch (error) {
+        console.error("Erro ao favoritar:", error);
+    }
+};
 
 // --- 3. MODAL E LÓGICA DE LOJAS (MATRIZ EM DESTAQUE) --- //
 window.abrirModalProduto = async function(idProduto) {

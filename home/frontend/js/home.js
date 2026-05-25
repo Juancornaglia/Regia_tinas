@@ -51,7 +51,7 @@ async function loadUserFavorites() {
     } catch (error) { console.error("Erro ao carregar favoritos:", error); }
 }
 
-window.toggleFavorite = async (productId) => {
+window.toggleFavorite = async function (productId) {
     const userId = localStorage.getItem('usuario_id');
     if (!userId) {
         alert("Ops! Faça login para salvar seus favoritos. 🐾");
