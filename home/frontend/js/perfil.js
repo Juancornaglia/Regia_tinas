@@ -56,11 +56,27 @@ document.addEventListener('DOMContentLoaded', () => {
 // 1. GESTÃO DOS DADOS PESSOAIS DO TUTOR
 // ==========================================
 async function carregarDadosUsuario(id) {
+    console.log("DEBUG: Iniciando busca de dados para o usuário ID:", id);
+    
+    if (!id || id === "null") {
+        console.error("DEBUG: ID de usuário inválido no LocalStorage!");
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/usuario/dados/${id}`);
-        if (!response.ok) throw new Error("Falha ao ler dados");
+        const url = `${API_BASE_URL}/api/usuario/dados/${id}`;
+        console.log("DEBUG: Chamando API:", url);
+        
+        const response = await fetch(url);
+        
+        // Se der erro, vamos ver o que o servidor respondeu
+        if (!response.ok) {
+            const erroTexto = await response.text();
+            throw new Error(`Servidor respondeu com ${response.status}: ${erroTexto}`);
+        }
         
         const data = await response.json();
+        console.log("DEBUG: Dados recebidos com sucesso:", data);
         
         const inputNome = document.getElementById('nome_completo');
         const inputTelefone = document.getElementById('telefone');
@@ -71,8 +87,8 @@ async function carregarDadosUsuario(id) {
         if (inputEmail) inputEmail.value = data.email || '';
         
     } catch (error) {
-        console.error("Erro ao carregar perfil do Neon:", error);
-        showToast("Erro ao sincronizar seus dados pessoais.", "erro");
+        console.error("❌ ERRO CRÍTICO NO PERFIL:", error);
+        showToast("Erro ao carregar dados: " + error.message, "erro");
     }
 }
 

@@ -229,6 +229,31 @@ def remove_favorito():
         print(f"Erro ao remover favorito: {e}")
         return jsonify({"error": "Erro interno ao remover."}), 500
 
+@app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
+def get_dados_usuario(id_usuario):
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Certifique-se que o nome das colunas abaixo EXISTE na tabela perfis
+        query = 'SELECT nome_completo, telefone, email FROM public.perfis WHERE id = %s'
+        cur.execute(query, (id_usuario,))
+        
+        usuario = cur.fetchone()
+        if usuario:
+            return jsonify(usuario), 200
+        else:
+            return jsonify({"error": "Usuário não encontrado"}), 404
+            
+    except Exception as e:
+        print(f"❌ Erro na API de dados do usuário: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
 def get_agendamentos_usuario(id_usuario):
     conn = None
