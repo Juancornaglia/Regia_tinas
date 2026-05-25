@@ -142,6 +142,22 @@ function renderizarVitrine(produtos) {
         return;
     }
 
+   function renderizarVitrine(produtos) {
+    const container = document.getElementById('search-results');
+    const resultsCount = document.getElementById('results-count');
+    
+    if (resultsCount) resultsCount.textContent = `${produtos.length} produto(s) no catálogo`;
+
+    if (produtos.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 fw-bold text-muted">Nenhum produto encontrado.</h5>
+                <p class="text-muted small">Tente ajustar os filtros na barra lateral.</p>
+            </div>`;
+        return;
+    }
+
     container.innerHTML = produtos.map(p => `
         <div class="col">
             <div class="product-card shadow-sm border position-relative">
@@ -161,8 +177,9 @@ function renderizarVitrine(produtos) {
                         <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
                         <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
                         <div class="d-flex justify-content-between align-items-center mt-3">
-                            // Procure por esta linha dentro do .map() e altere para:
-                        <span class="price-tag fw-bold" style="color: var(--brand-pink);">R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}<span>
+                            <span class="price-tag fw-bold" style="color: var(--brand-pink);">
+                                R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}
+                            </span>
                             <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
                         </div>
                     </div>
@@ -170,6 +187,7 @@ function renderizarVitrine(produtos) {
             </div>
         </div>
     `).join('');
+}
 }
 // --- Adicione ou substitua no seu js/busca.js ---
 

@@ -173,19 +173,44 @@ function createProductCard(produto) {
 
 async function loadProducts(containerId, filterType) {
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container) {
+        console.warn(`[REGIA-TINAS] O container com ID '${containerId}' não foi encontrado no HTML.`);
+        return;
+    }
 
-    // Adicione isto: Mostra um aviso enquanto carrega
+    // Mostra o spinner
     container.innerHTML = '<div class="spinner-border text-pink" role="status"><span class="visually-hidden">Carregando...</span></div>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        const allProducts = await response.json();
         
+        // 1. Verifica se a API respondeu com sucesso
+        if (!response.ok) {
+            throw new Error(`Erro na API: ${response.statusText}`);
+        }
+        
+        const allProducts = await response.json();
+        console.log("DEBUG: Produtos carregados:", allProducts); // Isso vai aparecer no F12 > Console
+
+        // 2. Verifica se o que veio é realmente uma lista (array)
+        if (!Array.isArray(allProducts)) {
+            throw new Error("A API não retornou uma lista de produtos.");
+        }
+
+        // 3. Renderiza
         container.innerHTML = allProducts.map(createProductCard).join('');
-        updateFavoriteButtons();
+        
+        // Garante que a função de favoritos existe antes de chamar
+        if (typeof updateFavoriteButtons === 'function') {
+            updateFavoriteButtons();
+        }
+        
     } catch (e) { 
-        console.error("Erro ao carregar produtos:", e); 
-        container.innerHTML = '<p class="text-center w-100">Erro ao carregar vitrine.</p>';
+        console.error("❌ Erro ao carregar produtos:", e); 
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <p class="text-danger fw-bold">Erro ao carregar a vitrine.</p>
+                <small class="text-muted">${e.message}</small>
+            </div>`;
     }
 }

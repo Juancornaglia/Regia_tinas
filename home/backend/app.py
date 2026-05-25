@@ -173,11 +173,37 @@ def redefinir_senha():
     
     return jsonify({"mensagem": "Senha alterada com sucesso!"}), 200
     
-# ROTA DE FAVORITOS (GET)
+# ========================================================
+# API DE FAVORITOS E ESTOQUE - REGIA & TINAS CARE
+# ========================================================
+
+@app.route('/api/favoritos', methods=['POST'])
+def add_favorito():
+    """Adiciona um produto aos favoritos do usuário."""
+    try:
+        data = request.get_json()
+        id_usuario = data.get('id_usuario')
+        id_produto = data.get('id_produto')
+        
+        if not id_usuario or not id_produto:
+            return jsonify({"error": "Usuário e produto são obrigatórios."}), 400
+            
+        sql = """
+            INSERT INTO public.favoritos (id_usuario, id_produto)
+            VALUES (%s, %s)
+            ON CONFLICT (id_usuario, id_produto) DO NOTHING
+        """
+        executar_query(sql, (id_usuario, id_produto))
+        return jsonify({"message": "Produto salvo nos favoritos!"}), 200
+    except Exception as e:
+        print(f"❌ Erro ao adicionar favorito: {e}")
+        return jsonify({"error": "Erro interno ao adicionar."}), 500
+
 @app.route('/api/favoritos/<id_usuario>', methods=['GET'])
 def get_favoritos(id_usuario):
+    """Busca favoritos. Corrigido para usar a coluna 'preco'"""
     try:
-        # A coluna no banco é "preco", então selecione "p.preco"
+        # A coluna no seu banco é "preco"
         sql = """
             SELECT p.id_produto, p.nome_produto, p.preco, p.url_imagem
             FROM public.produtos p
@@ -188,13 +214,27 @@ def get_favoritos(id_usuario):
         return jsonify(favoritos if favoritos else []), 200
     except Exception as e:
         print(f"❌ ERRO AO BUSCAR FAVORITOS: {e}")
-        return jsonify({"error": "Erro interno ao buscar."}), 500
+        return jsonify({"error": "Erro interno ao buscar favoritos."}), 500
 
-# ROTA DE ESTOQUE (Verifique se as colunas 'nome_loja' e 'quantidade' existem)
+@app.route('/api/favoritos/remover', methods=['DELETE'])
+def remove_favorito():
+    """Remove um produto dos favoritos."""
+    try:
+        data = request.get_json()
+        id_usuario = data.get('id_usuario')
+        id_produto = data.get('id_produto')
+        
+        sql = "DELETE FROM public.favoritos WHERE id_usuario = %s AND id_produto = %s"
+        executar_query(sql, (id_usuario, id_produto))
+        return jsonify({"message": "Favorito removido!"}), 200
+    except Exception as e:
+        print(f"❌ Erro ao remover favorito: {e}")
+        return jsonify({"error": "Erro interno ao remover."}), 500
+
+# ROTA DE ESTOQUE (Corrigida para usar as tabelas estoque e lojas)
 @app.route('/api/produtos/<int:id_produto>/estoque', methods=['GET'])
 def get_estoque_produto(id_produto):
     try:
-        # Query ajustada para o seu schema
         query = """
             SELECT l.nome_loja, e.quantidade 
             FROM public.estoque e
@@ -206,7 +246,7 @@ def get_estoque_produto(id_produto):
     except Exception as e:
         print(f"❌ ERRO AO BUSCAR ESTOQUE: {e}")
         return jsonify({"error": str(e)}), 500
-    
+
 @app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
 def get_dados_usuario(id_usuario):
     conn = None
@@ -1046,7 +1086,7 @@ def get_estoque_produto(id_produto):
     finally:
         if cur: cur.close()
         if conn: conn.close()
-
+        
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
     """Processa o agendamento com Transação Segura (Rollback) e conexão direta ao Neon"""
