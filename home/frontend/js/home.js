@@ -174,10 +174,18 @@ function createProductCard(produto) {
 async function loadProducts(containerId, filterType) {
     const container = document.getElementById(containerId);
     if (!container) return;
+
+    // APLICAR AS CLASSES AQUI
+    container.classList.add('d-flex', 'flex-nowrap'); 
+    
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
         const allProducts = await response.json();
+        
         container.innerHTML = allProducts.map(createProductCard).join('');
         updateFavoriteButtons();
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Erro ao carregar produtos:", e); 
+        container.innerHTML = '<p class="text-center w-100">Erro ao carregar vitrine.</p>';
+    }
 }

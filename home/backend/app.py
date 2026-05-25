@@ -1006,10 +1006,16 @@ def buscar_horarios_livres():
         print(f"❌ ERRO AO CALCULAR GRADE DE HORÁRIOS: {e}")
         return jsonify({"error": "Erro interno ao processar a grade."}), 500
 
+# --- 1. ROTA DE LISTAGEM DE PRODUTOS ---
 @app.route('/api/produtos', methods=['GET'])
 def listar_produtos_loja():
     """Retorna todos os produtos ativos do banco de dados Neon para a vitrine digital"""
+    conn = None
+    cur = None
     try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
         sql = """
             SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
                    marca, preco::float, preco_promocional::float, quantidade_estoque, 
@@ -1018,18 +1024,51 @@ def listar_produtos_loja():
             WHERE ativo = true AND status_produto = 'Ativo'
             ORDER BY nome_produto ASC
         """
+        cur.execute(sql)
+        produtos = cur.fetchall()
         
-        produtos = executar_query(sql)
-        
-        # Log de depuração para verificar se o banco retorna algo
-        print(f"DEBUG: Produtos encontrados no Neon: {len(produtos) if produtos else 0}")
-        
+        # Log para garantir que o backend está enviando os dados
+        print(f"DEBUG: Backend enviando {len(produtos)} produtos.")
         return jsonify(produtos if produtos else []), 200
         
     except Exception as e:
-        print(f"❌ ERRO AO LISTAR PRODUTOS NA VITRINE: {e}")
-        return jsonify({"error": "Falha interna ao carregar o catálogo de produtos."}), 500
+        print(f"❌ ERRO AO LISTAR PRODUTOS: {e}")
+        return jsonify({"error": "Falha interna ao carregar catálogo."}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
+# --- 2. ROTA DE ESTOQUE POR PRODUTO ---
+@app.route('/api/produtos/<int:id_produto>/estoque', methods=['GET'])
+def get_estoque_produto(id_produto):
+    """Busca disponibilidade do produto em cada loja"""
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Fazendo JOIN para garantir que pegamos o nome da loja (l.nome_loja)
+        # Assumindo que sua tabela de estoque se chama 'estoque' e tem 'id_loja'
+        query = """
+            SELECT l.nome_loja, e.quantidade 
+            FROM public.estoque e
+            JOIN public.lojas l ON e.id_loja = l.id_loja
+            WHERE e.id_produto = %s
+        """
+        cur.execute(query, (id_produto,))
+        estoque = cur.fetchall()
+        
+        print(f"DEBUG: Estoque encontrado para produto {id_produto}: {estoque}")
+        return jsonify(estoque if estoque else []), 200
+        
+    except Exception as e:
+        print(f"❌ ERRO AO BUSCAR ESTOQUE: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+        
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
     """Processa o agendamento com Transação Segura (Rollback) e conexão direta ao Neon"""

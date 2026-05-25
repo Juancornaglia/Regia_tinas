@@ -30,37 +30,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarProdutos(termoBusca);
 });
 
-// --- 1. CARREGAMENTO DOS PRODUTOS --- //
+// --- 1. CARREGAMENTO DOS PRODUTOS (COM DEBUG) --- //
 async function carregarProdutos(termoBusca) {
     const container = document.getElementById('search-results');
-    const resultsCount = document.getElementById('results-count');
-
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
-        if (!response.ok) throw new Error('Falha ao carregar produtos');
+        if (!response.ok) throw new Error('API não respondeu');
         
         const produtos = await response.json();
+        console.log("DEBUG: Produtos recebidos da API:", produtos); // Olhe isso no Console!
         
-        if (termoBusca) {
-            todosOsProdutos = produtos.filter(p => 
-                (p.nome_produto && p.nome_produto.toLowerCase().includes(termoBusca)) ||
-                (p.descricao && p.descricao.toLowerCase().includes(termoBusca)) ||
-                (p.marca && p.marca.toLowerCase().includes(termoBusca))
-            );
-        } else {
-            todosOsProdutos = produtos; 
-        }
-
-        gerarFiltrosLaterais(todosOsProdutos);
+        todosOsProdutos = produtos; 
         aplicarFiltros();
-
     } catch (error) {
         console.error("Erro na busca:", error);
-        container.innerHTML = `<div class="col-12 text-center text-danger py-5">
-            <i class="bi bi-exclamation-triangle fs-1"></i>
-            <p class="mt-3 fw-bold">Erro ao carregar a vitrine. Tenta novamente mais tarde.</p>
-        </div>`;
-        resultsCount.textContent = "0 produtos encontrados";
+    }
+}
+
+// --- 2. ESTOQUE (COM DEBUG) --- //
+async function verificarEstoque(idProduto) {
+    const storeList = document.getElementById('modal-store-list');
+    storeList.innerHTML = `<li>Verificando disponibilidade...</li>`;
+    
+    try {
+        const url = `${API_BASE_URL}/api/produtos/${idProduto}/estoque`;
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+            console.error("DEBUG: Rota de estoque falhou:", url);
+            throw new Error();
+        }
+        
+        const estoque = await res.json();
+        console.log("DEBUG: Estoque recebido para o ID " + idProduto + ":", estoque);
+
+        if (estoque.length === 0) {
+            storeList.innerHTML = `<li class="text-danger">Produto sem estoque.</li>`;
+            return;
+        }
+
+        storeList.innerHTML = estoque.map(e => {
+            // Verifique se os campos abaixo (nome_loja, quantidade) existem no JSON
+            const nomeLoja = e.nome_loja || "Loja desconhecida";
+            const qtd = e.quantidade || 0;
+            return `<li class="p-2 border-bottom">${nomeLoja}: ${qtd} unid.</li>`;
+        }).join('');
+
+    } catch (error) {
+        storeList.innerHTML = `<li class="text-muted">Sistema de estoque offline no momento.</li>`;
     }
 }
 
@@ -171,43 +188,6 @@ window.abrirModalProduto = async function(idProduto) {
     verificarEstoque(idProduto);
 };
 
-async function verificarEstoque(idProduto) {
-    const storeList = document.getElementById('modal-store-list');
-    storeList.innerHTML = `<li><span class="spinner-border spinner-border-sm text-secondary"></span> Buscando no sistema...</li>`;
-    
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/produtos/${idProduto}/estoque`);
-        if (!res.ok) throw new Error();
-        
-        const estoque = await res.json();
-        if (estoque.length === 0) {
-            storeList.innerHTML = `<li class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i> Produto temporariamente esgotado em todas as lojas.</li>`;
-            return;
-        }
-
-        // Renderiza a lista de lojas, destacando a principal
-        storeList.innerHTML = estoque.map(e => {
-            // Verifica se o nome da loja é exatamente a principal (ou ID 1 se for Mooca)
-            const nomeLoja = e.nome_loja.trim();
-            const isMatriz = nomeLoja.toLowerCase() === "regia & tinas care" || nomeLoja.toLowerCase() === "mooca";
-            
-            const destaqueHtml = isMatriz 
-                ? `<span class="badge bg-warning text-dark ms-2"><i class="bi bi-star-fill"></i> Matriz</span>` 
-                : '';
-
-            return `
-            <li class="store-item p-3 mb-2 shadow-sm d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1 text-dark fw-bold">${nomeLoja} ${destaqueHtml}</h6>
-                    <small class="text-muted"><i class="bi bi-box-seam me-1"></i> ${e.quantidade} unidades disponíveis</small>
-                </div>
-            </li>`;
-        }).join('');
-
-    } catch (error) {
-        storeList.innerHTML = `<li class="text-muted"><i class="bi bi-info-circle me-1"></i> Sistema de estoque offline no momento. Tente novamente ou ligue para a loja.</li>`;
-    }
-}
 
 // --- 4. FAVORITOS (CONECTADO AO BANCO) --- //
 window.toggleFavorito = async function(idProduto) {
