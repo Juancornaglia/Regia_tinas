@@ -179,21 +179,26 @@ def get_dados_usuario(id_usuario):
     conn = None
     cur = None
     try:
+        # Log para ver o que está a chegar no backend (olha o terminal do Render!)
+        print(f"DEBUG: Buscando dados para ID: {id_usuario}")
+        
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Certifique-se que o nome das colunas abaixo EXISTE na tabela perfis
-        query = 'SELECT nome_completo, telefone, email FROM public.perfis WHERE id = %s'
+        # Ajuste: usamos a query de forma segura
+        query = 'SELECT nome_completo, telefone, email, role FROM public.perfis WHERE id = %s'
         cur.execute(query, (id_usuario,))
         
         usuario = cur.fetchone()
+        
         if usuario:
             return jsonify(usuario), 200
         else:
+            print(f"DEBUG: Usuário {id_usuario} não encontrado na tabela.")
             return jsonify({"error": "Usuário não encontrado"}), 404
             
     except Exception as e:
-        print(f"❌ Erro na API de dados do usuário: {e}")
+        print(f"❌ Erro crítico na API de dados do usuário: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         if cur: cur.close()
