@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupSidebar();
     setupMediaSliders();
     setupBeforeAfterSlider();
+    setupVideoPlayers();
     
     // 3. Carregamento de dados (Vitrines)
     loadProducts('ofertas-track', 'ofertas');
@@ -166,5 +167,29 @@ function setupBeforeAfterSlider() {
         
         // 2. Move a linha divisória (handle)
         handle.style.left = `${val}%`;
+    });
+}
+// Função para controlar os vídeos
+function setupVideoPlayers() {
+    const videoCards = document.querySelectorAll('.video-card');
+
+    videoCards.forEach(card => {
+        const video = card.querySelector('video');
+        const playBtn = card.querySelector('.play-button');
+
+        playBtn.onclick = () => {
+            if (video.paused) {
+                video.play();
+                playBtn.innerHTML = '<i class="bi bi-pause-circle-fill"></i>'; // Muda ícone
+            } else {
+                video.pause();
+                playBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>'; // Volta ícone
+            }
+        };
+
+        // Pausa automaticamente se o vídeo acabar
+        video.onended = () => {
+            playBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
+        };
     });
 }
