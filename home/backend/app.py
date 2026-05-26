@@ -283,6 +283,59 @@ def listar_lojas_unificado():
         return jsonify({"error": f"Erro interno no Neon: {str(e)} "}), 500
 
 
+# Mude get_admin_stats para remover a busca de faturamento
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    try:
+        # Faturamento removido pois não há mais pedidos
+        res_agendamentos = executar_query('SELECT COUNT(*) as total FROM public.agendamentos')
+        total_agendamentos = res_agendamentos[0]['total'] if res_agendamentos else 0
+
+        res_clientes = executar_query("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = res_clientes[0]['total'] if res_clientes else 0
+
+        res_pets = executar_query("SELECT COUNT(*) as total FROM public.pets")
+        total_pets = res_pets[0]['total'] if res_pets else 0
+        
+        return jsonify({
+            "faturamento": 0.0, # Faturamento agora é zero (sem pedidos)
+            "total_agendamentos": total_agendamentos,
+            "total_clientes": total_clientes,
+            "total_pets": total_pets
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "Falha ao carregar estatísticas"}), 500
+
+# Mude dashboard_completo para remover faturamento e pedidos
+@app.route('/api/admin/dashboard-completo', methods=['GET'])
+def dashboard_completo():
+    try:
+        res_hoje = executar_query("SELECT COUNT(*) as total FROM public.agendamentos WHERE CAST(data_hora_inicio AS DATE) = CURRENT_DATE")
+        agendamentos_hoje = res_hoje[0]['total'] if res_hoje else 0
+        
+        res_pets = executar_query("SELECT COUNT(*) as total FROM public.pets")
+        total_pets = res_pets[0]['total'] if res_pets else 0
+        
+        res_clientes = executar_query("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
+        total_clientes = res_clientes[0]['total'] if res_clientes else 0
+        
+        # Estoque permanece pois pode ser útil para controle interno (baixa manual)
+        estoque_critico = executar_query("SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5 LIMIT 5")
+        
+        return jsonify({
+            "stats": {
+                "faturamento": 0.0,
+                "total_agendamentos": agendamentos_hoje,
+                "total_pets": total_pets,
+                "total_clientes": total_clientes
+            },
+            "agendamentos": [], # Removido histórico de pedidos daqui
+            "estoque_critico": estoque_critico if estoque_critico else [],
+            "graficos": [0, 0, 0, 0] 
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "Falha no painel administrativo"}), 500
+
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
     try:
