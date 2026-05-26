@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const data = await response.json();
+                console.log("Resposta do servidor:", data); // Debug essencial
 
                 if (!response.ok) {
                     throw new Error(data.error || "Credenciais inválidas");
@@ -61,12 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('usuario_nome', data.nome); 
                 localStorage.setItem('usuario_role', data.role);
 
-                // Lógica de Redirecionamento Inteligente
+                // Lógica de Redirecionamento Blindada
+                const cargo = (data.role || "").toLowerCase().trim();
                 const urlRetorno = sessionStorage.getItem('url_retorno_agendamento');
                 
-                if (data.role === 'admin') {
+                if (cargo === 'admin') {
                     window.location.href = '../admin/dashboard.html';
-                } else if (data.role === 'funcionario') {
+                } else if (cargo === 'funcionario') {
                     window.location.href = '../admin/funcionario.html';
                 } else if (urlRetorno) {
                     sessionStorage.removeItem('url_retorno_agendamento');
