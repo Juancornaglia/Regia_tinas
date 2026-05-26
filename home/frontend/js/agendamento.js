@@ -327,7 +327,7 @@ async function executeFinalBooking() {
         if (res.ok) {
             alert("✨ Perfeito! O seu agendamento foi gravado com sucesso.");
             // REDIRECIONA PARA A TELA ONDE ELE VE O AGENDAMENTO (perfil.html)
-            window.location.href = 'usuario/perfil.html';
+            window.location.href = '../index.html';
         } else {
             const err = await res.json().catch(() => ({}));
             alert("Ops: " + (err.error || "Falha ao registrar horário."));
