@@ -1,3 +1,4 @@
+// js/busca.js
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
@@ -5,7 +6,18 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 let todosOsProdutos = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Configura eventos de filtro se existirem na página
+    console.log("Sistema de Busca inicializando...");
+
+    // 1. Inicializa Geolocalização (se existir)
+    if (typeof inicializarGeolocalizador === 'function') {
+        try {
+            await inicializarGeolocalizador();
+        } catch (e) {
+            console.warn("Geolocalização não pôde ser carregada, usando padrão.");
+        }
+    }
+
+    // 2. Configura eventos de filtro (apenas se os elementos existirem na página)
     const priceRange = document.getElementById('price-range');
     if (priceRange) {
         priceRange.addEventListener('input', (e) => {
@@ -15,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Carrega tudo
+    // 3. Carrega os produtos
     await loadProducts('search-results');
 });
 

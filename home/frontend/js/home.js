@@ -97,6 +97,7 @@ function createProductCard(produto) {
     `;
 }
 
+// --- 3. CARREGAMENTO E FILTRO DOS CARDS (HOME) ---
 async function loadProducts(containerId, filterType) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -104,13 +105,50 @@ async function loadProducts(containerId, filterType) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
         const allProducts = await response.json();
+        
+        let produtosFiltrados = [];
+
+        // LÓGICA DE FILTRAGEM (A Mágica acontece aqui!)
+        switch (filterType) {
+            case 'ofertas':
+                // Mostra apenas produtos que têm preço promocional menor que o preço original
+                produtosFiltrados = allProducts.filter(p => 
+                    p.preco_promocional && parseFloat(p.preco_promocional) < parseFloat(p.preco)
+                );
+                break;
+            case 'recomendados':
+                // Exemplo: Mostra produtos de uma categoria específica ou mistura tudo
+                // Aqui estou pegando os últimos produtos como exemplo
+                produtosFiltrados = allProducts.slice(-6); 
+                break;
+            case 'novidades':
+                // Exemplo: Pode filtrar por ID maior (produtos adicionados recentemente)
+                produtosFiltrados = allProducts.reverse().slice(0, 6);
+                break;
+            case 'vendidos':
+                // Exemplo: Filtra pela categoria 'Ração' ou pega os 6 primeiros
+                produtosFiltrados = allProducts.slice(0, 6);
+                break;
+            default:
+                produtosFiltrados = allProducts;
+        }
+
+        // Se não houver produtos para o filtro, mostra uma mensagem
+        if (produtosFiltrados.length === 0) {
+             container.innerHTML = '<p class="text-muted w-100 text-center">Nenhum produto nesta categoria.</p>';
+             return;
+        }
+
         container.classList.add('d-flex', 'flex-nowrap');
-        container.innerHTML = allProducts.map(createProductCard).join('');
+        // Usamos map para criar os cards apenas dos produtos filtrados
+        container.innerHTML = produtosFiltrados.map(createProductCard).join('');
+        
     } catch (e) { 
         console.error("Erro ao carregar produtos:", e); 
         container.innerHTML = '<p class="text-muted w-100 text-center">Tente novamente mais tarde.</p>';
     }
 }
+
 function setupBeforeAfterSlider() {
     const slider = document.getElementById('slider-range');
     const beforeImg = document.getElementById('before-img');
