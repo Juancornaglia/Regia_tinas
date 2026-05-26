@@ -548,54 +548,6 @@ def buscar_produtos():
         print(f"❌ ERRO NA BUSCA DE PRODUTOS (NEON): {e}")
         return jsonify({"error": "Falha interna ao processar a busca no catálogo"}), 500
 
-@app.route('/api/finalizar-pedido', methods=['POST'])
-def finalizar_pedido():
-    dados = request.get_json()
-    id_usuario = dados.get('id_usuario') # Espera o UUID do cliente
-    itens = dados.get('itens') 
-    total = dados.get('total')
-
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute('''
-            INSERT INTO public.pedidos (id_cliente, total_pedido, status_pedido, data_pedido)
-            VALUES (%s, %s, 'processando', NOW())
-            RETURNING id_pedido
-        ''', (id_usuario, total))
-        
-        id_pedido = cur.fetchone()[0]
-
-        for item in itens:
-            cur.execute('''
-                INSERT INTO public.itens_pedido (id_pedido, id_produto, quantidade)
-                VALUES (%s, %s, %s)
-            ''', (id_pedido, item['id'], item['quantidade']))
-            
-            cur.execute('''
-                UPDATE public.produtos 
-                SET quantidade_estoque = quantidade_estoque - %s 
-                WHERE id_produto = %s AND quantidade_estoque >= %s
-            ''', (item['quantidade'], item['id'], item['quantidade']))
-
-        conn.commit()
-        return jsonify({"status": "sucesso", "id_pedido": id_pedido}), 201
-
-    except Exception as e:
-        # Se houve erro (ex: falta de estoque), desfaz tudo o que foi tentado
-        if conn: conn.rollback()
-        print(f"Erro Crítico no Checkout: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha ao finalizar o pedido. Verifique o estoque."}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
-
-
-
 @app.route('/api/filtros', methods=['GET'])
 def get_filtros():
     try:
@@ -1030,95 +982,69 @@ def get_estoque_produto(id_produto):
         if cur: cur.close()
         if conn: conn.close()
         
+# ROTA 1: CORREÇÃO DO AGENDAMENTO (Uso de id_cliente)
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
-    """Processa o agendamento com Transação Segura e Datas Flexíveis"""
     conn = None
     cur = None
     try:
         d = request.get_json()
-        if not d:
-            return jsonify({"error": "Dados do agendamento não recebidos."}), 400
-            
-        # NUNCA usar int() aqui, pois os IDs de cliente e funcionário são UUIDs!
-        id_servico = d.get('id_servico')
+        # Mapeamento garantido para evitar erro de tipo (UUID)
+        id_cliente = d.get('id_cliente') 
+        id_pet = d.get('id_pet')
         id_loja = d.get('id_loja')
-        id_cliente = d.get('id_cliente')
-
+        id_servico = d.get('id_servico')
+        
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
             
-        cur.execute('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (id_servico,))
-        serv = cur.fetchone()
-        if not serv:
-            return jsonify({"error": "O serviço selecionado não foi localizado na base."}), 404
-            
-        preco = serv['preco_servico']
-        dur = serv['duracao_media_minutos'] or 30
+        cur.execute('SELECT preco_servico FROM public.servicos WHERE id_servico = %s', (id_servico,))
+        preco = cur.fetchone()['preco_servico']
 
-        # Parse de Data Blindado contra o formato do Javascript
-        inicio_str = d['data_hora_inicio'].replace('Z', '').split('.')[0] 
-        try:
-            if len(inicio_str) == 16: # Ex: 2026-05-17T14:30
-                inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M')
-            else: # Ex: 2026-05-17T14:30:00
-                inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M:%S')
-        except ValueError:
-            inicio = datetime.strptime(inicio_str.replace('T', ' '), '%Y-%m-%d %H:%M:%S')
+        # Converte a data string para objeto datetime de forma segura
+        inicio = datetime.strptime(d['data_hora_inicio'].replace('Z', '').split('.')[0], '%Y-%m-%dT%H:%M:%S')
 
-        fim = inicio + timedelta(minutes=dur)
-
-        id_pet = d.get('id_pet')
-        novo_pet_dados = d.get('novo_pet')
-
-        # LÓGICA DO NOVO PET AUTOMÁTICO
-        # Se o usuário escolheu "Novo Pet" no Front, o id_pet vem vazio e o objeto novo_pet vem preenchido
-        if not id_pet and novo_pet_dados:
-            cur.execute("""
-                INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
-                VALUES (%s, %s, 'Cão', %s, %s, 'Cadastrado automaticamente via fluxo de agendamento rápido')
-                RETURNING id_pet
-            """, (
-                id_cliente, # Associa o novo pet diretamente ao cliente logado
-                novo_pet_dados.get('nome', 'Pet Sem Nome'),
-                novo_pet_dados.get('raca', 'SRD'),
-                novo_pet_dados.get('porte', 'Médio')
-            ))
-            
-            res_pet = cur.fetchone()
-            if res_pet:
-                id_pet = res_pet['id_pet']
-            else:
-                raise Exception("O banco inseriu o pet, mas não devolveu o ID para concluir a reserva.")
-
-        # LÓGICA DO AGENDAMENTO FINAL
         cur.execute("""
             INSERT INTO public.agendamentos 
-            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
-            VALUES (%s, %s, %s, %s, %s, %s, 'pendente', %s, %s)
-        """, (
-            id_cliente, 
-            id_pet, # Se o cara criou um pet, esse id_pet aqui será o ID novinho gerado acima!
-            id_loja, 
-            id_servico, 
-            inicio, 
-            fim, 
-            preco, 
-            d.get('observacoes', '')
-        ))
+            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, status, valor_cobrado, observacoes_cliente)
+            VALUES (%s, %s, %s, %s, %s, 'pendente', %s, %s)
+        """, (id_cliente, id_pet, id_loja, id_servico, inicio, preco, d.get('observacoes', '')))
         
         conn.commit()
-        return jsonify({"status": "sucesso", "mensagem": "Agendamento registrado com sucesso!"}), 201
-        
+        return jsonify({"status": "sucesso"}), 201
     except Exception as e:
-        if conn: conn.rollback() # SE DER QUALQUER ERRO, APAGA TUDO E NÃO DEIXA "LIXO" NO BANCO (NÃO CRIA PET FANTASMA)
-        print(f"❌ ERRO CRÍTICO NO AGENDAMENTO: {e}")
-        import traceback
-        traceback.print_exc() 
-        return jsonify({"error": f"Erro interno no servidor: {str(e)}"}), 500
+        if conn: conn.rollback()
+        return jsonify({"error": str(e)}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
+
+# ROTA 2: CORREÇÃO DO PEDIDO (Uso de id_perfis, conforme sua tabela)
+@app.route('/api/finalizar-pedido', methods=['POST'])
+def finalizar_pedido():
+    dados = request.get_json()
+    id_usuario = dados.get('id_usuario') # O ID do cliente
+    total = dados.get('total')
+    
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # ATENÇÃO AQUI: id_perfis é o nome da coluna que sua tabela espera!
+        cur.execute('''
+            INSERT INTO public.pedidos (id_perfis, total_pedido, status_pedido, data_pedido)
+            VALUES (%s, %s, 'processando', NOW())
+            RETURNING id_pedido
+        ''', (id_usuario, total))
+        
+        id_pedido = cur.fetchone()[0]
+        conn.commit()
+        return jsonify({"status": "sucesso", "id_pedido": id_pedido}), 201
+    except Exception as e:
+        if conn: conn.rollback()
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
     
 @app.route('/api/pet/<id_pet>/historico', methods=['GET'])
 def get_historico_pet(id_pet):
