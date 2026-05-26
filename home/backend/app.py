@@ -282,13 +282,12 @@ def listar_lojas_unificado():
         print(f"❌ ERRO REAL NA ROTA DE LOJAS: {e}")
         return jsonify({"error": f"Erro interno no Neon: {str(e)} "}), 500
 
+
+# Mude get_admin_stats para remover a busca de faturamento
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
     try:
-
-        res_faturamento = executar_query('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
-        faturamento = res_faturamento[0]['faturamento'] if res_faturamento and res_faturamento[0]['faturamento'] else 0
-        
+        # Faturamento removido pois não há mais pedidos
         res_agendamentos = executar_query('SELECT COUNT(*) as total FROM public.agendamentos')
         total_agendamentos = res_agendamentos[0]['total'] if res_agendamentos else 0
 
@@ -299,22 +298,18 @@ def get_admin_stats():
         total_pets = res_pets[0]['total'] if res_pets else 0
         
         return jsonify({
-            "faturamento": float(faturamento), 
+            "faturamento": 0.0, # Faturamento agora é zero (sem pedidos)
             "total_agendamentos": total_agendamentos,
             "total_clientes": total_clientes,
             "total_pets": total_pets
         }), 200
     except Exception as e:
-        print(f"Erro no Dashboard Admin: {e}")
-        return jsonify({"error": "Falha ao carregar estatísticas do painel"}), 500
-    
+        return jsonify({"error": "Falha ao carregar estatísticas"}), 500
+
+# Mude dashboard_completo para remover faturamento e pedidos
 @app.route('/api/admin/dashboard-completo', methods=['GET'])
 def dashboard_completo():
     try:
-
-        res_faturamento = executar_query('SELECT SUM(total_pedido) as faturamento FROM public.pedidos')
-        faturamento = res_faturamento[0]['faturamento'] if res_faturamento and res_faturamento[0]['faturamento'] else 0
-        
         res_hoje = executar_query("SELECT COUNT(*) as total FROM public.agendamentos WHERE CAST(data_hora_inicio AS DATE) = CURRENT_DATE")
         agendamentos_hoje = res_hoje[0]['total'] if res_hoje else 0
         
@@ -324,36 +319,22 @@ def dashboard_completo():
         res_clientes = executar_query("SELECT COUNT(*) as total FROM public.perfis WHERE role = 'cliente'")
         total_clientes = res_clientes[0]['total'] if res_clientes else 0
         
-        query_recentes = '''
-            SELECT a.id_agendamento as id, a.data_hora_inicio, a.status, 
-                   p.nome_completo as cliente_nome, p.telefone as cliente_tel,
-                   pt.nome_pet, pt.raca as pet_raca, s.nome_servico
-            FROM public.agendamentos a
-            JOIN public.perfis p ON a.id_cliente = p.id
-            JOIN public.pets pt ON a.id_pet = pt.id_pet
-            JOIN public.servicos s ON a.id_servico = s.id_servico
-            WHERE CAST(a.data_hora_inicio AS DATE) >= CURRENT_DATE
-            ORDER BY a.data_hora_inicio ASC LIMIT 10
-        '''
-        lista_agendamentos = executar_query(query_recentes)
-        
+        # Estoque permanece pois pode ser útil para controle interno (baixa manual)
         estoque_critico = executar_query("SELECT nome_produto, quantidade_estoque FROM public.produtos WHERE quantidade_estoque < 5 LIMIT 5")
         
         return jsonify({
             "stats": {
-                "faturamento": float(faturamento),
+                "faturamento": 0.0,
                 "total_agendamentos": agendamentos_hoje,
                 "total_pets": total_pets,
                 "total_clientes": total_clientes
             },
-            "agendamentos": lista_agendamentos if lista_agendamentos else [],
+            "agendamentos": [], # Removido histórico de pedidos daqui
             "estoque_critico": estoque_critico if estoque_critico else [],
-            "graficos": [1200, 950, 400, 600] # Dados fixos para o gráfico de exemplo
+            "graficos": [0, 0, 0, 0] 
         }), 200
-        
     except Exception as e:
-        print(f"Erro Crítico no Dashboard Completo: {e}")
-        return jsonify({"error": "Falha ao processar dados do painel administrativo"}), 500
+        return jsonify({"error": "Falha no painel administrativo"}), 500
 
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
@@ -642,8 +623,6 @@ def excluir_produto(id_produto):
     except Exception as e:
         print(f"Erro ao excluir produto {id_produto}: {e}")
         return jsonify({"error": "Não foi possível excluir o produto. Verifique se ele possui pedidos vinculados."}), 500
-
-
 
 @app.route('/api/admin/remover-bloqueio/<id_bloqueio>', methods=['DELETE'])
 def remover_bloqueio(id_bloqueio):
