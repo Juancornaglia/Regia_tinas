@@ -254,3 +254,5 @@ christopher-noessel-about-face_-the-essentials-of-interaction-design-wiley-2014.
 Disponível em:
 https://raw.githubusercontent.com/robby06/php_mysql/master/Luke%20Welling%20and%20Laura%20Thomson%2
 C%20PHP%20and%20MySQL%20Web%20Development%2C%20Fifth%20Edition.pdf. Acesso em: 10 out 2025.
+
+temos mais alteracoes 
