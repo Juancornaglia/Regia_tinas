@@ -174,21 +174,6 @@ def redefinir_senha():
     return jsonify({"mensagem": "Senha alterada com sucesso!"}), 200
     
 
-@app.route('/api/produtos/<int:id_produto>/estoque', methods=['GET'])
-def get_estoque_produto(id_produto):
-    try:
-        query = """
-            SELECT l.nome_loja, e.quantidade 
-            FROM public.estoque e
-            JOIN public.lojas l ON e.id_loja = l.id_loja
-            WHERE e.id_produto = %s
-        """
-        estoque = executar_query(query, (id_produto,))
-        return jsonify(estoque if estoque else []), 200
-    except Exception as e:
-        print(f"❌ ERRO AO BUSCAR ESTOQUE: {e}")
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
 def get_dados_usuario(id_usuario):
     conn = None
@@ -339,7 +324,7 @@ def dashboard_completo():
 @app.route('/api/admin/agendamentos', methods=['GET'])
 def buscar_todos_agendamentos():
     try:
-        # 1. Capturar os filtros da URL
+        
         servico_id = request.args.get('servico')
         funcionario_id = request.args.get('funcionario')
         status_filtro = request.args.get('status')
@@ -413,7 +398,7 @@ def criar_produto():
     try:
         dados = request.get_json()
         
-        # Query completa incluindo os campos que você definiu no seu Modal do Frontend
+    
         sql = '''
             INSERT INTO public.produtos (
                 nome_produto, preco, quantidade_estoque, url_imagem, 
@@ -464,15 +449,14 @@ def editar_produto(id_produto):
 @app.route('/api/busca', methods=['GET'])
 def buscar_produtos():
     try:
-        # Captura os filtros enviados pelos seletores do Frontend
+        
         termo = request.args.get('q', '').strip()
         categoria = request.args.get('categoria', '')
         marca = request.args.get('marca', '')
         preco_min = request.args.get('preco_min')
         preco_max = request.args.get('preco_max')
 
-        # CORREÇÃO VITAL: Trocado o "SELECT *" pelas colunas explícitas com ::float
-        # Isso impede que o erro do Decimal quebre o jsonify!
+    
         sql = """
             SELECT id_produto, nome_produto, url_imagem, tipo_produto, 
                    marca, preco::float, preco_promocional::float, quantidade_estoque, 
@@ -702,7 +686,6 @@ def cadastrar_pet_unificado():
         if not dados:
             return jsonify({"status": "erro", "mensagem": "Dados do animal não foram recebidos."}), 400
             
-        # Captura os parâmetros enviados pelo formulário do Frontend
         id_tutor = dados.get('id_tutor')
         nome_pet = dados.get('nome_pet')
         especie = dados.get('especie')
@@ -724,7 +707,6 @@ def cadastrar_pet_unificado():
         resultado = executar_query(sql, params)
         novo_id = resultado[0]['id_pet'] if resultado else None
         
-        # Retorna o JSON de sucesso com o padrão de chaves limpo esperado pelo Frontend
         return jsonify({
             "status": "sucesso", 
             "mensagem": f"🐾 {nome_pet} foi cadastrado com sucesso no banco Neon!", 
@@ -761,7 +743,6 @@ def excluir_pet_unificado(id_pet):
             "error": "Este pet possui históricos de agendamentos vinculados e não pode ser removido fisicamente."
         }), 500
 
-# --- 1. ROTA DE LISTAGEM DE PRODUTOS ---
 @app.route('/api/produtos', methods=['GET'])
 def listar_produtos_loja():
     """Retorna todos os produtos ativos do banco de dados Neon para a vitrine digital"""
@@ -793,7 +774,6 @@ def listar_produtos_loja():
         if cur: cur.close()
         if conn: conn.close()
 
-# --- 2. ROTA DE ESTOQUE POR PRODUTO ---
 @app.route('/api/produtos/<int:id_produto>/estoque', methods=['GET'])
 def get_estoque_produto(id_produto):
     """Busca disponibilidade do produto em cada loja"""
