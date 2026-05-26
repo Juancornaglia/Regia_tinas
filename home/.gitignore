@@ -1,4 +1,7 @@
-.env
-venv/
 __pycache__/
 *.pyc
+.env
+.venv/
+venv/
+tempCodeRunnerFile*
+.vscode/
