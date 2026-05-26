@@ -62,21 +62,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('usuario_nome', data.nome); 
                 localStorage.setItem('usuario_role', data.role);
 
-                // Lógica de Redirecionamento Blindada
-                const cargo = (data.role || "").toLowerCase().trim();
+               // --- Lógica de Redirecionamento Blindada ---
+            const cargo = (data.role || "").toString().toLowerCase().trim();
+            console.log("DEBUG: Cargo recebido após processamento:", cargo);
+
+            // Se for admin, manda pro admin. Se for funcionário, manda pro funcionário.
+            if (cargo === 'admin') {
+                window.location.href = '../admin/dashboard.html';
+            } else if (cargo === 'funcionario') {
+                window.location.href = '../admin/funcionario.html';
+            } else {
+                // Se não for nenhum dos dois, é cliente
                 const urlRetorno = sessionStorage.getItem('url_retorno_agendamento');
-                
-                if (cargo === 'admin') {
-                    window.location.href = '../admin/dashboard.html';
-                } else if (cargo === 'funcionario') {
-                    window.location.href = '../admin/funcionario.html';
-                } else if (urlRetorno) {
+                if (urlRetorno) {
                     sessionStorage.removeItem('url_retorno_agendamento');
                     window.location.href = urlRetorno;
                 } else {
                     window.location.href = 'perfil.html'; 
                 }
-
+            }
             } catch (error) { 
                 console.error('Erro:', error); 
                 alert(error.message); 
