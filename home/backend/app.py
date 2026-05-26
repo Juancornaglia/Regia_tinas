@@ -398,21 +398,6 @@ def listar_lojas_admin():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/admin/pedidos', methods=['GET'])
-def listar_todos_pedidos():
-    try:
-
-        query_pedidos = '''
-            SELECT p.*, per.nome_completo 
-            FROM public.pedidos p
-            JOIN public.perfis per ON p.id_cliente = per.id
-            ORDER BY p.data_pedido DESC
-        '''
-        pedidos = executar_query(query_pedidos)
-        return jsonify(pedidos if pedidos else []), 200
-    except Exception as e:
-        print(f"Erro na listagem de pedidos: {e}")
-        return jsonify({"error": "Falha ao carregar histórico de vendas"}), 500
 
 @app.route('/api/admin/produtos', methods=['GET'])
 def listar_produtos_admin():
