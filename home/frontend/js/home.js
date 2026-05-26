@@ -7,20 +7,27 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     : "https://regia-tinas.onrender.com";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    verificarEstadoLogin();
+    console.log("O HTML foi carregado, iniciando o sistema...");
     
-    // CMS removido conforme solicitado
+    // 1. Verificações de login
+    verificarEstadoLogin(); 
     
+    // 2. Inicialização da interface
     setupSidebar();
     setupMediaSliders();
+    setupBeforeAfterSlider();
     
+    // 3. Carregamento de dados (Vitrines)
     loadProducts('ofertas-track', 'ofertas');
     loadProducts('recomendados-track', 'recomendados');
     loadProducts('novidades-track', 'novidades');
     loadProducts('mais-vendidos-track', 'vendidos');
+    
+    console.log("Sistema Regia & Tinas Care operacional! 🐾🚀");
 });
 
-// --- 1. LOGIN ---
+// --- FUNÇÕES DE APOIO ---
+
 function verificarEstadoLogin() {
     const userId = localStorage.getItem('usuario_id');
     const userName = localStorage.getItem('usuario_nome');
@@ -34,7 +41,6 @@ function verificarEstadoLogin() {
     }
 }
 
-// --- 2. INTERFACE (SIDEBAR E SLIDERS) ---
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
@@ -75,7 +81,6 @@ function setupMediaSliders() {
     setupSlider('novidades-track', 'novidades-prev', 'novidades-next');
 }
 
-// --- 3. CARDS DE PRODUTOS ---
 function createProductCard(produto) {
     const id = produto.id_produto || produto.id;
     const displayPrice = parseFloat(produto.preco_promocional) || parseFloat(produto.preco) || 0;
@@ -103,5 +108,25 @@ async function loadProducts(containerId, filterType) {
         container.innerHTML = allProducts.map(createProductCard).join('');
     } catch (e) { 
         console.error("Erro ao carregar produtos:", e); 
+        container.innerHTML = '<p class="text-muted w-100 text-center">Tente novamente mais tarde.</p>';
     }
+}
+function setupBeforeAfterSlider() {
+    const slider = document.getElementById('slider-range');
+    const beforeImg = document.getElementById('before-img');
+    const handle = document.getElementById('handle');
+
+    if (!slider || !beforeImg || !handle) return;
+
+    slider.addEventListener('input', (e) => {
+        const val = e.target.value; // Valor de 0 a 100
+        
+        // 1. O clip-path corta a imagem. 
+        // 100 - val inverte o movimento para a máscara funcionar da esquerda para direita
+        const rightOffset = 100 - val;
+        beforeImg.style.clipPath = `inset(0 ${rightOffset}% 0 0)`;
+        
+        // 2. Move a linha divisória (handle)
+        handle.style.left = `${val}%`;
+    });
 }
