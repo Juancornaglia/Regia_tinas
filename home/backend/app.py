@@ -1044,53 +1044,6 @@ def post_agendamento():
         if conn: conn.close()
 
 
-@app.route('/api/finalizar-pedido', methods=['POST'])
-def finalizar_pedido():
-    """Processa o fechamento de carrinho e atualiza estoque"""
-    dados = request.get_json()
-    id_usuario = dados.get('id_usuario') 
-    itens = dados.get('itens') 
-    total = dados.get('total')
-    
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # INSERT CORRETO USANDO id_perfis (Nome exato da sua tabela)
-        cur.execute('''
-            INSERT INTO public.pedidos (id_perfis, total_pedido, status_pedido, data_pedido)
-            VALUES (%s, %s, 'processando', NOW())
-            RETURNING id_pedido
-        ''', (id_usuario, total))
-        
-        id_pedido = cur.fetchone()[0]
-
-        for item in itens:
-            # Adequado à sua tabela itens_pedido (com todas as colunas NOT NULL)
-            cur.execute('''
-                INSERT INTO public.itens_pedido 
-                (id_pedidos, id_produto, quantidade_solicitada, quantidade_estoque, preco_venda, subtotal, tipo_item)
-                VALUES (%s, %s, %s, 0, %s, %s, 'produto')
-            ''', (id_pedido, item['id'], item['quantidade'], item.get('preco', 0), item.get('preco', 0) * item['quantidade']))
-            
-            cur.execute('''
-                UPDATE public.produtos 
-                SET quantidade_estoque = quantidade_estoque - %s 
-                WHERE id_produto = %s
-            ''', (item['quantidade'], item['id']))
-
-        conn.commit()
-        return jsonify({"status": "sucesso", "id_pedido": id_pedido}), 201
-    except Exception as e:
-        if conn: conn.rollback()
-        print(f"❌ ERRO AO FINALIZAR PEDIDO: {e}")
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
-
 @app.route('/api/pet/<id_pet>/historico', methods=['GET'])
 def get_historico_pet(id_pet):
     """Puxa o prontuário de saúde para o Modal do Veterinário"""
