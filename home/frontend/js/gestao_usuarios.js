@@ -1,3 +1,4 @@
+// Substitua o import inicial por este para depuração
 import { checkAdminAuth } from './admin_auth.js';
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -5,32 +6,24 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
     : "https://regia-tinas.onrender.com";
 
 let listaOriginal = [];
-let usuarioPromocao = null; // Guarda os dados temporariamente
+let usuarioPromocao = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Diagnóstico: O que o navegador sabe sobre você?
+    console.log("Status do Login:", localStorage.getItem('usuario_id'));
+    console.log("Status da Role:", localStorage.getItem('usuario_role'));
+
     const auth = await checkAdminAuth();
-    if (!auth) return;
+    
+    // Se a função checkAdminAuth estiver te expulsando, 
+    // comente a linha abaixo e descomente o console.log para testar
+    if (!auth) {
+        console.warn("Autenticação falhou. Verifique se o admin_auth.js está lendo o localStorage corretamente.");
+        return; 
+    }
 
     await carregarUsuarios();
-
-    const input = document.getElementById('input-busca-inteligente');
-    const btn = document.getElementById('btn-buscar-manual');
-
-    input.addEventListener('input', () => filtrarERenderizar(input.value));
-    btn.addEventListener('click', () => filtrarERenderizar(input.value));
-
-    // Evento de disparo do Modal de Promoção
-    document.getElementById('formPromover').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const especialidade = document.getElementById('promover_especialidade').value;
-        const salario = document.getElementById('promover_salario').value;
-
-        await executarMudancaCargo(usuarioPromocao.id, usuarioPromocao.novoRole, especialidade, salario);
-        
-        // Fecha o modal e limpa tudo
-        bootstrap.Modal.getInstance(document.getElementById('modalPromover')).hide();
-        e.target.reset();
-    });
+    // ... restante do código
 });
 
 window.carregarUsuarios = async () => {
