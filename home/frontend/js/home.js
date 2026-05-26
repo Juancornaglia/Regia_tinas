@@ -1,5 +1,5 @@
 // ========================================================
-// HOME.JS - CÉREBRO INTEGRADO
+// HOME.JS - CÉREBRO INTEGRADO (Login + Vitrines + UI)
 // ========================================================
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -8,7 +8,8 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 
 document.addEventListener('DOMContentLoaded', async () => {
     verificarEstadoLogin();
-    initCMS();
+    
+    // CMS removido conforme solicitado
     
     setupSidebar();
     setupMediaSliders();
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadProducts('mais-vendidos-track', 'vendidos');
 });
 
+// --- 1. LOGIN ---
 function verificarEstadoLogin() {
     const userId = localStorage.getItem('usuario_id');
     const userName = localStorage.getItem('usuario_nome');
@@ -32,6 +34,7 @@ function verificarEstadoLogin() {
     }
 }
 
+// --- 2. INTERFACE (SIDEBAR E SLIDERS) ---
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
@@ -72,18 +75,7 @@ function setupMediaSliders() {
     setupSlider('novidades-track', 'novidades-prev', 'novidades-next');
 }
 
-async function initCMS() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/cms/content`);
-        if (response.ok) {
-            const data = await response.json();
-            const bannerItem = data.find(item => item.element_id === 'banner_principal_img');
-            const imgBanner = document.getElementById('img-banner-principal');
-            if (bannerItem && imgBanner) imgBanner.src = bannerItem.content_value;
-        }
-    } catch (e) { console.error("Erro CMS:", e); }
-}
-
+// --- 3. CARDS DE PRODUTOS ---
 function createProductCard(produto) {
     const id = produto.id_produto || produto.id;
     const displayPrice = parseFloat(produto.preco_promocional) || parseFloat(produto.preco) || 0;
