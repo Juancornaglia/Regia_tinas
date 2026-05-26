@@ -643,19 +643,7 @@ def excluir_produto(id_produto):
         print(f"Erro ao excluir produto {id_produto}: {e}")
         return jsonify({"error": "Não foi possível excluir o produto. Verifique se ele possui pedidos vinculados."}), 500
 
-@app.route('/api/admin/atualizar-status-pedido/<id_pedido>', methods=['PUT'])
-def atualizar_status_pedido(id_pedido):
-    try:
-        dados = request.get_json()
-        novo_status = dados.get('status')
-        
-        sql = 'UPDATE public.pedidos SET status_pedido = %s WHERE id_pedido = %s'
-        executar_query(sql, (novo_status, id_pedido))
-        
-        return jsonify({"message": f"Status do pedido {id_pedido} atualizado para {novo_status}"}), 200
-    except Exception as e:
-        print(f"Erro ao atualizar pedido {id_pedido}: {e}")
-        return jsonify({"error": "Falha ao atualizar o status do pedido"}), 500
+
 
 @app.route('/api/admin/remover-bloqueio/<id_bloqueio>', methods=['DELETE'])
 def remover_bloqueio(id_bloqueio):
