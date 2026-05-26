@@ -1,5 +1,5 @@
 // ========================================================
-// HOME.JS - CÉREBRO INTEGRADO (Login + CMS + Vitrines + UI)
+// HOME.JS - CÉREBRO INTEGRADO
 // ========================================================
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadProducts('mais-vendidos-track', 'vendidos');
 });
 
-// --- 1. LOGIN ---
 function verificarEstadoLogin() {
     const userId = localStorage.getItem('usuario_id');
     const userName = localStorage.getItem('usuario_nome');
@@ -33,13 +32,11 @@ function verificarEstadoLogin() {
     }
 }
 
-// --- 2. INTERFACE (SIDEBAR E SLIDERS) ---
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
     const openButton = document.getElementById('button-menu');
     const closeButton = document.getElementById('close-sidebar');
-    const submenuToggles = document.querySelectorAll('.submenu-toggle');
 
     if (!sidebar || !overlay || !openButton || !closeButton) return;
 
@@ -55,13 +52,6 @@ function setupSidebar() {
 
     closeButton.onclick = close;
     overlay.onclick = close;
-
-    submenuToggles.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            btn.closest('.menu-item')?.classList.toggle('open');
-        };
-    });
 }
 
 function setupMediaSliders() {
@@ -75,7 +65,6 @@ function setupMediaSliders() {
             prev.onclick = () => track.scrollBy({ left: -300, behavior: 'smooth' });
         }
     };
-
     setupSlider('videos-track', 'videos-prev', 'videos-next');
     setupSlider('ofertas-track', 'ofertas-prev', 'ofertas-next');
     setupSlider('recomendados-track', 'recomendados-prev', 'recomendados-next');
@@ -83,7 +72,6 @@ function setupMediaSliders() {
     setupSlider('novidades-track', 'novidades-prev', 'novidades-next');
 }
 
-// --- 3. CMS E CARDS ---
 async function initCMS() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/cms/content`);
@@ -95,8 +83,6 @@ async function initCMS() {
         }
     } catch (e) { console.error("Erro CMS:", e); }
 }
-
-function formatPrice(p) { return p.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
 function createProductCard(produto) {
     const id = produto.id_produto || produto.id;
@@ -117,16 +103,13 @@ function createProductCard(produto) {
 async function loadProducts(containerId, filterType) {
     const container = document.getElementById(containerId);
     if (!container) return;
-
-    container.classList.add('d-flex', 'flex-nowrap'); 
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
         const allProducts = await response.json();
-        
+        container.classList.add('d-flex', 'flex-nowrap');
         container.innerHTML = allProducts.map(createProductCard).join('');
     } catch (e) { 
         console.error("Erro ao carregar produtos:", e); 
-        container.innerHTML = '<p class="text-center w-100">Erro ao carregar vitrine.</p>';
     }
 }

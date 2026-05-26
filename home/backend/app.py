@@ -881,41 +881,6 @@ def excluir_pet_unificado(id_pet):
             "error": "Este pet possui históricos de agendamentos vinculados e não pode ser removido fisicamente."
         }), 500
 
-@app.route('/api/horarios-disponiveis', methods=['GET'])
-def buscar_horarios_livres():
-    """
-    Motor Inteligente de Grade de Agendamento.
-    Devolve os horários livres da clínica (09:00 às 17:00), 
-    removendo os que já estão ocupados no banco Neon para o mesmo dia e loja.
-    """
-    try:
-        loja_id = request.args.get('loja_id')
-        data_solicitada = request.args.get('data') # Formato: YYYY-MM-DD
-
-        if not loja_id or not data_solicitada:
-            return jsonify({"error": "Faltam parâmetros de loja ou data."}), 400
-
-        grade_padrao = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"]
-
-        sql = '''
-            SELECT to_char(data_hora_inicio, 'HH24:MI') as hora_ocupada
-            FROM public.agendamentos
-            WHERE id_loja = %s 
-              AND DATE(data_hora_inicio) = %s 
-              AND status NOT IN ('cancelado')
-        '''
-        ocupados_raw = executar_query(sql, (loja_id, data_solicitada))
-        
-        horas_ocupadas = [item['hora_ocupada'] for item in ocupados_raw] if ocupados_raw else []
-
-        horarios_livres = [h for h in grade_padrao if h not in horas_ocupadas]
-
-        return jsonify(horarios_livres), 200
-
-    except Exception as e:
-        print(f"❌ ERRO AO CALCULAR GRADE DE HORÁRIOS: {e}")
-        return jsonify({"error": "Erro interno ao processar a grade."}), 500
-
 # --- 1. ROTA DE LISTAGEM DE PRODUTOS ---
 @app.route('/api/produtos', methods=['GET'])
 def listar_produtos_loja():
@@ -979,58 +944,121 @@ def get_estoque_produto(id_produto):
         if cur: cur.close()
         if conn: conn.close()
         
+
+@app.route('/api/horarios-disponiveis', methods=['GET'])
+def buscar_horarios_livres():
+    """Devolve horários livres removendo os já ocupados no banco"""
+    try:
+        loja_id = request.args.get('loja_id')
+        data_solicitada = request.args.get('data') # Formato: YYYY-MM-DD
+
+        if not loja_id or not data_solicitada:
+            return jsonify({"error": "Faltam parâmetros."}), 400
+
+        grade_padrao = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"]
+
+        # Busca segura comparando apenas a data ignorando a hora
+        sql = '''
+            SELECT to_char(data_hora_inicio, 'HH24:MI') as hora_ocupada
+            FROM public.agendamentos
+            WHERE id_loja = %s 
+              AND data_hora_inicio::date = %s 
+              AND status NOT IN ('cancelado')
+        '''
+        ocupados_raw = executar_query(sql, (loja_id, data_solicitada))
+        horas_ocupadas = [item['hora_ocupada'] for item in ocupados_raw] if ocupados_raw else []
+
+        horarios_livres = [h for h in grade_padrao if h not in horas_ocupadas]
+        return jsonify(horarios_livres), 200
+
+    except Exception as e:
+        print(f"❌ ERRO AO CALCULAR GRADE: {e}")
+        return jsonify({"error": "Erro interno ao processar a grade."}), 500
+
+
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
+    """Processa o agendamento e criação de pet automático em transação segura"""
     conn = None
     cur = None
     try:
         d = request.get_json()
-        # NÃO use int() aqui. Se for UUID, int() quebra.
+        if not d:
+            return jsonify({"error": "Dados inválidos"}), 400
+
         id_cliente = d.get('id_cliente')
-        id_pet = d.get('id_pet')
-        id_loja = d.get('id_loja')
         id_servico = d.get('id_servico')
+        id_loja = d.get('id_loja')
         
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
             
-        cur.execute('SELECT preco_servico FROM public.servicos WHERE id_servico = %s', (id_servico,))
-        preco = cur.fetchone()['preco_servico']
+        cur.execute('SELECT preco_servico, duracao_media_minutos FROM public.servicos WHERE id_servico = %s', (id_servico,))
+        serv = cur.fetchone()
+        if not serv:
+            return jsonify({"error": "Serviço não encontrado"}), 404
+            
+        preco = serv['preco_servico']
+        dur = serv['duracao_media_minutos'] or 30
 
-        # Parse de data robusto
-        inicio = datetime.strptime(d['data_hora_inicio'].replace('Z', '').split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        # Parse robusto: aceita 2026-05-17T14:30 ou 2026-05-17T14:30:00
+        inicio_str = d['data_hora_inicio'].replace('Z', '').split('.')[0]
+        try:
+            if len(inicio_str) == 16:
+                inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M')
+            else:
+                inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M:%S')
+        except ValueError:
+            inicio = datetime.strptime(inicio_str.replace('T', ' '), '%Y-%m-%d %H:%M:%S')
 
+        fim = inicio + timedelta(minutes=dur)
+
+        id_pet = d.get('id_pet')
+        
+        # Se não enviou ID do pet, cria um novo agora e amarra ao cliente
+        if not id_pet and d.get('novo_pet'):
+            np = d.get('novo_pet')
+            cur.execute("""
+                INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte)
+                VALUES (%s, %s, 'Cão', %s, %s) RETURNING id_pet
+            """, (id_cliente, np.get('nome', 'Sem nome'), np.get('raca', 'SRD'), np.get('porte', 'Médio')))
+            res_pet = cur.fetchone()
+            id_pet = res_pet['id_pet']
+
+        # Insere o agendamento vinculando tudo corretamente
         cur.execute("""
             INSERT INTO public.agendamentos 
-            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, status, valor_cobrado, observacoes_cliente)
-            VALUES (%s, %s, %s, %s, %s, 'pendente', %s, %s)
-        """, (id_cliente, id_pet, id_loja, id_servico, inicio, preco, d.get('observacoes', '')))
+            (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
+            VALUES (%s, %s, %s, %s, %s, %s, 'pendente', %s, %s)
+        """, (id_cliente, id_pet, id_loja, id_servico, inicio, fim, preco, d.get('observacoes', '')))
         
         conn.commit()
-        return jsonify({"status": "sucesso"}), 201
+        return jsonify({"status": "sucesso", "mensagem": "Agendamento confirmado!"}), 201
+
     except Exception as e:
         if conn: conn.rollback()
-        print(f"ERRO AGENDAMENTO: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"❌ ERRO CRÍTICO NO AGENDAMENTO: {e}")
+        return jsonify({"error": "Erro no servidor ao salvar agendamento."}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
 
+
 @app.route('/api/finalizar-pedido', methods=['POST'])
 def finalizar_pedido():
+    """Processa o fechamento de carrinho e atualiza estoque"""
     dados = request.get_json()
-    # Captura os dados enviados pelo front-end
     id_usuario = dados.get('id_usuario') 
     itens = dados.get('itens') 
     total = dados.get('total')
-
+    
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # A MUDANÇA VITAL: O banco espera 'id_perfis' conforme sua tabela 'pedidos'
+        # INSERT CORRETO USANDO id_perfis (Nome exato da sua tabela)
         cur.execute('''
             INSERT INTO public.pedidos (id_perfis, total_pedido, status_pedido, data_pedido)
             VALUES (%s, %s, 'processando', NOW())
@@ -1039,31 +1067,29 @@ def finalizar_pedido():
         
         id_pedido = cur.fetchone()[0]
 
-        # Processamento dos itens
         for item in itens:
+            # Adequado à sua tabela itens_pedido (com todas as colunas NOT NULL)
             cur.execute('''
-                INSERT INTO public.itens_pedido (id_pedidos, id_produto, quantidade_solicitada, quantidade_estoque, preco_venda, subtotal, tipo_item)
-                VALUES (%s, %s, %s, 0, 0, 0, 'produto')
-            ''', (id_pedido, item['id'], item['quantidade']))
+                INSERT INTO public.itens_pedido 
+                (id_pedidos, id_produto, quantidade_solicitada, quantidade_estoque, preco_venda, subtotal, tipo_item)
+                VALUES (%s, %s, %s, 0, %s, %s, 'produto')
+            ''', (id_pedido, item['id'], item['quantidade'], item.get('preco', 0), item.get('preco', 0) * item['quantidade']))
             
-            # Atualização do estoque no banco
             cur.execute('''
                 UPDATE public.produtos 
                 SET quantidade_estoque = quantidade_estoque - %s 
-                WHERE id_produto = %s AND quantidade_estoque >= %s
-            ''', (item['quantidade'], item['id'], item['quantidade']))
+                WHERE id_produto = %s
+            ''', (item['quantidade'], item['id']))
 
         conn.commit()
         return jsonify({"status": "sucesso", "id_pedido": id_pedido}), 201
-
     except Exception as e:
         if conn: conn.rollback()
-        print(f"Erro Crítico no Checkout: {e}")
-        return jsonify({"status": "erro", "mensagem": "Falha ao finalizar o pedido."}), 500
+        print(f"❌ ERRO AO FINALIZAR PEDIDO: {e}")
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
     finally:
         if cur: cur.close()
-        if conn: conn.close(),
-
+        if conn: conn.close()
 
 @app.route('/api/pet/<id_pet>/historico', methods=['GET'])
 def get_historico_pet(id_pet):

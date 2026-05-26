@@ -1,16 +1,15 @@
-// js/login.js - Código Definitivo e Completo
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
 
 document.addEventListener('DOMContentLoaded', () => { 
     const loginForm = document.getElementById('loginForm'); 
-    const togglePassword = document.getElementById('togglePassword'); // ID do olhinho no HTML
+    const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('senha'); 
     const emailInput = document.getElementById('email'); 
     const rememberCheckbox = document.getElementById('remember'); 
     
-    // 1. LÓGICA DO OLHINHO (Visualização de Senha)
+    // Lógica do olho (senha)
     if (togglePassword && passwordInput) {
         togglePassword.addEventListener('click', function () {
             const isPassword = passwordInput.type === 'password';
@@ -20,13 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. LEMBRAR DE MIM
+    // Lembrar de mim
     if (localStorage.getItem('lembrar_email') && emailInput) { 
         emailInput.value = localStorage.getItem('lembrar_email'); 
         if (rememberCheckbox) rememberCheckbox.checked = true; 
     }
 
-    // 3. ENVIO DO FORMULÁRIO
+    // Envio do formulário
     if (loginForm) { 
         loginForm.addEventListener('submit', async (e) => { 
             e.preventDefault(); 
@@ -51,28 +50,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email, senha: password }) 
                 });
 
-                const text = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch {
-                    throw new Error("Erro no servidor. Tente novamente mais tarde.");
-                }
+                const data = await response.json();
 
                 if (!response.ok) {
                     throw new Error(data.error || "Credenciais inválidas");
                 }
 
-                // SUCESSO
-                localStorage.clear(); 
+                // Salva dados
                 localStorage.setItem('usuario_id', data.id); 
                 localStorage.setItem('usuario_nome', data.nome); 
                 localStorage.setItem('usuario_role', data.role);
 
-                // REDIRECIONAMENTO
-                if (data.role === 'admin') window.location.href = '../admin/dashboard.html'; 
-                else if (data.role === 'funcionario') window.location.href = '../admin/funcionario.html'; 
-                else window.location.href = 'perfil.html'; 
+                // Lógica de Redirecionamento Inteligente
+                const urlRetorno = sessionStorage.getItem('url_retorno_agendamento');
+                
+                if (data.role === 'admin') {
+                    window.location.href = '../admin/dashboard.html';
+                } else if (data.role === 'funcionario') {
+                    window.location.href = '../admin/funcionario.html';
+                } else if (urlRetorno) {
+                    sessionStorage.removeItem('url_retorno_agendamento');
+                    window.location.href = urlRetorno;
+                } else {
+                    window.location.href = 'perfil.html'; 
+                }
 
             } catch (error) { 
                 console.error('Erro:', error); 
