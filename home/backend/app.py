@@ -215,6 +215,7 @@ def get_dados_usuario(id_usuario):
         if conn: conn.close()
 
 @app.route('/api/usuario/agendamentos/<id_usuario>', methods=['GET'])
+@app.route('/api/agendamentos/cliente/<id_usuario>', methods=['GET']) 
 def get_agendamentos_usuario(id_usuario):
     conn = None
     cur = None
@@ -1031,7 +1032,7 @@ def get_estoque_produto(id_produto):
         
 @app.route('/api/agendar', methods=['POST'])
 def post_agendamento():
-    """Processa o agendamento com Transação Segura (Rollback) e conexão direta ao Neon"""
+    """Processa o agendamento com Transação Segura e Datas Flexíveis"""
     conn = None
     cur = None
     try:
@@ -1039,8 +1040,10 @@ def post_agendamento():
         if not d:
             return jsonify({"error": "Dados do agendamento não recebidos."}), 400
             
-        id_servico = int(d['id_servico'])
-        id_loja = int(d['id_loja'])
+        # NUNCA usar int() aqui, pois os IDs de cliente e funcionário são UUIDs!
+        id_servico = d.get('id_servico')
+        id_loja = d.get('id_loja')
+        id_cliente = d.get('id_cliente')
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1053,20 +1056,30 @@ def post_agendamento():
         preco = serv['preco_servico']
         dur = serv['duracao_media_minutos'] or 30
 
-        inicio_str = d['data_hora_inicio'].split('.')[0] 
-        inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M:%S')
+        # Parse de Data Blindado contra o formato do Javascript
+        inicio_str = d['data_hora_inicio'].replace('Z', '').split('.')[0] 
+        try:
+            if len(inicio_str) == 16: # Ex: 2026-05-17T14:30
+                inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M')
+            else: # Ex: 2026-05-17T14:30:00
+                inicio = datetime.strptime(inicio_str, '%Y-%m-%dT%H:%M:%S')
+        except ValueError:
+            inicio = datetime.strptime(inicio_str.replace('T', ' '), '%Y-%m-%d %H:%M:%S')
+
         fim = inicio + timedelta(minutes=dur)
 
         id_pet = d.get('id_pet')
         novo_pet_dados = d.get('novo_pet')
 
+        # LÓGICA DO NOVO PET AUTOMÁTICO
+        # Se o usuário escolheu "Novo Pet" no Front, o id_pet vem vazio e o objeto novo_pet vem preenchido
         if not id_pet and novo_pet_dados:
             cur.execute("""
                 INSERT INTO public.pets (id_tutor, nome_pet, especie, raca, porte, observacoes)
-                VALUES (%s, %s, 'Cão', %s, %s, 'Cadastrado automaticamente no agendamento')
+                VALUES (%s, %s, 'Cão', %s, %s, 'Cadastrado automaticamente via fluxo de agendamento rápido')
                 RETURNING id_pet
             """, (
-                d['id_cliente'],
+                id_cliente, # Associa o novo pet diretamente ao cliente logado
                 novo_pet_dados.get('nome', 'Pet Sem Nome'),
                 novo_pet_dados.get('raca', 'SRD'),
                 novo_pet_dados.get('porte', 'Médio')
@@ -1076,15 +1089,16 @@ def post_agendamento():
             if res_pet:
                 id_pet = res_pet['id_pet']
             else:
-                raise Exception("O banco inseriu o pet, mas não devolveu o ID.")
+                raise Exception("O banco inseriu o pet, mas não devolveu o ID para concluir a reserva.")
 
+        # LÓGICA DO AGENDAMENTO FINAL
         cur.execute("""
             INSERT INTO public.agendamentos 
             (id_cliente, id_pet, id_loja, id_servico, data_hora_inicio, data_hora_fim, status, valor_cobrado, observacoes_cliente)
             VALUES (%s, %s, %s, %s, %s, %s, 'pendente', %s, %s)
         """, (
-            d['id_cliente'], 
-            int(id_pet) if id_pet else None, 
+            id_cliente, 
+            id_pet, # Se o cara criou um pet, esse id_pet aqui será o ID novinho gerado acima!
             id_loja, 
             id_servico, 
             inicio, 
@@ -1097,15 +1111,25 @@ def post_agendamento():
         return jsonify({"status": "sucesso", "mensagem": "Agendamento registrado com sucesso!"}), 201
         
     except Exception as e:
-        # Se QUALQUER coisa der errado (falha no agendamento, formato errado), 
-        # ele desfaz a criação do pet para não sujar o seu banco!
-        if conn: conn.rollback()
+        if conn: conn.rollback() # SE DER QUALQUER ERRO, APAGA TUDO E NÃO DEIXA "LIXO" NO BANCO (NÃO CRIA PET FANTASMA)
         print(f"❌ ERRO CRÍTICO NO AGENDAMENTO: {e}")
+        import traceback
+        traceback.print_exc() 
         return jsonify({"error": f"Erro interno no servidor: {str(e)}"}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
     
+@app.route('/api/pet/<id_pet>/historico', methods=['GET'])
+def get_historico_pet(id_pet):
+    """Puxa o prontuário de saúde para o Modal do Veterinário"""
+    try:
+        sql = "SELECT * FROM public.pet_saude_historico WHERE id_pet = %s ORDER BY data_registro DESC"
+        historico = executar_query(sql, (id_pet,))
+        return jsonify(historico if historico else []), 200
+    except Exception as e:
+        print(f"Erro ao buscar historico: {e}")
+        return jsonify({"error": "Falha ao carregar prontuário"}), 500
 
 if __name__ == '__main__':
     # Configuração vital para o Render (PORT) e escuta em 0.0.0.0

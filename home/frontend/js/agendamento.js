@@ -1,6 +1,6 @@
 /**
  * js/agendamento.js - Motor de Fluxo de Agendamento (Regia & Tinas Care)
- * Versão Final: EXIGE LOGIN ABSOLUTO ANTES DE INICIAR QUALQUER PASSO.
+ * Versão Final: Conectado e Blindado.
  */
 
 // 1. CONFIGURAÇÃO DE AMBIENTE E ESTADO GLOBAL
@@ -26,7 +26,6 @@ const appointmentData = {
 
 // 2. DISPARO INICIAL COM VALIDAÇÃO LINHA DURA
 document.addEventListener('DOMContentLoaded', () => {
-    
     // Se o usuário não existir ou o login for inválido, bloqueia tudo na hora.
     if (!userId || userId === 'null' || userId === 'undefined' || userId.trim() === '') {
         document.getElementById('agendamento-wizard').style.display = 'none';
@@ -42,10 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Função acionada pelo botão do HTML quando o cara está bloqueado
 window.irParaLogin = function() {
     sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    window.location.href = 'login.html'; 
+    window.location.href = 'usuario/login.html'; 
 };
 
-// --- INICIALIZAÇÃO DO AGENDAMENTO (SÓ RODA SE ESTIVER LOGADO) ---
+// --- INICIALIZAÇÃO DO AGENDAMENTO ---
 function initSchedulingSystem() {
     loadServicesCatalog();
     loadPhysicalStores();
@@ -168,7 +167,7 @@ async function fetchAvailableSlots(dateStr) {
             btn.onclick = () => {
                 appointmentData.horario = time;
                 document.querySelectorAll('.time-slot-btn').forEach(b => b.className = 'btn btn-outline-secondary btn-sm m-1 time-slot-btn rounded-pill');
-                btn.className = 'btn bg-brand-pink text-white btn-sm m-1 time-slot-btn rounded-pill';
+                btn.className = 'btn bg-brand text-white btn-sm m-1 time-slot-btn rounded-pill';
                 document.getElementById('nextButtonStep3').disabled = false;
             };
             container.appendChild(btn);
@@ -178,7 +177,7 @@ async function fetchAvailableSlots(dateStr) {
     }
 }
 
-// --- PASSO 4: CARREGAR PETS (USUÁRIO GARANTIDO QUE ESTÁ LOGADO NESTA ETAPA) ---
+// --- PASSO 4: CARREGAR PETS DO BANCO NEON ---
 async function loadUserPets() {
     const select = document.getElementById('select-pet');
     const containerSelect = document.getElementById('select-pet-container');
@@ -237,7 +236,7 @@ function renderConfirmationSummary() {
             <div class="col-6"><small class="text-muted d-block">UNIDADE</small> <strong class="text-dark">${appointmentData.loja_nome}</strong></div>
             <div class="col-6"><small class="text-muted d-block">DATA SELECIONADA</small> <strong class="text-dark">${appointmentData.data.split('-').reverse().join('/')}</strong></div>
             <div class="col-6"><small class="text-muted d-block">HORÁRIO RESERVADO</small> <strong class="text-dark">${appointmentData.horario}</strong></div>
-            <div class="col-12 border-top pt-2"><small class="text-muted d-block">PACIENTE ANIMAL</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet}</strong></div>
+            <div class="col-12 border-top pt-2"><small class="text-muted d-block">PACIENTE ANIMAL</small> <strong class="text-dark"><i class="bi bi-paw-fill text-danger me-1"></i>${nomePet || 'Meu Pet'}</strong></div>
         </div>
     `;
 }
@@ -268,6 +267,17 @@ function bindInterfaceEvents() {
     
     document.getElementById('pet-info-form').onsubmit = (e) => {
         e.preventDefault();
+        
+        // Se escolheu criar um novo pet, obriga a pôr o nome
+        const selectPet = document.getElementById('select-pet');
+        if (selectPet && selectPet.value === 'NEW') {
+            const nomeInput = document.getElementById('nome_pet').value.trim();
+            if (!nomeInput) {
+                alert("Por favor, digite o nome do novo pet.");
+                return;
+            }
+        }
+        
         showStep(5);
     };
 
@@ -316,7 +326,8 @@ async function executeFinalBooking() {
 
         if (res.ok) {
             alert("✨ Perfeito! O seu agendamento foi gravado com sucesso.");
-            window.location.href = 'meus_agendamentos.html';
+            // REDIRECIONA PARA A TELA ONDE ELE VE O AGENDAMENTO (perfil.html)
+            window.location.href = 'usuario/perfil.html';
         } else {
             const err = await res.json().catch(() => ({}));
             alert("Ops: " + (err.error || "Falha ao registrar horário."));
@@ -324,7 +335,7 @@ async function executeFinalBooking() {
             btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
         }
     } catch (e) {
-        alert("Erro de comunicação de rede.");
+        alert("Erro de comunicação de rede. Verifique sua internet.");
         btn.disabled = false;
         btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
     }
