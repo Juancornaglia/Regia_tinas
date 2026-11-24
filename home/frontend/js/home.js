@@ -18,11 +18,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupBeforeAfterSlider();
     setupVideoPlayers();
     
-    // 3. Carregamento de dados (Vitrines)
-    loadProducts('ofertas-track', 'ofertas');
-    loadProducts('recomendados-track', 'recomendados');
-    loadProducts('novidades-track', 'novidades');
-    loadProducts('mais-vendidos-track', 'vendidos');
+    // 3. Carregamento único dos produtos para todas as vitrines
+    await carregarTodasAsVitrines();
     
     console.log("Sistema Regia & Tinas Care operacional! 🐾🚀");
 });
@@ -48,20 +45,32 @@ function setupSidebar() {
     const openButton = document.getElementById('button-menu');
     const closeButton = document.getElementById('close-sidebar');
 
-    if (!sidebar || !overlay || !openButton || !closeButton) return;
+    if (sidebar && overlay && openButton && closeButton) {
+        openButton.onclick = () => {
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+        };
 
-    openButton.onclick = () => {
-        sidebar.classList.add('active');
-        overlay.classList.add('active');
-    };
+        const close = () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        };
 
-    const close = () => {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-    };
+        closeButton.onclick = close;
+        overlay.onclick = close;
+    }
 
-    closeButton.onclick = close;
-    overlay.onclick = close;
+    // Abre e fecha os submenus (Categorias, Cachorros, Gatos)
+    const submenuToggles = document.querySelectorAll('.submenu-toggle');
+    submenuToggles.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const submenu = btn.nextElementSibling;
+            if (submenu) {
+                submenu.classList.toggle('active');
+                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+            }
+        });
+    });
 }
 
 function setupMediaSliders() {
@@ -88,66 +97,60 @@ function createProductCard(produto) {
     
     return `
         <div class="card h-100 product-card shadow-sm mx-2" style="min-width: 220px; max-width: 250px;">
-            <a href="busca.html?id=${id}"><img src="${produto.url_imagem || 'img/logo_pequena4.png'}" class="card-img-top" style="height: 180px; object-fit: contain;" onerror="this.src='img/logo_pequena4.png'"></a>
-            <div class="card-body text-center">
-                <h6 class="fw-bold">${produto.nome_produto || 'Produto'}</h6>
-                <p class="text-brand fw-bold">R$ ${displayPrice.toFixed(2).replace('.', ',')}</p>
-                <a href="busca.html?id=${id}" class="btn w-100 text-white rounded-pill" style="background-color: #FE8697;">Ver Lojas</a>
+            <a href="busca.html?id=${id}">
+                <img src="${produto.url_imagem || 'img/logo_pequena4.png'}" class="card-img-top" style="height: 180px; object-fit: contain;" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
+            </a>
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <div>
+                    <h6 class="fw-bold text-truncate" title="${produto.nome_produto || 'Produto'}">${produto.nome_produto || 'Produto'}</h6>
+                    <p class="text-brand fw-bold">R$ ${displayPrice.toFixed(2).replace('.', ',')}</p>
+                </div>
+                <a href="busca.html?id=${id}" class="btn w-100 text-white rounded-pill mt-2" style="background-color: #FE8697;">Ver Lojas</a>
             </div>
         </div>
     `;
 }
 
-// --- 3. CARREGAMENTO E FILTRO DOS CARDS (HOME) ---
-async function loadProducts(containerId, filterType) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
+// --- 3. CARREGAMENTO ÚNICO E DISTRIBUIÇÃO NAS VITRINES ---
+async function carregarTodasAsVitrines() {
+    const tracks = ['ofertas-track', 'recomendados-track', 'novidades-track', 'mais-vendidos-track'];
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+        
         const allProducts = await response.json();
-        
-        let produtosFiltrados = [];
+        if (!Array.isArray(allProducts)) return;
 
-        // LÓGICA DE FILTRAGEM (A Mágica acontece aqui!)
-        switch (filterType) {
-            case 'ofertas':
-                // Mostra apenas produtos que têm preço promocional menor que o preço original
-                produtosFiltrados = allProducts.filter(p => 
-                    p.preco_promocional && parseFloat(p.preco_promocional) < parseFloat(p.preco)
-                );
-                break;
-            case 'recomendados':
-                // Exemplo: Mostra produtos de uma categoria específica ou mistura tudo
-                // Aqui estou pegando os últimos produtos como exemplo
-                produtosFiltrados = allProducts.slice(-6); 
-                break;
-            case 'novidades':
-                // Exemplo: Pode filtrar por ID maior (produtos adicionados recentemente)
-                produtosFiltrados = allProducts.reverse().slice(0, 6);
-                break;
-            case 'vendidos':
-                // Exemplo: Filtra pela categoria 'Ração' ou pega os 6 primeiros
-                produtosFiltrados = allProducts.slice(0, 6);
-                break;
-            default:
-                produtosFiltrados = allProducts;
-        }
+        renderizarVitrineHome('ofertas-track', allProducts.filter(p => 
+            p.preco_promocional && parseFloat(p.preco_promocional) < parseFloat(p.preco)
+        ));
+        renderizarVitrineHome('recomendados-track', allProducts.slice(-6));
+        renderizarVitrineHome('novidades-track', [...allProducts].reverse().slice(0, 6));
+        renderizarVitrineHome('mais-vendidos-track', allProducts.slice(0, 6));
 
-        // Se não houver produtos para o filtro, mostra uma mensagem
-        if (produtosFiltrados.length === 0) {
-             container.innerHTML = '<p class="text-muted w-100 text-center">Nenhum produto nesta categoria.</p>';
-             return;
-        }
-
-        container.classList.add('d-flex', 'flex-nowrap');
-        // Usamos map para criar os cards apenas dos produtos filtrados
-        container.innerHTML = produtosFiltrados.map(createProductCard).join('');
-        
-    } catch (e) { 
-        console.error("Erro ao carregar produtos:", e); 
-        container.innerHTML = '<p class="text-muted w-100 text-center">Tente novamente mais tarde.</p>';
+    } catch (e) {
+        console.error("Erro ao carregar produtos:", e);
+        tracks.forEach(id => {
+            const container = document.getElementById(id);
+            if (container) {
+                container.innerHTML = '<p class="text-muted w-100 text-center">Tente novamente mais tarde.</p>';
+            }
+        });
     }
+}
+
+function renderizarVitrineHome(containerId, produtosFiltrados) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (produtosFiltrados.length === 0) {
+        container.innerHTML = '<p class="text-muted w-100 text-center">Nenhum produto nesta categoria.</p>';
+        return;
+    }
+
+    container.classList.add('d-flex', 'flex-nowrap');
+    container.innerHTML = produtosFiltrados.map(createProductCard).join('');
 }
 
 function setupBeforeAfterSlider() {
@@ -158,36 +161,31 @@ function setupBeforeAfterSlider() {
     if (!slider || !beforeImg || !handle) return;
 
     slider.addEventListener('input', (e) => {
-        const val = e.target.value; // Valor de 0 a 100
-        
-        // 1. O clip-path corta a imagem. 
-        // 100 - val inverte o movimento para a máscara funcionar da esquerda para direita
+        const val = e.target.value;
         const rightOffset = 100 - val;
         beforeImg.style.clipPath = `inset(0 ${rightOffset}% 0 0)`;
-        
-        // 2. Move a linha divisória (handle)
         handle.style.left = `${val}%`;
     });
 }
-// Função para controlar os vídeos
+
 function setupVideoPlayers() {
     const videoCards = document.querySelectorAll('.video-card');
 
     videoCards.forEach(card => {
         const video = card.querySelector('video');
         const playBtn = card.querySelector('.play-button');
+        if (!video || !playBtn) return;
 
         playBtn.onclick = () => {
             if (video.paused) {
                 video.play();
-                playBtn.innerHTML = '<i class="bi bi-pause-circle-fill"></i>'; // Muda ícone
+                playBtn.innerHTML = '<i class="bi bi-pause-circle-fill"></i>';
             } else {
                 video.pause();
-                playBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>'; // Volta ícone
+                playBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
             }
         };
 
-        // Pausa automaticamente se o vídeo acabar
         video.onended = () => {
             playBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
         };

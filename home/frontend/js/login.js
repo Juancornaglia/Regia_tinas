@@ -28,7 +28,7 @@ async function finalizarLoginE_Redirecionar(email, nome) {
     if (cargo === 'admin') {
         window.location.href = '../admin/dashboard.html';
     } else if (cargo === 'funcionario') {
-        window.location.href = '../admin/funcionario.html';
+        window.location.href = '../funcionario/dash_funcionario.html';
     } else {
         const urlRetorno = sessionStorage.getItem('url_retorno_agendamento');
         if (urlRetorno) {
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
     }
 
-// 2. BOTÃO ENTRAR COM GOOGLE
+    // 2. BOTÃO ENTRAR COM GOOGLE
     if (btnGoogleLogin) {
         btnGoogleLogin.addEventListener('click', async () => {
             btnGoogleLogin.disabled = true;
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-   // 3. RETORNO DO GOOGLE OAUTH
+    // 3. RETORNO DO GOOGLE OAUTH
     (async () => {
         try {
             const urlParams = new URLSearchParams(window.location.search);

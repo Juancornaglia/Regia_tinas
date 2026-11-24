@@ -12,6 +12,13 @@ let acaoPendente = null;
 let modalAssinatura = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 0. Proteção de Rota (Apenas Funcionário ou Admin)
+    const userRole = (localStorage.getItem('usuario_role') || '').toLowerCase().trim();
+    if (userRole !== 'funcionario' && userRole !== 'admin') {
+        window.location.href = '../usuario/login.html';
+        return;
+    }
+
     console.log("🛠️ Inicializando Painel do Funcionário...");
     
     // 1. Configurações Iniciais de Interface
@@ -34,7 +41,7 @@ function inicializarInterface() {
     // Nome do Funcionário (Vem do Login)
     const nome = localStorage.getItem('usuario_nome') || "Equipe";
     const nomeDisplay = document.getElementById('nome-funcionario');
-    if (nomeDisplay) nomeDisplay.innerText = nome;
+    if (nomeDisplay) nomeDisplay.innerText = nome.split(' ')[0];
 
     // Data Atual formatada
     const dataSpan = document.getElementById('data-atual');
@@ -68,12 +75,15 @@ function inicializarInterface() {
 async function carregarResumoDoDia() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/admin/agendamentos`);
+        if (!response.ok) throw new Error("Erro ao buscar agendamentos.");
+        
         const agendamentos = await response.json();
+        if (!Array.isArray(agendamentos)) return;
 
-        // Filtramos apenas o que é para HOJE (ou pendente)
-        const pendentes = agendamentos.filter(a => a.status === 'pendente' || a.status === 'aguardando');
-        const emAndamento = agendamentos.filter(a => a.status === 'em_andamento' || a.status === 'em_curso');
-        const concluidos = agendamentos.filter(a => a.status === 'concluido' || a.status === 'pronto');
+        // Filtra os status do dia
+        const pendentes = agendamentos.filter(a => ['pendente', 'aguardando', 'confirmado'].includes(a.status));
+        const emAndamento = agendamentos.filter(a => ['em_andamento', 'em_curso'].includes(a.status));
+        const concluidos = agendamentos.filter(a => ['concluido', 'pronto'].includes(a.status));
 
         // Atualiza os números (KPIs)
         document.getElementById('kpi-atendimentos').innerText = pendentes.length;
@@ -85,6 +95,10 @@ async function carregarResumoDoDia() {
 
     } catch (error) {
         console.error("Erro ao carregar resumo:", error);
+        document.getElementById('kpi-atendimentos').innerText = '0';
+        document.getElementById('kpi-em-andamento').innerText = '0';
+        document.getElementById('kpi-concluidos').innerText = '0';
+        renderizarTabelaFila([]);
     }
 }
 
@@ -93,24 +107,26 @@ function renderizarTabelaFila(lista) {
     if (!tbody) return;
 
     if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Nenhum atendimento para agora.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Nenhum atendimento pendente para agora.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = lista.map(a => `
+    tbody.innerHTML = lista.map(a => {
+        const isAndamento = ['em_andamento', 'em_curso'].includes(a.status);
+        return `
         <tr>
             <td class="fw-bold text-secondary">${extrairHora(a.data_hora_inicio)}</td>
             <td>
-                <div class="fw-bold text-dark">${a.nome_pet}</div>
-                <small class="text-muted">${a.nome_cliente}</small>
+                <div class="fw-bold text-dark">${a.nome_pet || 'Pet'}</div>
+                <small class="text-muted">${a.cliente_nome || a.nome_cliente || 'Tutor'}</small>
             </td>
             <td>
-                <span class="status-pill ${a.status === 'pendente' ? 'bg-status-waiting' : 'bg-status-active'}">
-                    ${a.status === 'pendente' ? 'Aguardando' : 'Em Curso'}
+                <span class="status-pill ${isAndamento ? 'bg-status-active' : 'bg-status-waiting'}">
+                    ${isAndamento ? 'Em Curso' : 'Aguardando'}
                 </span>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 // ==========================================
@@ -123,12 +139,19 @@ async function carregarListaEstoque() {
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        if (!response.ok) throw new Error("Falha ao buscar produtos.");
+        
         const produtos = await response.json();
+        if (!Array.isArray(produtos) || produtos.length === 0) {
+            select.innerHTML = '<option value="">Nenhum produto cadastrado no estoque</option>';
+            return;
+        }
 
         select.innerHTML = '<option value="">Selecione o material...</option>' + 
-            produtos.map(p => `<option value="${p.id_produto || p.id}">${p.nome_produto} (${p.quantidade_estoque} un)</option>`).join('');
+            produtos.map(p => `<option value="${p.id_produto || p.id}">${p.nome_produto} (${p.quantidade_estoque ?? 0} un)</option>`).join('');
     } catch (e) {
-        select.innerHTML = '<option>Erro ao carregar estoque</option>';
+        console.error("Erro ao carregar estoque:", e);
+        select.innerHTML = '<option value="">Erro ao carregar estoque</option>';
     }
 }
 
@@ -137,15 +160,26 @@ async function carregarListaEstoque() {
 // ==========================================
 
 window.solicitarAssinatura = (callback) => {
+    const selectProd = document.getElementById('select-produto-estoque');
+    if (selectProd && document.getElementById('modalEstoque')?.classList.contains('show')) {
+        if (!selectProd.value) {
+            alert("Selecione um produto antes de avançar!");
+            return;
+        }
+    }
+
     acaoPendente = callback;
     
     // Limpa o modal
     document.getElementById('input-cpf-funcionario').value = '';
     document.getElementById('erro-validacao').style.display = 'none';
 
-    // Fecha modais de formulário se existirem
-    const mEstoque = bootstrap.Modal.getInstance(document.getElementById('modalEstoque'));
-    if(mEstoque) mEstoque.hide();
+    // Fecha modal de estoque se estiver aberto
+    const mEstoqueEl = document.getElementById('modalEstoque');
+    if (mEstoqueEl) {
+        const mEstoque = bootstrap.Modal.getInstance(mEstoqueEl);
+        if (mEstoque) mEstoque.hide();
+    }
 
     modalAssinatura = new bootstrap.Modal(document.getElementById('modalAssinaturaFuncionario'));
     modalAssinatura.show();
@@ -166,10 +200,9 @@ async function validarCpfESalvar() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> VALIDANDO...';
 
     try {
-        // Juan, aqui conectamos com a tua tabela de PERFIS para ver se o CPF existe e é funcionário
         const res = await fetch(`${API_BASE_URL}/api/auth/validar-cpf`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cpf: cpf.replace(/\D/g, '') })
         });
 
@@ -177,7 +210,6 @@ async function validarCpfESalvar() {
 
         if (res.ok && data.autorizado) {
             modalAssinatura.hide();
-            // Executa a ação que estava esperando (ex: processarBaixaEstoque)
             if (acaoPendente) acaoPendente(data.id_funcionario);
         } else {
             throw new Error("CPF não autorizado.");
@@ -202,21 +234,24 @@ window.processarBaixaEstoque = async (idFuncionario) => {
 
     const dados = {
         id_produto: prodId,
-        quantidade: qtd,
-        id_funcionario: idFuncionario // Rastreabilidade total Juan!
+        quantidade: parseInt(qtd, 10) || 1,
+        id_funcionario: idFuncionario
     };
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/estoque/consumo`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
 
         if (res.ok) {
             alert("✅ Sucesso! Baixa no estoque realizada e assinada digitalmente.");
-            carregarResumoDoDia(); // Atualiza KPIs
-            carregarListaEstoque(); // Atualiza lista
+            carregarResumoDoDia();
+            carregarListaEstoque();
+        } else {
+            const err = await res.json();
+            alert(err.error || "Não foi possível registrar a baixa.");
         }
     } catch (e) {
         alert("Erro ao salvar no Neon.");
@@ -234,8 +269,8 @@ function extrairHora(dataISO) {
 }
 
 function encerrarTurno() {
-    if(confirm("Juan, deseja realmente encerrar o turno e sair?")) {
+    if (confirm("Deseja realmente encerrar o turno e sair?")) {
         localStorage.clear();
-        window.location.href = '../auth/login.html';
+        window.location.href = '../usuario/login.html';
     }
 }
