@@ -1,56 +1,53 @@
-// 1. CONFIGURAÇÃO GERAL DO BACKEND (Unificada e Segura)
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000" 
-    : "https://regia-tinas.onrender.com"; 
+const NEON_AUTH_URL = "https://ep-fragrant-brook-a44jnssw.neonauth.us-east-1.aws.neon.tech/neondb/auth";
 
 document.addEventListener('DOMContentLoaded', () => {
     const section1 = document.getElementById('reset-section-1');
     const section2 = document.getElementById('reset-section-2');
     const sendCodeForm = document.getElementById('sendCodeForm');
     const resetPasswordForm = document.getElementById('resetPasswordForm');
+    const codeInput = document.getElementById('verification_code');
 
-    // ETAPA 1: Solicitar Código (Conecta ao Python)
+    // Garante que apenas números sejam digitados no campo de 6 dígitos
+    if (codeInput) {
+        codeInput.addEventListener('input', () => {
+            codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6);
+        });
+    }
+
+    // ETAPA 1: Enviar o código numérico de 6 dígitos para o e-mail via Neon Auth
     if (sendCodeForm) {
         sendCodeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const emailInput = document.getElementById('email').value.trim();
+            const emailInput = document.getElementById('email').value.trim().toLowerCase();
             if (!emailInput) {
                 alert("Por favor, digite seu e-mail.");
                 return;
             }
 
-            // Salva no sessionStorage para blindar contra perdas de estado entre as seções
             sessionStorage.setItem('email_recuperacao', emailInput);
             
             const button = e.target.querySelector('button[type="submit"]');
             button.disabled = true;
-            button.textContent = 'VERIFICANDO...';
+            button.textContent = 'ENVIANDO...';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/recuperar-senha`, {
+                const response = await fetch(`${NEON_AUTH_URL}/email-otp/send-verification-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailInput })
+                    body: JSON.stringify({
+                        email: emailInput,
+                        type: 'forget-password'
+                    })
                 });
 
-                // Blindagem contra erros de resposta estruturados ou quedas do servidor
+                const data = await response.json();
                 if (!response.ok) {
-                    let errorMessage = "Erro: E-mail não encontrado na base de dados.";
-                    try {
-                        const data = await response.json();
-                        errorMessage = data.error || data.mensagem || errorMessage;
-                    } catch (err) {
-                        if (response.status === 404) errorMessage = "Rota de recuperação não encontrada.";
-                        if (response.status === 500) errorMessage = "Erro interno no servidor Python.";
-                    }
-                    throw new Error(errorMessage);
+                    throw new Error(data.message || "Não foi possível enviar o código para este e-mail.");
                 }
 
-                // Se o servidor respondeu OK (Status 200)
-                alert("✨ Código gerado! (Se for para o TCC/Testes locais, olhe o terminal do seu VS Code para pegar os 6 dígitos).");
+                alert("Código de 6 dígitos enviado! Verifique sua caixa de entrada ou spam.");
                 
-                // Transição visual das seções
                 if (section1 && section2) {
                     section1.style.display = 'none';
                     section2.style.display = 'block';
@@ -66,14 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ETAPA 2: Definir Nova Senha (Usa o Código de 6 dígitos)
+    // ETAPA 2: Validar os 6 dígitos e salvar a nova senha no Neon Auth
     if (resetPasswordForm) {
         resetPasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Resgata o e-mail que salvamos com segurança na Etapa 1
-            const emailSalvo = sessionStorage.getItem('email_recuperacao');
-            const codigo = document.getElementById('verification_code')?.value.trim();
+            const emailSalvo = sessionStorage.getItem('email_recuperacao') || document.getElementById('email')?.value.trim().toLowerCase();
+            const codigo = codeInput?.value.trim();
             const nova_senha = document.getElementById('new_password')?.value;
             const confirmar = document.getElementById('confirm_new_password')?.value;
 
@@ -84,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!codigo || codigo.length !== 6) {
-                alert("Por favor, insira o código de verificação válido com 6 dígitos.");
+                alert("Por favor, insira o código numérico de 6 dígitos enviado para o seu e-mail.");
                 return;
             }
 
@@ -103,30 +99,23 @@ document.addEventListener('DOMContentLoaded', () => {
             button.textContent = 'SALVANDO...';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/redefinir-senha`, {
+                const response = await fetch(`${NEON_AUTH_URL}/email-otp/reset-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         email: emailSalvo, 
-                        codigo: codigo,
-                        nova_senha: nova_senha 
+                        otp: codigo,
+                        password: nova_senha 
                     })
                 });
 
+                const data = await response.json();
                 if (!response.ok) {
-                    let errorMessage = "Código inválido ou expirado.";
-                    try {
-                        const data = await response.json();
-                        errorMessage = data.error || data.mensagem || errorMessage;
-                    } catch (err) {
-                        if (response.status === 404) errorMessage = "Rota de redefinição não encontrada.";
-                        if (response.status === 500) errorMessage = "Erro ao processar alteração no servidor.";
-                    }
-                    throw new Error(errorMessage);
+                    throw new Error(data.message || "Código inválido ou expirado.");
                 }
 
                 alert("Senha redefinida com sucesso! Use sua nova senha para entrar.");
-                sessionStorage.removeItem('email_recuperacao'); // Limpa o dado sensível da memória
+                sessionStorage.removeItem('email_recuperacao');
                 window.location.href = 'login.html';
 
             } catch (error) {
@@ -147,12 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
             section2.style.display = 'none';
         }
         
-        // Limpa os campos se o usuário desistir e voltar
-        const codeField = document.getElementById('verification_code');
         const passField = document.getElementById('new_password');
         const confirmField = document.getElementById('confirm_new_password');
         
-        if (codeField) codeField.value = '';
+        if (codeInput) codeInput.value = '';
         if (passField) passField.value = '';
         if (confirmField) confirmField.value = '';
     });
