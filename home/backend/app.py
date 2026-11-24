@@ -134,7 +134,53 @@ def criar_conta():
         print(f"❌ ERRO NO CADASTRO: {e}")
         return jsonify({"error": "Erro interno ao criar conta."}), 500
     
+@app.route('/api/auth/sync-perfil', methods=['POST'])
+def sync_perfil():
+    try:
+        dados = request.get_json()
+        email = dados.get('email', '').lower().strip()
+        nome = dados.get('nome', 'Cliente')
 
+        if not email:
+            return jsonify({"error": "E-mail obrigatório."}), 400
+
+        # 1. Busca o usuário na tabela public.perfis (mantendo o UUID original de pets/agendamentos)
+        usuario = executar_query(
+            "SELECT id, nome_completo, role, ativo FROM public.perfis WHERE email = %s",
+            (email,)
+        )
+
+        if usuario:
+            u = usuario[0]
+            if not u.get('ativo', True):
+                return jsonify({"error": "Conta desativada."}), 403
+            return jsonify({
+                "id": str(u['id']),
+                "nome": u['nome_completo'],
+                "role": u['role']
+            }), 200
+
+        # 2. Se for primeiro acesso (ex: via Google), cria o perfil vinculado ao e-mail
+        sql_insert = """
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo)
+            VALUES (%s, %s, 'NEON_AUTH_MANAGED', 'cliente', true)
+        """
+        executar_query(sql_insert, (nome, email))
+
+        novo_usuario = executar_query(
+            "SELECT id, nome_completo, role FROM public.perfis WHERE email = %s",
+            (email,)
+        )
+        u = novo_usuario[0]
+        return jsonify({
+            "id": str(u['id']),
+            "nome": u['nome_completo'],
+            "role": u['role']
+        }), 201
+
+    except Exception as e:
+        print(f"❌ ERRO NO SYNC PERFIL: {e}")
+        return jsonify({"error": "Erro interno ao sincronizar perfil."}), 500
 
 @app.route('/api/recuperar-senha', methods=['POST'])
 def solicitar_recuperacao():
@@ -172,7 +218,35 @@ def redefinir_senha():
     executar_query(sql, (hash_senha, email))
     
     return jsonify({"mensagem": "Senha alterada com sucesso!"}), 200
-    
+
+@app.route('/api/auth/google-sync', methods=['POST'])
+def google_sync():
+    try:
+        dados = request.get_json()
+        email = dados.get('email', '').lower().strip()
+        nome = dados.get('nome', 'Usuário Google')
+
+        if not email:
+            return jsonify({"error": "E-mail não fornecido pelo Google."}), 400
+
+        usuario = executar_query("SELECT id, nome_completo, role FROM public.perfis WHERE email = %s", (email,))
+        if usuario:
+            u = usuario[0]
+            return jsonify({"id": u['id'], "nome": u['nome_completo'], "role": u['role']}), 200
+
+        sql_insert = """
+            INSERT INTO public.perfis (nome_completo, email, senha, role, ativo)
+            VALUES (%s, %s, 'GOOGLE_AUTH', 'cliente', true)
+        """
+        executar_query(sql_insert, (nome, email))
+
+        novo_usuario = executar_query("SELECT id, nome_completo, role FROM public.perfis WHERE email = %s", (email,))
+        u = novo_usuario[0]
+        return jsonify({"id": u['id'], "nome": u['nome_completo'], "role": u['role']}), 201
+
+    except Exception as e:
+        print(f"❌ ERRO NO GOOGLE SYNC: {e}")
+        return jsonify({"error": "Erro interno ao sincronizar conta Google."}), 500
 
 @app.route('/api/usuario/dados/<id_usuario>', methods=['GET'])
 def get_dados_usuario(id_usuario):
