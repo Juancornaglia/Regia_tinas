@@ -26,9 +26,7 @@ app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "http://127.0.0.1:5501",
-            "http://localhost:5501",
-            "https://regia-tinas.onrender.com" 
+            ao
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]

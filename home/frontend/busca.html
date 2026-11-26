@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo Digital - Regia & Tinas Care</title>
-    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link rel="icon" type="image/png" href="img/logo_pequena4.png">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -19,24 +19,26 @@
         .navbar-container { display: flex; align-items: center; position: relative; width: 100%; padding: 0 15px; justify-content: space-between; }
         
         .brand-title { color: white; font-weight: bold; font-size: 1.2rem; text-decoration: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; display: none; }
-        @media (min-width: 992px) { .brand-title { display: block; } }
+        @media (min-width: 1200px) { .brand-title { display: block; } }
 
-        .search-form-bar { background: white; border-radius: 25px; overflow: hidden; flex-grow: 1; max-width: 400px; position: relative; margin: 0 auto; }
-        .search-form-bar input { border: none; padding: 8px 35px 8px 20px; width: 100%; outline: none; }
+        .search-form-bar { background: white; border-radius: 25px; overflow: hidden; flex-grow: 1; max-width: 420px; position: relative; margin: 0 auto; }
+        .search-form-bar input { border: none; padding: 8px 35px 8px 20px; width: 100%; outline: none; font-size: 0.9rem; }
         .btn-search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--brand-pink); }
         .back-arrow { color: white; font-size: 2.2rem; text-decoration: none; z-index: 10; transition: 0.3s; }
         .back-arrow:hover { transform: translateX(-3px); color: #f8f9fa; }
 
         /* --- FILTROS --- */
         .filter-card { border: none; border-radius: 20px; position: sticky; top: 85px; }
-        .filter-title { font-weight: 700; color: var(--brand-pink); border-bottom: 2px solid #f1f1f1; padding-bottom: 10px; margin-bottom: 20px; }
+        .filter-title { font-weight: 700; color: var(--brand-pink); border-bottom: 2px solid #f1f1f1; padding-bottom: 10px; margin-bottom: 16px; }
         
-        /* --- PRODUTOS --- */
-        .product-card { border: none; border-radius: 20px; transition: 0.3s; cursor: pointer; background: white; overflow: hidden; height: 100%; display: flex; flex-direction: column; text-decoration: none; color: inherit; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; border-color: var(--brand-pink) !important; }
-        .img-container { height: 180px; display: flex; align-items: center; justify-content: center; padding: 15px; background: #fff; }
+        /* --- PRODUTOS (COMPACTO PARA CABER 5 POR FILEIRA) --- */
+        .product-card { border: 1px solid #eee; border-radius: 18px; transition: 0.25s; cursor: pointer; background: white; overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 22px rgba(0,0,0,0.08) !important; border-color: var(--brand-pink) !important; }
+        .img-container { height: 155px; display: flex; align-items: center; justify-content: center; padding: 12px; background: #fff; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
-        .card-body { padding: 20px; text-align: center; }
+        .badge-promo { position: absolute; top: 10px; left: 10px; background: #198754; color: #fff; font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+        .card-body { padding: 14px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
+        .product-title { font-size: 0.88rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.3rem; }
         
         /* --- MODAL --- */
         .modal-content { border-radius: 30px; border: none; }
@@ -49,10 +51,10 @@
 <body>
 
     <header class="navbar-custom">
-        <div class="container navbar-container">
-            <a href="../index.html" class="back-arrow"><i class="bi bi-arrow-left-short"></i></a>
+        <div class="container-fluid px-lg-5 navbar-container">
+            <a href="index.html" class="back-arrow"><i class="bi bi-arrow-left-short"></i></a>
             
-            <a href="../index.html" class="brand-title">REGIA & TINAS CARE</a>
+            <a href="index.html" class="brand-title">REGIA & TINAS CARE</a>
             
             <form class="search-form-bar shadow-sm" id="form-busca-navbar" action="busca.html" method="GET">
                 <input type="search" name="q" id="search-input-page" placeholder="Pesquisar produto..." autocomplete="off">
@@ -61,23 +63,46 @@
         </div>
     </header>
 
-    <main class="container my-5">
-        <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+    <main class="container-fluid px-lg-5 my-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
             <div>
                 <h1 class="text-brand fw-bold mb-1 h3" style="color: var(--brand-pink);">Catálogo Digital</h1>
                 <p id="results-count" class="text-muted small fw-bold mb-0">Consultando estoque nas lojas...</p>
             </div>
-            <span class="text-muted small d-none d-md-inline">Consulte e visite a loja mais próxima!</span>
+
+            <div class="d-flex align-items-center gap-2">
+                <label for="sort-select" class="small fw-bold text-muted text-nowrap mb-0">Ordenar por:</label>
+                <select id="sort-select" class="form-select form-select-sm rounded-pill shadow-sm" style="min-width: 190px;">
+                    <option value="destaques">🔥 Mais Vendidos / Destaques</option>
+                    <option value="ofertas">🏷️ Maiores Ofertas</option>
+                    <option value="menor_preco">💲 Menor Preço</option>
+                    <option value="maior_preco">💎 Maior Preço</option>
+                    <option value="az">🔤 Nome (A - Z)</option>
+                </select>
+            </div>
         </div>
         
-        <div class="row">
-            <aside class="col-lg-3 d-none d-lg-block" id="sidebar-filtros">
-                <div class="bg-white p-4 filter-card shadow-sm border">
+        <div class="row g-4">
+            <!-- Barra Lateral Compacta (col-lg-2) para liberar espaço para 5 colunas -->
+            <aside class="col-12 col-lg-3 col-xl-2" id="sidebar-filtros">
+                <div class="bg-white p-3 p-xl-4 filter-card shadow-sm border">
                     <div class="d-flex justify-content-between align-items-center filter-title">
-                        <h5 class="mb-0 fw-bold"><i class="bi bi-sliders me-1"></i> Filtros</h5>
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-sliders me-1"></i> Filtros</h6>
                         <button type="button" id="btn-limpar-filtros" class="btn btn-link btn-sm text-muted text-decoration-none p-0">Limpar</button>
                     </div>
                     
+                    <div class="mb-4">
+                        <label class="fw-bold small mb-2 text-secondary">Vendas & Ofertas</label>
+                        <div class="form-check small mb-1">
+                            <input class="form-check-input" type="checkbox" id="filtro-apenas-promocao">
+                            <label class="form-check-label" for="filtro-apenas-promocao">Em Promoção</label>
+                        </div>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="checkbox" id="filtro-apenas-estoque">
+                            <label class="form-check-label" for="filtro-apenas-estoque">Disponível na Loja</label>
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <label class="fw-bold small mb-2 text-secondary">Categoria</label>
                         <div id="category-filters" class="small">
@@ -85,28 +110,22 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="fw-bold small mb-2 text-secondary">Marca</label>
-                        <div id="brand-filters" class="small">
-                            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-                        </div>
-                    </div>
-
                     <div>
                         <label class="fw-bold small mb-2 text-secondary">Preço Máximo</label>
-                        <input type="range" class="form-range" id="price-range" min="0" max="500" step="10" value="500">
+                        <input type="range" class="form-range" id="price-range" min="0" max="1000" step="10" value="1000">
                         <div class="d-flex justify-content-between small fw-bold text-muted">
                             <span>R$ 0</span>
-                            <span id="price-value">R$ 500</span>
+                            <span id="price-value">R$ 1000</span>
                         </div>
                     </div>
                 </div>
             </aside>
 
-            <section class="col-lg-9">
+            <!-- Grade Responsiva: 2 cols no celular pequeno, 3 no celular/tablet, 4 no notebook, 5 no monitor -->
+            <section class="col-12 col-lg-9 col-xl-10">
                 <h2 class="fw-bold h5 mb-3" style="display: none;" id="term-display-container">Resultados para: <span id="term-display" style="color: var(--brand-pink);"></span></h2>
                 
-                <div id="search-results" class="row row-cols-2 row-cols-md-3 g-4">
+                <div id="search-results" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 row-cols-xl-5 g-3">
                     <div class="col-12 text-center py-5 w-100" id="loading-spinner">
                         <div class="spinner-border" style="color: var(--brand-pink); width: 3rem; height: 3rem;" role="status"></div>
                         <p class="mt-3 text-muted fw-bold">Buscando produtos...</p>
@@ -116,6 +135,7 @@
         </div>
     </main>
 
+    <!-- MODAL DE DETALHES E DISPONIBILIDADE PRESENCIAL -->
     <div class="modal fade" id="modalProduto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
@@ -127,31 +147,31 @@
                 </div>
                 
                 <div class="modal-body p-4 p-md-5 pt-2">
-                    <div class="row g-5 align-items-center">
+                    <div class="row g-4 align-items-center">
                         <div class="col-md-5 text-center">
-                            <img id="modal-img" src="" class="img-fluid rounded-4 p-3" style="max-height: 350px; object-fit: contain;" onerror="this.onerror=null; this.src='../img/logo_pequena4.png'">
+                            <img id="modal-img" src="" class="img-fluid rounded-4 p-3" style="max-height: 320px; object-fit: contain;" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
                         </div>
                         
                         <div class="col-md-7">
                             <span class="badge bg-light text-secondary mb-2 border">Cód: #<span id="modal-codigo"></span></span>
                             <span class="badge bg-danger bg-opacity-10 text-danger mb-2 border border-danger" id="modal-categoria">CATEGORIA</span>
                             
-                            <h2 class="fw-bold mb-1 text-dark h3" id="modal-nome">Nome do Produto</h2>
+                            <h2 class="fw-bold mb-1 text-dark h4" id="modal-nome">Nome do Produto</h2>
                             <p class="text-muted small mb-3">Marca: <strong id="modal-marca" class="text-dark">...</strong></p>
                             
-                            <div class="price-box mb-4 fs-3 fw-bold" id="modal-preco-box" style="color: var(--brand-pink);"></div>
+                            <div class="price-box mb-3" id="modal-preco-box"></div>
                             
-                            <div class="bg-light p-4 rounded-4 border mb-4">
-                                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt-fill me-2" style="color: var(--brand-pink);"></i>Disponibilidade nas Lojas Físicas:</h6>
-                                <ul class="list-unstyled mb-0" id="modal-store-list">
-                                    <li><span class="spinner-border spinner-border-sm text-secondary"></span> Verificando unidades presencialmente...</li>
+                            <div class="bg-light p-3 rounded-4 border mb-3">
+                                <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-geo-alt-fill me-2" style="color: var(--brand-pink);"></i>Disponibilidade nas Lojas Físicas:</h6>
+                                <ul class="list-unstyled mb-0 small" id="modal-store-list">
+                                    <li><span class="spinner-border spinner-border-sm text-secondary"></span> Verificando unidades...</li>
                                 </ul>
                             </div>
                             
                             <div class="accordion shadow-sm mt-3" id="accordionDesc">
                                 <div class="accordion-item border-0 rounded-4 overflow-hidden">
                                     <h2 class="accordion-header">
-                                        <button class="accordion-button fw-bold bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInfo">
+                                        <button class="accordion-button fw-bold bg-white py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInfo">
                                             <i class="bi bi-info-circle me-2 text-secondary"></i> Detalhes do Produto
                                         </button>
                                     </h2>
@@ -170,7 +190,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/geolocator.js"></script>
-    <script src="../js/busca.js"></script>
+    <script src="js/geolocator.js" type="module"></script>
+    <script src="js/busca.js"></script>
 </body>
 </html>

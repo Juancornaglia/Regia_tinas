@@ -1,7 +1,7 @@
 // js/busca.js
 const BUSCA_API_URL = window.API_BASE_URL || (
     window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-        ? "http://localhost:5000"
+        ? `http://${window.location.hostname}:${window.location.port || 5000}`
         : "https://regia-tinas.onrender.com"
 );
 
@@ -9,26 +9,19 @@ let todosOsProdutos = [];
 let produtoAtualModal = null;
 let termoBuscaAtual = "";
 
-// Resolve caminho padrão da logo independente se a página está na raiz ou subpasta
-const LOGO_FALLBACK = window.location.pathname.includes('/usuario/') || window.location.pathname.includes('/servicos/')
-    ? '../img/logo_pequena4.png'
-    : 'img/logo_pequena4.png';
+const LOGO_FALLBACK = 'img/logo_pequena4.png';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Sistema de Busca inicializando...");
-
-    // 1. Lê parâmetros da URL (?q= e ?id=)
     const params = new URLSearchParams(window.location.search);
     termoBuscaAtual = (params.get('q') || '').trim();
 
     const searchInput = document.getElementById('search-input-page');
     if (searchInput) {
-        if (termoBuscaAtual) {
+        if (termoBuscaAtual && !['ofertas', 'novidades', 'vendidos'].includes(termoBuscaAtual.toLowerCase())) {
             searchInput.value = termoBuscaAtual;
             atualizarTituloTermo(termoBuscaAtual);
         }
 
-        // Busca em tempo real ao digitar na barra superior
         searchInput.addEventListener('input', (e) => {
             termoBuscaAtual = e.target.value.trim();
             atualizarTituloTermo(termoBuscaAtual);
@@ -36,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Intercepta o submit do form para filtrar sem precisar recarregar a página inteira
     const formBusca = document.getElementById('form-busca-navbar');
     if (formBusca) {
         formBusca.addEventListener('submit', (e) => {
@@ -47,16 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 2. Inicializa Geolocalização (se existir no geolocator.js)
-    if (typeof inicializarGeolocalizador === 'function') {
-        try {
-            await inicializarGeolocalizador();
-        } catch (e) {
-            console.warn("Geolocalização não pôde ser carregada, usando padrão.");
-        }
-    }
+    // Eventos de ordenação e filtros de vendas
+    document.getElementById('sort-select')?.addEventListener('change', aplicarFiltros);
+    document.getElementById('filtro-apenas-promocao')?.addEventListener('change', aplicarFiltros);
+    document.getElementById('filtro-apenas-estoque')?.addEventListener('change', aplicarFiltros);
 
-    // 3. Configura eventos de filtro
     const priceRange = document.getElementById('price-range');
     if (priceRange) {
         priceRange.addEventListener('input', (e) => {
@@ -66,15 +53,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const btnLimpar = document.getElementById('btn-limpar-filtros');
-    if (btnLimpar) {
-        btnLimpar.addEventListener('click', limparTodosFiltros);
+    document.getElementById('btn-limpar-filtros')?.addEventListener('click', limparTodosFiltros);
+
+    // Atalhos vindos da Home (?q=ofertas, ?q=vendidos)
+    if (termoBuscaAtual.toLowerCase() === 'ofertas') {
+        const promoCheck = document.getElementById('filtro-apenas-promocao');
+        const sortSelect = document.getElementById('sort-select');
+        if (promoCheck) promoCheck.checked = true;
+        if (sortSelect) sortSelect.value = 'ofertas';
+        termoBuscaAtual = '';
+    } else if (termoBuscaAtual.toLowerCase() === 'vendidos') {
+        const sortSelect = document.getElementById('sort-select');
+        if (sortSelect) sortSelect.value = 'destaques';
+        termoBuscaAtual = '';
     }
 
-    // 4. Carrega os produtos
     await loadProducts('search-results');
 
-    // 5. Abre o modal automaticamente se o usuário clicou em um produto na Home (?id=...)
+    // Abre modal direto se veio da Home (?id=...)
     const idDireto = params.get('id');
     if (idDireto) {
         window.abrirModalProduto(idDireto);
@@ -94,20 +90,61 @@ function atualizarTituloTermo(termo) {
     }
 }
 
-// 1. CARREGAMENTO DOS PRODUTOS
+// Normaliza dados vindos do banco (remove códigos numéricos e marcas antigas mesmo antes do SQL)
+function normalizarProduto(p) {
+    const nomeLimpo = (p.nome_produto || 'Produto').replace(/^\d+\s*-\s*/, '').trim();
+    let marcaLimpa = (p.marca || 'Regia & Tinas Care').trim();
+    if (/chateau du pet/i.test(marcaLimpa)) {
+        marcaLimpa = marcaLimpa.includes('/') ? marcaLimpa.split('/')[0].trim() : 'Regia & Tinas Care';
+    }
+    marcaLimpa = marcaLimpa.replace(/^Pet Treas/i, 'Pet Treats');
+
+    let categoriaLimpa = (p.tipo_produto || p.categoria || 'Acessório').trim();
+    if (categoriaLimpa === 'Biscoitos') categoriaLimpa = 'Biscoito';
+    if (categoriaLimpa === 'Agrado') categoriaLimpa = 'Petisco';
+
+    const precoOriginal = parseFloat(p.preco) || 0;
+    const precoPromo = parseFloat(p.preco_promocional) || 0;
+    const temPromocao = precoPromo > 0 && precoPromo < precoOriginal;
+
+    return {
+        ...p,
+        nome_produto: nomeLimpo,
+        marca: marcaLimpa,
+        categoria: categoriaLimpa,
+        preco_original: precoOriginal,
+        preco_final: temPromocao ? precoPromo : precoOriginal,
+        tem_promocao: temPromocao
+    };
+}
+
+// 1. CARREGAMENTO DOS PRODUTOS (USA /api/busca QUE FILTRA ATIVOS, COM FALLBACK PARA /api/produtos)
 async function loadProducts(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    container.innerHTML = '<div class="col-12 text-center py-5 w-100"><div class="spinner-border" style="color: var(--brand-pink);" role="status"></div><p class="mt-3 text-muted fw-bold">Buscando produtos...</p></div>';
-
     try {
-        const response = await fetch(`${BUSCA_API_URL}/api/produtos`);
+        let response = await fetch(`${BUSCA_API_URL}/api/busca`);
+        if (!response.ok) {
+            response = await fetch(`${BUSCA_API_URL}/api/produtos`);
+        }
         if (!response.ok) throw new Error(`Erro ${response.status}`);
         
-        const allProducts = await response.json();
-        todosOsProdutos = Array.isArray(allProducts) ? allProducts : []; 
-        
+        const rawProducts = await response.json();
+        const lista = Array.isArray(rawProducts) ? rawProducts : [];
+
+        // Remove duplicados pelo nome normalizado e filtra apenas ativos
+        const vistos = new Set();
+        todosOsProdutos = lista
+            .filter(p => p.ativo !== false && (p.status_produto || 'Ativo') === 'Ativo')
+            .map(normalizarProduto)
+            .filter(p => {
+                const chave = p.nome_produto.toLowerCase();
+                if (vistos.has(chave)) return false;
+                vistos.add(chave);
+                return true;
+            });
+
         popularFiltrosLaterais(todosOsProdutos);
         aplicarFiltros();
     } catch (e) { 
@@ -116,15 +153,12 @@ async function loadProducts(containerId) {
     }
 }
 
-// Preenche Categorias, Marcas e Preço Máximo na barra lateral automaticamente
 function popularFiltrosLaterais(produtos) {
     const catContainer = document.getElementById('category-filters');
-    const brandContainer = document.getElementById('brand-filters');
     const priceRange = document.getElementById('price-range');
     const priceValue = document.getElementById('price-value');
 
     const categorias = [...new Set(produtos.map(p => p.categoria).filter(Boolean))].sort();
-    const marcas = [...new Set(produtos.map(p => p.marca).filter(Boolean))].sort();
 
     if (catContainer) {
         catContainer.innerHTML = categorias.length > 0
@@ -138,20 +172,8 @@ function popularFiltrosLaterais(produtos) {
         catContainer.querySelectorAll('.filtro-categoria').forEach(cb => cb.addEventListener('change', aplicarFiltros));
     }
 
-    if (brandContainer) {
-        brandContainer.innerHTML = marcas.length > 0
-            ? marcas.map((marca, idx) => `
-                <div class="form-check mb-1">
-                    <input class="form-check-input filtro-marca" type="checkbox" value="${marca}" id="marca-${idx}">
-                    <label class="form-check-label" for="marca-${idx}">${marca}</label>
-                </div>`).join('')
-            : '<span class="text-muted">Nenhuma marca</span>';
-
-        brandContainer.querySelectorAll('.filtro-marca').forEach(cb => cb.addEventListener('change', aplicarFiltros));
-    }
-
     if (priceRange && produtos.length > 0) {
-        const maiorPreco = Math.ceil(Math.max(...produtos.map(p => parseFloat(p.preco) || 0), 500) / 10) * 10;
+        const maiorPreco = Math.ceil(Math.max(...produtos.map(p => p.preco_final), 100) / 10) * 10;
         priceRange.max = maiorPreco;
         priceRange.value = maiorPreco;
         if (priceValue) priceValue.textContent = `R$ ${maiorPreco}`;
@@ -159,7 +181,14 @@ function popularFiltrosLaterais(produtos) {
 }
 
 function limparTodosFiltros() {
-    document.querySelectorAll('.filtro-categoria, .filtro-marca').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.filtro-categoria').forEach(cb => cb.checked = false);
+    const promoCb = document.getElementById('filtro-apenas-promocao');
+    const estoqueCb = document.getElementById('filtro-apenas-estoque');
+    const sortSelect = document.getElementById('sort-select');
+    if (promoCb) promoCb.checked = false;
+    if (estoqueCb) estoqueCb.checked = false;
+    if (sortSelect) sortSelect.value = 'destaques';
+
     const searchInput = document.getElementById('search-input-page');
     if (searchInput) searchInput.value = '';
     termoBuscaAtual = '';
@@ -175,41 +204,51 @@ function limparTodosFiltros() {
     aplicarFiltros();
 }
 
-// 2. RENDERIZAÇÃO DA VITRINE
+// 2. RENDERIZAÇÃO DA VITRINE (5 COLUNAS NO DESKTOP)
 function renderizarVitrine(produtos) {
     const container = document.getElementById('search-results');
     const resultsCount = document.getElementById('results-count');
     if (!container) return;
     
-    if (resultsCount) resultsCount.textContent = `${produtos.length} produto(s) no catálogo`;
+    if (resultsCount) resultsCount.textContent = `${produtos.length} produto(s) encontrado(s)`;
 
     if (produtos.length === 0) {
         container.innerHTML = `
             <div class="col-12 text-center py-5 w-100">
                 <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
-                <h5 class="mt-3 fw-bold text-muted">Nenhum produto encontrado.</h5>
+                <h5 class="mt-3 fw-bold text-muted">Nenhum produto encontrado com esses filtros.</h5>
             </div>`;
         return;
     }
 
     container.innerHTML = produtos.map(p => {
         const id = p.id_produto ?? p.id;
+        const descontoPct = p.tem_promocao
+            ? Math.round(((p.preco_original - p.preco_final) / p.preco_original) * 100)
+            : 0;
+
+        const precoHtml = p.tem_promocao
+            ? `<div class="text-start">
+                   <small class="text-muted text-decoration-line-through d-block" style="font-size: 0.72rem;">R$ ${p.preco_original.toFixed(2).replace('.', ',')}</small>
+                   <span class="fw-bold" style="color: var(--brand-pink); font-size: 0.95rem;">R$ ${p.preco_final.toFixed(2).replace('.', ',')}</span>
+               </div>`
+            : `<span class="fw-bold" style="color: var(--brand-pink); font-size: 0.95rem;">R$ ${p.preco_final.toFixed(2).replace('.', ',')}</span>`;
+
         return `
         <div class="col">
-            <div class="product-card shadow-sm border position-relative">
-                <div onclick="abrirModalProduto('${id}')" style="cursor: pointer;">
-                    <div class="img-container">
-                        <img src="${p.url_imagem || LOGO_FALLBACK}" alt="${p.nome_produto}" class="product-img" onerror="this.onerror=null; this.src='${LOGO_FALLBACK}'">
+            <div class="product-card shadow-sm" onclick="abrirModalProduto('${id}')">
+                <div class="img-container">
+                    ${p.tem_promocao ? `<span class="badge-promo">-${descontoPct}%</span>` : ''}
+                    <img src="${p.url_imagem || LOGO_FALLBACK}" alt="${p.nome_produto}" class="product-img" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${LOGO_FALLBACK}'">
+                </div>
+                <div class="card-body border-top">
+                    <div>
+                        <span class="badge bg-light text-secondary mb-1 border" style="font-size: 0.7rem;">${p.categoria}</span>
+                        <h6 class="fw-bold text-dark mb-2 product-title" title="${p.nome_produto}">${p.nome_produto}</h6>
                     </div>
-                    <div class="card-body border-top">
-                        <span class="badge bg-light text-secondary mb-2">${p.categoria || 'Geral'}</span>
-                        <h6 class="fw-bold text-dark mb-1 text-truncate" title="${p.nome_produto}">${p.nome_produto}</h6>
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <span class="price-tag fw-bold" style="color: var(--brand-pink);">
-                                R$ ${parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}
-                            </span>
-                            <span class="badge bg-dark text-white rounded-pill"><i class="bi bi-geo-alt"></i> Lojas</span>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                        ${precoHtml}
+                        <span class="badge bg-dark text-white rounded-pill" style="font-size: 0.7rem;"><i class="bi bi-geo-alt"></i> Lojas</span>
                     </div>
                 </div>
             </div>
@@ -217,57 +256,105 @@ function renderizarVitrine(produtos) {
     `}).join('');
 }
 
-// 3. FILTROS COMBINADOS (TEXTO + CATEGORIA + MARCA + PREÇO)
+// 3. FILTROS COMBINADOS + ORDENAÇÃO DE VENDAS
 function aplicarFiltros() {
     const categoriasSelecionadas = Array.from(document.querySelectorAll('.filtro-categoria:checked')).map(cb => cb.value);
-    const marcasSelecionadas = Array.from(document.querySelectorAll('.filtro-marca:checked')).map(cb => cb.value);
+    const apenasPromocao = document.getElementById('filtro-apenas-promocao')?.checked || false;
+    const apenasEstoque = document.getElementById('filtro-apenas-estoque')?.checked || false;
+    const ordenacao = document.getElementById('sort-select')?.value || 'destaques';
     const priceRange = document.getElementById('price-range');
     const precoMaximo = priceRange ? parseFloat(priceRange.value) : Infinity;
     const termo = termoBuscaAtual.toLowerCase();
 
-    const produtosFiltrados = todosOsProdutos.filter(p => {
-        const preco = parseFloat(p.preco) || 0;
-        const nome = (p.nome_produto || '').toLowerCase();
-        const cat = (p.categoria || '').toLowerCase();
-        const marca = (p.marca || '').toLowerCase();
+    let filtrados = todosOsProdutos.filter(p => {
+        const nome = p.nome_produto.toLowerCase();
+        const cat = p.categoria.toLowerCase();
+        const desc = (p.descricao || '').toLowerCase();
 
-        const passaTexto = !termo || nome.includes(termo) || cat.includes(termo) || marca.includes(termo);
+        const passaTexto = !termo || nome.includes(termo) || cat.includes(termo) || desc.includes(termo);
         const passaCategoria = categoriasSelecionadas.length === 0 || categoriasSelecionadas.includes(p.categoria);
-        const passaMarca = marcasSelecionadas.length === 0 || marcasSelecionadas.includes(p.marca);
-        const passaPreco = preco <= precoMaximo;
+        const passaPreco = p.preco_final <= precoMaximo;
+        const passaPromo = !apenasPromocao || p.tem_promocao;
+        const passaEstoque = !apenasEstoque || (p.quantidade_estoque ?? 0) > 0;
 
-        return passaTexto && passaCategoria && passaMarca && passaPreco;
+        return passaTexto && passaCategoria && passaPreco && passaPromo && passaEstoque;
     });
 
-    renderizarVitrine(produtosFiltrados);
+    // Ordenação de vendas
+    switch (ordenacao) {
+        case 'menor_preco':
+            filtrados.sort((a, b) => a.preco_final - b.preco_final);
+            break;
+        case 'maior_preco':
+            filtrados.sort((a, b) => b.preco_final - a.preco_final);
+            break;
+        case 'ofertas':
+            filtrados.sort((a, b) => (b.preco_original - b.preco_final) - (a.preco_original - a.preco_final));
+            break;
+        case 'az':
+            filtrados.sort((a, b) => a.nome_produto.localeCompare(b.nome_produto));
+            break;
+        default: // 'destaques' -> prioriza em estoque e mais vendidos
+            filtrados.sort((a, b) => (b.quantidade_estoque || 0) - (a.quantidade_estoque || 0));
+            break;
+    }
+
+    renderizarVitrine(filtrados);
 }
 
-// 4. MODAL
+// 4. MODAL + CONSULTA DE ESTOQUE NAS LOJAS FÍSICAS
 window.abrirModalProduto = async function(idProduto) {
     produtoAtualModal = todosOsProdutos.find(p => String(p.id_produto ?? p.id) === String(idProduto));
     if (!produtoAtualModal) return;
 
-    document.getElementById('modal-img').src = produtoAtualModal.url_imagem || LOGO_FALLBACK;
+    const modalImg = document.getElementById('modal-img');
+    modalImg.setAttribute('referrerpolicy', 'no-referrer');
+    modalImg.src = produtoAtualModal.url_imagem || LOGO_FALLBACK;
+
     document.getElementById('modal-codigo').textContent = produtoAtualModal.id_produto ?? produtoAtualModal.id ?? '--';
-    document.getElementById('modal-categoria').textContent = (produtoAtualModal.categoria || 'Geral').toUpperCase();
-    document.getElementById('modal-nome').textContent = produtoAtualModal.nome_produto || 'Produto';
-    document.getElementById('modal-marca').textContent = produtoAtualModal.marca || 'Marca própria';
-    document.getElementById('modal-preco-box').textContent = `R$ ${parseFloat(produtoAtualModal.preco || 0).toFixed(2).replace('.', ',')}`;
+    document.getElementById('modal-categoria').textContent = produtoAtualModal.categoria.toUpperCase();
+    document.getElementById('modal-nome').textContent = produtoAtualModal.nome_produto;
+    document.getElementById('modal-marca').textContent = produtoAtualModal.marca;
+
+    const precoBox = document.getElementById('modal-preco-box');
+    precoBox.innerHTML = produtoAtualModal.tem_promocao
+        ? `<span class="text-muted text-decoration-line-through fs-6 me-2">R$ ${produtoAtualModal.preco_original.toFixed(2).replace('.', ',')}</span>
+           <span class="fs-3 fw-bold" style="color: var(--brand-pink);">R$ ${produtoAtualModal.preco_final.toFixed(2).replace('.', ',')}</span>`
+        : `<span class="fs-3 fw-bold" style="color: var(--brand-pink);">R$ ${produtoAtualModal.preco_final.toFixed(2).replace('.', ',')}</span>`;
+
     document.getElementById('modal-descricao').textContent = produtoAtualModal.descricao || 'Sem descrição adicional cadastrada para este item.';
 
-    const storeList = document.getElementById('modal-store-list');
-    if (storeList) {
-        const qtd = produtoAtualModal.quantidade_estoque ?? 0;
-        storeList.innerHTML = qtd > 0
-            ? `<li class="store-item p-2 mb-2 shadow-sm d-flex justify-content-between align-items-center">
-                   <span><strong>Unidade Matriz</strong></span>
-                   <span class="badge bg-success rounded-pill">${qtd} em estoque</span>
-               </li>`
-            : `<li class="text-muted small">Consulte disponibilidade na recepção da unidade.</li>`;
-    }
-    
     const modal = new bootstrap.Modal(document.getElementById('modalProduto'));
     modal.show();
-    
-    if (typeof verificarEstoque === 'function') verificarEstoque(idProduto);
+
+    // Consulta disponibilidade nas unidades físicas (/api/produtos/<id>/estoque)
+    const storeList = document.getElementById('modal-store-list');
+    if (storeList) {
+        storeList.innerHTML = '<li><span class="spinner-border spinner-border-sm text-secondary"></span> Verificando unidades...</li>';
+        try {
+            const res = await fetch(`${BUSCA_API_URL}/api/produtos/${idProduto}/estoque`);
+            const lojas = res.ok ? await res.json() : [];
+
+            if (Array.isArray(lojas) && lojas.length > 0) {
+                storeList.innerHTML = lojas.map(l => `
+                    <li class="store-item p-2 mb-2 shadow-sm d-flex justify-content-between align-items-center">
+                        <span><strong><i class="bi bi-shop me-1"></i>${l.nome_loja}</strong></span>
+                        ${l.quantidade > 0
+                            ? `<span class="badge bg-success rounded-pill">${l.quantidade} un. disponíveis</span>`
+                            : `<span class="badge bg-secondary rounded-pill">Esgotado nesta unidade</span>`}
+                    </li>
+                `).join('');
+            } else {
+                const qtd = produtoAtualModal.quantidade_estoque ?? 0;
+                storeList.innerHTML = qtd > 0
+                    ? `<li class="store-item p-2 mb-2 shadow-sm d-flex justify-content-between align-items-center">
+                           <span><strong>São Caetano do Sul (Matriz)</strong></span>
+                           <span class="badge bg-success rounded-pill">${qtd} un. disponíveis</span>
+                       </li>`
+                    : `<li class="text-muted small">Indisponível no momento. Consulte a recepção para encomenda.</li>`;
+            }
+        } catch (err) {
+            console.error("Erro ao consultar estoque:", err);
+        }
+    }
 };
