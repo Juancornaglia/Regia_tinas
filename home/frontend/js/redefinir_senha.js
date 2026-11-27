@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(error.message);
             } finally {
                 button.disabled = false;
-                button.textContent = 'SALVAR NOVA SENHA';
+                button.textContent = 'REDEFINIR SENHA';
             }
         });
     }

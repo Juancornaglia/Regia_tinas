@@ -2,7 +2,7 @@
 // HOME.JS - CÉREBRO INTEGRADO (Login + Vitrines + UI)
 // ========================================================
 
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+const HOME_API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000" 
     : "https://regia-tinas.onrender.com";
 
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Carregamento único dos produtos para todas as vitrines
     await carregarTodasAsVitrines();
     
-    console.log("Sistema Regia & Tinas Care operacional! 🐾🚀");
+    console.log("Sistema Regia & Tinas Care operacional.");
 });
 
 // --- FUNÇÕES DE APOIO ---
@@ -29,12 +29,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 function verificarEstadoLogin() {
     const userId = localStorage.getItem('usuario_id');
     const userName = localStorage.getItem('usuario_nome');
+    const userRole = (localStorage.getItem('usuario_role') || '').toLowerCase().trim();
     const loginButton = document.getElementById('btn-login-header');
+    const sidebarAccountLink = document.getElementById('sidebar-account-link');
+
+    const primeiroNome = userName ? userName.split(' ')[0] : 'Conta';
+    let destinoConta = 'usuario/login.html';
+    if (userRole === 'admin') {
+        destinoConta = 'admin/dashboard.html';
+    } else if (userRole === 'funcionario') {
+        destinoConta = 'funcionario/dash_funcionario.html';
+    } else if (userId) {
+        destinoConta = 'usuario/perfil.html';
+    }
+
+    if (sidebarAccountLink) {
+        sidebarAccountLink.href = destinoConta;
+        sidebarAccountLink.textContent = userId ? primeiroNome : 'Entre ou cadastre-se';
+    }
 
     if (loginButton && userId) {
-        const primeiroNome = userName ? userName.split(' ')[0] : 'Conta';
-        loginButton.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> Olá, ${primeiroNome}`;
-        loginButton.href = 'usuario/perfil.html'; 
+        loginButton.replaceChildren();
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-person-check-fill me-1';
+        const label = document.createTextNode(` Olá, ${primeiroNome}`);
+        loginButton.append(icon, label);
+        loginButton.href = destinoConta;
+        loginButton.title = userRole === 'admin'
+            ? 'Voltar ao Painel Admin'
+            : userRole === 'funcionario'
+                ? 'Voltar ao Painel Operacional'
+                : 'Acessar meu perfil';
         loginButton.style.fontWeight = '600';
     }
 }
@@ -60,17 +85,23 @@ function setupSidebar() {
         overlay.onclick = close;
     }
 
-    // Abre e fecha os submenus (Categorias, Cachorros, Gatos)
+    // Abre e fecha as categorias do menu lateral.
     const submenuToggles = document.querySelectorAll('.submenu-toggle');
     submenuToggles.forEach(btn => {
         btn.addEventListener('click', () => {
             const submenu = btn.nextElementSibling;
             if (submenu) {
-                submenu.classList.toggle('active');
-                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                const aberto = btn.getAttribute('aria-expanded') === 'true';
+                btn.setAttribute('aria-expanded', String(!aberto));
+                submenu.style.display = aberto ? 'none' : 'block';
             }
         });
     });
+
+    sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        overlay?.classList.remove('active');
+    }));
 }
 
 function setupMediaSliders() {
@@ -96,13 +127,15 @@ function createProductCard(produto) {
     const displayPrice = parseFloat(produto.preco_promocional) || parseFloat(produto.preco) || 0;
     
     return `
-        <div class="card h-100 product-card shadow-sm mx-2" style="min-width: 220px; max-width: 250px;">
-            <a href="busca.html?id=${id}">
-                <img src="${produto.url_imagem || 'img/logo_pequena4.png'}" class="card-img-top" style="height: 180px; object-fit: contain;" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
+        <div class="card product-card shadow-sm mx-2">
+            <a class="product-image-link" href="busca.html?id=${id}">
+                <div class="product-image-container">
+                    <img src="${produto.url_imagem || 'img/logo_pequena4.png'}" class="product-image" alt="${produto.nome_produto || 'Produto'}" onerror="this.onerror=null; this.src='img/logo_pequena4.png'">
+                </div>
             </a>
             <div class="card-body text-center d-flex flex-column justify-content-between">
                 <div>
-                    <h6 class="fw-bold text-truncate" title="${produto.nome_produto || 'Produto'}">${produto.nome_produto || 'Produto'}</h6>
+                    <h6 class="product-title fw-bold" title="${produto.nome_produto || 'Produto'}">${produto.nome_produto || 'Produto'}</h6>
                     <p class="text-brand fw-bold">R$ ${displayPrice.toFixed(2).replace('.', ',')}</p>
                 </div>
                 <a href="busca.html?id=${id}" class="btn w-100 text-white rounded-pill mt-2" style="background-color: #FE8697;">Ver Lojas</a>
@@ -116,7 +149,7 @@ async function carregarTodasAsVitrines() {
     const tracks = ['ofertas-track', 'recomendados-track', 'novidades-track', 'mais-vendidos-track'];
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/produtos`);
+        const response = await fetch(`${HOME_API_BASE_URL}/api/produtos`);
         if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
         
         const allProducts = await response.json();

@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('Deseja realmente sair da sua conta com segurança?')) {
             localStorage.clear();
             sessionStorage.clear();
-            showToast("Sessão encerrada. Até logo! 🐾", "sucesso");
+            showToast("Sessão encerrada. Até logo!", "sucesso");
             setTimeout(() => { window.location.href = '../index.html'; }, 1000);
         }
     });
@@ -73,7 +73,7 @@ async function carregarDadosUsuario(id) {
         if (inputEmail) inputEmail.value = data.email || '';
         
     } catch (error) {
-        console.error("❌ ERRO CRÍTICO NO PERFIL:", error);
+        console.error("ERRO CRÍTICO NO PERFIL:", error);
         showToast("Erro ao carregar dados.", "erro");
     }
 }
@@ -99,7 +99,7 @@ async function salvarPerfil(id) {
         });
 
         if (response.ok) {
-            showToast("✨ Dados pessoais atualizados com sucesso!", "sucesso");
+            showToast("Dados pessoais atualizados com sucesso!", "sucesso");
             localStorage.setItem('usuario_nome', payload.nome_completo);
             
             const greetingElement = document.getElementById('user-greeting');
@@ -183,7 +183,7 @@ async function cadastrarPet(e, id) {
         });
 
         if (response.ok) {
-            showToast(`🐾 ${payload.nome_pet} foi registrado na sua conta!`, "sucesso");
+            showToast(`${payload.nome_pet} foi registrado na sua conta!`, "sucesso");
             e.target.reset();
             if (typeof window.toggleFormPet === 'function') window.toggleFormPet();
             await carregarPets(id);

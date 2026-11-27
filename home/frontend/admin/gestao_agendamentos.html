@@ -105,12 +105,20 @@
         .btn-action { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; margin-left: 4px; border: none; transition: 0.2s; }
         .btn-action:hover { transform: scale(1.1); }
     </style>
+    <link rel="stylesheet" href="../css/internal-mobile.css">
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
 
+    <header class="mobile-topbar">
+        <button type="button" class="mobile-menu-toggle" aria-label="Abrir menu" aria-expanded="false"><i class="bi bi-list fs-2"></i></button>
+        <span class="mobile-topbar-title">Regia &amp; Tinas</span>
+    </header>
+    <button type="button" class="sidebar-backdrop" aria-label="Fechar menu"></button>
+
     <aside class="admin-sidebar shadow-lg">
         <div class="sidebar-header text-center p-4">
-            <div class="mascote-header mb-2">👑</div>
+            <img src="../img/logo_pequena4.png" alt="Regia &amp; Tinas Care" width="54" height="54" class="mb-2 rounded-circle bg-white p-1">
             <h4 class="fw-bold text-white mb-0">Regia & Tinas</h4>
             <small class="text-white-50">ADMIN MASTER</small>
         </div>
@@ -129,28 +137,23 @@
         </ul>
 
         <div class="logout-btn-container p-3 mt-auto">
+            <a href="../index.html" class="btn btn-outline-light w-100 rounded-pill btn-sm fw-bold mb-2"><i class="bi bi-shop me-2"></i>Ir para Loja</a>
             <button class="btn btn-outline-danger w-100 rounded-pill btn-sm fw-bold shadow-sm" onclick="location.href='../usuario/login.html'"><i class="bi bi-box-arrow-right me-2"></i>Sair do Turno</button>
         </div>
     </aside>
 
     <main class="admin-main-content">
         <div class="filter-container">
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <div>
-                    <h2 class="fw-bold text-dark mb-0">Gestão de Agendamentos</h2>
-                    <p class="text-muted mb-0 small">Acompanhe e controle todas as reservas da rede.</p>
-                </div>
-                <button class="btn bg-brand-pink text-white fw-bold shadow-sm rounded-pill px-4" onclick="abrirModalNovoAgendamento()">
-                    <i class="bi bi-plus-circle me-2"></i>NOVO AGENDAMENTO
-                </button>
+            <div class="mb-3">
+                <h2 class="fw-bold text-dark mb-0 text-nowrap">Gestão de Agendamentos</h2>
             </div>
             
             <div class="dashboard-panel bg-white shadow-sm p-3">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="input-group border rounded-pill overflow-hidden bg-light">
-                            <span class="input-group-text bg-transparent border-0"><i class="bi bi-search brand-pink"></i></span>
                             <input type="text" id="input-busca-agendamento" class="form-control border-0 bg-transparent" placeholder="Cliente, Pet ou ID...">
+                            <button type="button" id="btn-search-appointments" class="btn bg-brand-pink text-white px-3" aria-label="Buscar agendamentos"><i class="bi bi-search"></i></button>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -177,7 +180,7 @@
         </div>
 
         <div class="dashboard-panel mt-2">
-            <div class="table-responsive">
+            <div class="table-responsive d-none d-md-block">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -199,8 +202,11 @@
                     </tbody>
                 </table>
             </div>
+            <div id="mobile-appointments-list" class="mobile-disclosure-list d-md-none"></div>
         </div>
     </main>
+
+    <button type="button" class="btn-add-float" onclick="abrirModalNovoAgendamento()" aria-label="Novo agendamento" title="Novo agendamento"><i class="bi bi-plus-lg"></i></button>
 
     <div class="modal fade" id="modalNovoAgendamento" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -247,6 +253,11 @@
             var myModal = new bootstrap.Modal(document.getElementById('modalNovoAgendamento'));
             myModal.show();
         }
+        if (new URLSearchParams(window.location.search).get('novo') === '1') {
+            document.addEventListener('DOMContentLoaded', abrirModalNovoAgendamento, { once: true });
+        }
     </script>
+    <script src="../js/internal_mobile_menu.js" defer></script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

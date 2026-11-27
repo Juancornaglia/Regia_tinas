@@ -1,0 +1,183 @@
+.mobile-topbar,
+.sidebar-backdrop {
+    display: none;
+}
+
+.admin-sidebar,
+.worker-sidebar {
+    transition: transform 0.3s ease;
+}
+
+.kpi-card,
+.kpi-card .card-body {
+    min-width: 0;
+}
+
+.kpi-card h2,
+.kpi-card h6,
+.kpi-card small,
+.kpi-value {
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+.kpi-value {
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+}
+
+#employee-appointment-notifications article {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.btn-add-float {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 1030;
+    display: inline-flex;
+    width: 60px;
+    height: 60px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #fff;
+    background: #FE8697;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: 0 8px 22px rgba(254, 134, 151, .4);
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.btn-add-float:hover,
+.btn-add-float:focus-visible {
+    color: #fff;
+    background: #e57585;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 991.98px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    .admin-sidebar,
+    .worker-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1050;
+        height: 100vh;
+        height: 100dvh;
+        transform: translateX(-100%);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .admin-sidebar.is-open,
+    .worker-sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    .mobile-topbar {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 1040;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 60px;
+        padding: 8px 16px;
+        color: #fff;
+        background: #1e272e;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+    }
+
+    .mobile-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        color: #fff;
+        background: transparent;
+        border: 0;
+        border-radius: 10px;
+    }
+
+    .mobile-menu-toggle:hover,
+    .mobile-menu-toggle:focus-visible {
+        color: #fff;
+        background: rgba(254, 134, 151, 0.2);
+    }
+
+    .mobile-topbar-title {
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1045;
+        display: block;
+        padding: 0;
+        background: rgba(15, 23, 42, 0.58);
+        border: 0;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .sidebar-backdrop.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    body.sidebar-open {
+        overflow: hidden;
+    }
+
+    .admin-main-content,
+    .worker-main-content {
+        width: 100%;
+        min-width: 0;
+        margin-left: 0 !important;
+        padding: 76px 16px 16px !important;
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+
+    .search-container,
+    .search-header,
+    .filter-container {
+        position: static;
+    }
+
+    .kanban-board,
+    .kanban-container {
+        flex-direction: column;
+        overflow-x: visible;
+    }
+
+    .kanban-column {
+        width: 100%;
+        min-width: 0;
+    }
+
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-panel,
+    .panel-white {
+        padding: 18px;
+    }
+
+    .kpi-card .card-body {
+        padding: 18px !important;
+    }
+}

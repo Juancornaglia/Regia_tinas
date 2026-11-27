@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário Operacional | Regia &amp; Tinas Care</title>
+    <link rel="icon" type="image/png" href="../img/logo_pequena4.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/internal-mobile.css">
+    <style>
+        body { background: #f4f6f9; font-family: 'Poppins', sans-serif; }
+        .worker-sidebar { width: 260px; height: 100vh; position: fixed; inset: 0 auto 0 0; background: #1e272e; display: flex; flex-direction: column; z-index: 1000; }
+        .worker-main-content { margin-left: 260px; padding: 40px; min-height: 100vh; }
+        .nav-link { border-radius: 10px; margin: 2px 15px; color: #a4b0be; font-weight: 500; }
+        .nav-link.active { background: #FE8697 !important; color: #fff !important; }
+        .nav-section-title { color: #747d8c; font-size: .75rem; letter-spacing: 1px; margin: 1.5rem 1.5rem .5rem; text-transform: uppercase; }
+        .schedule-panel { background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.04); }
+        .table-responsive { border-radius: 12px; }
+        .agenda-weekdays, .agenda-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+        .agenda-weekdays span { text-align: center; color: #747d8c; font-size: .7rem; font-weight: 700; padding: 4px 0; }
+        .agenda-day { position: relative; aspect-ratio: 1; border: 0; border-radius: 10px; background: transparent; color: #2d3436; font: inherit; font-size: .78rem; }
+        .agenda-day:hover { background: #fff0f2; }
+        .agenda-day.is-selected { color: #fff; background: #FE8697; font-weight: 700; }
+        .agenda-day.has-items::after { content: ''; position: absolute; width: 5px; height: 5px; left: 50%; bottom: 3px; border-radius: 50%; background: #FE8697; transform: translateX(-50%); }
+        .agenda-day.is-selected.has-items::after { background: #fff; }
+        .agenda-day.is-outside { color: #b2bec3; }
+        .agenda-day.is-today:not(.is-selected) { box-shadow: inset 0 0 0 1px #FE8697; }
+        .agenda-reminder { border-left: 3px solid #FE8697; background: #fff7f8; border-radius: 10px; }
+        .agenda-reminder.is-done { border-left-color: #198754; opacity: .72; }
+    </style>
+<link rel="stylesheet" href="../css/site-ui.css">
+</head>
+<body>
+    <header class="mobile-topbar">
+        <button type="button" class="mobile-menu-toggle" aria-label="Abrir menu" aria-expanded="false"><i class="bi bi-list fs-2"></i></button>
+        <span class="mobile-topbar-title">Regia &amp; Tinas</span>
+    </header>
+    <button type="button" class="sidebar-backdrop" aria-label="Fechar menu"></button>
+
+    <aside class="worker-sidebar shadow-lg">
+        <div class="sidebar-header text-center p-4">
+            <img src="../img/logo_pequena4.png" alt="Regia &amp; Tinas Care" width="54" height="54" class="mb-2 rounded-circle bg-white p-1">
+            <h4 class="fw-bold text-white mb-0">Regia &amp; Tinas</h4>
+            <small class="text-white-50">SISTEMA DA EQUIPE</small>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item"><a class="nav-link" href="dash_funcionario.html"><i class="bi bi-house-door me-2"></i>Início</a></li>
+            <li class="nav-section-title">Atendimento</li>
+            <li class="nav-item"><a class="nav-link" href="operacional_funcionario.html"><i class="bi bi-kanban me-2"></i>Fila de Atendimento</a></li>
+            <li class="nav-item"><a class="nav-link" href="prontu_funcionario.html"><i class="bi bi-journal-medical me-2"></i>Prontuários</a></li>
+            <li class="nav-item"><a class="nav-link active" href="escala_funcionario.html"><i class="bi bi-calendar-week me-2"></i>Calendário Operacional</a></li>
+            <li class="nav-section-title">Recursos</li>
+            <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalEstoque"><i class="bi bi-box-seam me-2"></i>Uso de Material</a></li>
+        </ul>
+        <div class="p-3 mt-auto d-grid gap-2">
+            <a href="../index.html" class="btn btn-outline-light rounded-pill btn-sm"><i class="bi bi-shop me-2"></i>Ir para Loja</a>
+            <button id="logout-button" class="btn btn-outline-danger rounded-pill btn-sm fw-bold"><i class="bi bi-box-arrow-right me-2"></i>Sair do Turno</button>
+        </div>
+    </aside>
+
+    <main class="worker-main-content">
+        <div class="mb-4">
+            <h1 class="h2 fw-bold text-dark mb-1">Calendário Operacional &amp; Lembretes</h1>
+            <p class="text-muted mb-0">Organize pacientes, rotina do hotel, retornos e tarefas do serviço.</p>
+        </div>
+        <section class="schedule-panel" aria-label="Calendário operacional e lembretes">
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Agenda da equipe</h2>
+                    <p class="small text-muted mb-0">Selecione uma data para consultar ou atualizar os lembretes.</p>
+                </div>
+                <button type="button" id="btn-novo-lembrete" class="btn bg-brand-pink text-white rounded-circle flex-shrink-0" style="width: 44px; height: 44px;" aria-label="Adicionar lembrete" title="Adicionar lembrete">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <button type="button" id="agenda-mes-anterior" class="btn btn-sm btn-light rounded-circle" aria-label="Mês anterior"><i class="bi bi-chevron-left"></i></button>
+                <strong id="agenda-mes-titulo" class="small text-capitalize">--</strong>
+                <button type="button" id="agenda-proximo-mes" class="btn btn-sm btn-light rounded-circle" aria-label="Próximo mês"><i class="bi bi-chevron-right"></i></button>
+            </div>
+            <div class="agenda-weekdays" aria-hidden="true"><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span><span>DOM</span></div>
+            <div id="agenda-calendario" class="agenda-calendar-grid" aria-label="Calendário mensal"></div>
+            <div class="d-flex align-items-center justify-content-between border-top pt-3 mt-3 mb-2">
+                <button type="button" id="agenda-dia-anterior" class="btn btn-sm btn-light rounded-circle" aria-label="Dia anterior"><i class="bi bi-arrow-left"></i></button>
+                <div id="agenda-data-selecionada" class="fw-bold small text-center">--</div>
+                <button type="button" id="agenda-proximo-dia" class="btn btn-sm btn-light rounded-circle" aria-label="Próximo dia"><i class="bi bi-arrow-right"></i></button>
+            </div>
+            <div id="agenda-lembretes-dia" class="d-flex flex-column gap-2" style="max-height: 420px; overflow-y: auto;">
+                <p class="text-muted small text-center py-3 mb-0">Carregando lembretes...</p>
+            </div>
+        </section>
+    </main>
+    <div class="modal fade" id="modalLembreteFuncionario" tabindex="-1" aria-labelledby="modalLembreteTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg overflow-hidden">
+                <div class="modal-header bg-dark text-white p-4">
+                    <h5 id="modalLembreteTitulo" class="modal-title fw-bold">Novo lembrete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="form-lembrete-funcionario">
+                    <div class="modal-body p-4 bg-light">
+                        <input type="hidden" id="lembrete-id">
+                        <div class="mb-3"><label for="lembrete-tipo" class="form-label">Tipo</label>
+                            <select id="lembrete-tipo" class="form-select" required>
+                                <option value="cliente_fixo">Paciente / cliente fixo</option>
+                                <option value="retorno">Retorno</option>
+                                <option value="tarefa_interna">Tarefa ou rotina do hotel</option>
+                            </select>
+                        </div>
+                        <div class="mb-3"><label for="lembrete-titulo" class="form-label">Título</label><input id="lembrete-titulo" class="form-control" maxlength="180" required placeholder="Ex.: Retorno da Mel"></div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6"><label for="lembrete-data" class="form-label">Data</label><input id="lembrete-data" type="date" class="form-control" required></div>
+                            <div class="col-sm-6"><label for="lembrete-hora" class="form-label">Horário</label><input id="lembrete-hora" type="time" class="form-control"></div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6"><label for="lembrete-cliente" class="form-label">Tutor</label><input id="lembrete-cliente" class="form-control" maxlength="160" placeholder="Nome do cliente"></div>
+                            <div class="col-sm-6"><label for="lembrete-pet" class="form-label">Pet</label><input id="lembrete-pet" class="form-control" maxlength="120" placeholder="Nome do pet / hóspede"></div>
+                        </div>
+                        <div><label for="lembrete-descricao" class="form-label">Observações</label><textarea id="lembrete-descricao" class="form-control" rows="3" placeholder="Detalhes da rotina ou tarefa"></textarea></div>
+                        <div id="lembrete-erro" class="text-danger small mt-3" role="alert" hidden></div>
+                    </div>
+                    <div class="modal-footer border-0 bg-white p-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button id="btn-salvar-lembrete" type="submit" class="btn bg-brand-pink text-white rounded-pill px-4 fw-bold">Salvar lembrete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/dash_funcionario.js" defer></script>
+    <script src="../js/escala_funcionario.js" defer></script>
+    <script src="../js/internal_mobile_menu.js" defer></script>
+<script src="../js/site_navigation.js" defer></script>
+</body>
+</html>

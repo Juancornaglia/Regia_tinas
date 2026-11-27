@@ -27,14 +27,14 @@ def executar_query(sql, params=None):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql, params)
-            if sql.strip().upper().startswith("SELECT"):
+            if cur.description is not None:
                 resultado = cur.fetchall()
-            else:
-                conn.commit()
+            conn.commit()
+            if cur.description is None:
                 resultado = True
     except Exception as e:
         print(f"Erro na query: {e}")
-        if conn: conn.rollback()
+        conn.rollback()
     finally:
-        if conn: conn.close()
+        conn.close()
     return resultado

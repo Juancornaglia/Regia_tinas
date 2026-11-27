@@ -48,7 +48,7 @@ async function carregarProfissionais() {
 // --- 2. CARREGAR GRADE DE HORÁRIOS ---
 async function carregarHorarioPadrao(idProfissional) {
     const tbody = document.getElementById('tabela-horarios-body');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-brand"></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-brand"></div></td></tr>';
 
     try {
         const token = localStorage.getItem('token');
@@ -60,7 +60,7 @@ async function carregarHorarioPadrao(idProfissional) {
         const diasSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
         tbody.innerHTML = diasSemana.map(dia => {
-            const h = horarios.find(x => x.dia_semana === dia) || { is_folga: false, hora_inicio: '09:00', hora_fim: '18:00' };
+            const h = horarios.find(x => x.dia_semana === dia) || { is_folga: false, hora_inicio: '09:00', hora_fim: '18:00', observacoes: '' };
             const isTrabalha = !h.is_folga;
 
             return `
@@ -74,6 +74,7 @@ async function carregarHorarioPadrao(idProfissional) {
                 </td>
                 <td><input type="time" class="form-control form-control-sm border-0 bg-light input-inicio" value="${h.hora_inicio || '09:00'}" ${h.is_folga ? 'disabled' : ''}></td>
                 <td><input type="time" class="form-control form-control-sm border-0 bg-light input-fim" value="${h.hora_fim || '18:00'}" ${h.is_folga ? 'disabled' : ''}></td>
+                <td><input type="text" class="form-control form-control-sm border-0 bg-light input-observacoes" value="${String(h.observacoes || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" maxlength="300" aria-label="Observações de ${dia}"></td>
             </tr>`;
         }).join('');
 
@@ -89,7 +90,7 @@ async function carregarHorarioPadrao(idProfissional) {
             });
         });
 
-    } catch (error) { tbody.innerHTML = '<tr><td colspan="4" class="text-danger text-center small">Erro ao carregar escala.</td></tr>'; }
+    } catch (error) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center small">Erro ao carregar escala.</td></tr>'; }
 }
 
 // --- 3. SALVAR GRADE SEMANAL ---
@@ -106,7 +107,8 @@ async function salvarGradeHorarios(e) {
         dia_semana: tr.dataset.dia,
         is_folga: !tr.querySelector('.switch-folga').checked,
         hora_inicio: tr.querySelector('.input-inicio').value,
-        hora_fim: tr.querySelector('.input-fim').value
+        hora_fim: tr.querySelector('.input-fim').value,
+        observacoes: tr.querySelector('.input-observacoes').value.trim()
     }));
 
     try {
@@ -120,7 +122,7 @@ async function salvarGradeHorarios(e) {
         });
 
         if (response.ok) {
-            alert("✅ Jornada semanal atualizada!");
+            alert("Jornada semanal atualizada.");
             renderizarPrevisaoSemana(idProfissional);
         } else { alert("Erro ao salvar."); }
     } catch (error) { alert("Erro de conexão."); }
@@ -209,7 +211,7 @@ async function salvarFolga(e) {
         });
 
         if (response.ok) {
-            alert("🚀 Ausência registrada e bloqueada no site!");
+            alert("Ausência registrada e bloqueada no site.");
             carregarFolgas(idProfissional);
         }
     } catch (error) { alert("Erro ao conectar."); }

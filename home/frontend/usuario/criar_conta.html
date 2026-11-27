@@ -94,7 +94,14 @@
         font-weight: bold;
         text-decoration: none;
     }
+
+    @media (max-width: 575.98px) {
+        .form-container { padding: 0; }
+        .form-box { padding: 24px 18px; margin: 16px; width: calc(100% - 32px); }
+        .form-box .btn-solid { width: 100%; min-height: 48px; }
+    }
 </style>
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
     
@@ -158,5 +165,6 @@
     </script>
 
     <script src="../js/criar_conta.js" type="module"></script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

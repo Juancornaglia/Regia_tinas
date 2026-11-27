@@ -189,7 +189,22 @@
             font-size: 0.95rem;
             letter-spacing: 1px;
         }
+
+        @media (max-width: 575.98px) {
+            main { overflow-x: hidden; }
+            .nav-pills-container { display: flex; max-width: 100%; justify-content: center; }
+            .custom-nav-tabs { flex-wrap: wrap; justify-content: center; }
+            .custom-nav-tabs .nav-link { padding: 8px 12px; font-size: 0.85rem; }
+            .card.p-4.p-md-5 { padding: 1.25rem !important; }
+            #lista-pets > [class*="col-"] { flex: 0 0 100%; width: 100%; max-width: 100%; }
+            #form-perfil .btn-rosa,
+            #form-cadastro-pet button,
+            #aba-agendamentos .btn { width: 100%; }
+            #form-cadastro-pet .mt-4 { display: flex; flex-direction: column; gap: 8px; }
+            #form-cadastro-pet .mt-4 .btn { margin-right: 0 !important; }
+        }
     </style>
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
 
@@ -243,7 +258,7 @@
                         <a class="nav-link" onclick="mostrarAba('pets', this)"><i class="bi bi-paw-fill me-2"></i>Meus Pets</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="mostrarAba('agendamentos', this)"><i class="bi bi-calendar-week-fill me-2"></i>Agendamentos</a>
+                        <a class="nav-link" href="meus_agendamentos.html"><i class="bi bi-calendar-week-fill me-2"></i>Agendamentos</a>
                     </li>
                 </ul>
             </div>
@@ -258,11 +273,11 @@
                 </div>
                 <form id="form-perfil">
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">Nome Completo</label>
                             <input type="text" class="form-control" id="nome_completo" required placeholder="Seu nome completo">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">Telefone de Contato</label>
                             <input type="tel" class="form-control" id="telefone" placeholder="(11) 99999-9999">
                         </div>
@@ -294,19 +309,19 @@
                     <h5 class="fw-bold text-dark mb-3 d-flex align-items-center"><i class="bi bi-stars text-warning me-2"></i>Novo Cadastro de Pet</h5>
                     <form id="form-cadastro-pet">
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label">Nome do Pet *</label>
                                 <input type="text" id="input_nome_pet" class="form-control bg-white" placeholder="Ex: Thor, Mel" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label">Espécie *</label>
                                 <input type="text" id="input_especie" class="form-control bg-white" placeholder="Ex: Cão, Gato" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label">Raça</label>
                                 <input type="text" id="input_raca" class="form-control bg-white" placeholder="Ex: Golden, SRD">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label">Porte Físico</label>
                                 <select id="input_porte" class="form-select bg-white">
                                     <option value="Pequeno">Porte Pequeno (Até 10kg)</option>
@@ -314,14 +329,14 @@
                                     <option value="Grande">Porte Grande (Acima de 25kg)</option>
                                 </select>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-12 col-md-8">
                                 <label class="form-label">Alergias ou Notas Especiais</label>
                                 <input type="text" id="input_obs" class="form-control bg-white" placeholder="Ex: Alergia a shampoo de coco, tímido...">
                             </div>
                         </div>
                         <div class="mt-4 text-end">
                             <button type="button" class="btn btn-sm btn-secondary bg-opacity-10 text-secondary border-0 rounded-pill px-4 me-2 fw-semibold" onclick="toggleFormPet()">Cancelar</button>
-                            <button type="submit" class="btn btn-sm btn-rosa rounded-pill px-4">Gravar Pet 🐾</button>
+                            <button type="submit" class="btn btn-sm btn-rosa rounded-pill px-4">Gravar Pet</button>
                         </div>
                     </form>
                 </div>
@@ -347,7 +362,7 @@
                     </table>
                 </div>
                 <div class="text-center mt-4">
-                    <a href="agendamento.html" class="btn btn-brand btn-sm shadow-sm"><i class="bi bi-calendar-plus me-2"></i>Agendar Novo Serviço</a>
+                    <a href="../servicos/agendamento-fluxo.html" class="btn btn-brand btn-sm shadow-sm"><i class="bi bi-calendar-plus me-2"></i>Agendar Novo Serviço</a>
                 </div>
             </div>
 
@@ -357,7 +372,7 @@
     <footer class="pt-5 pb-4 mt-5 text-center">
         <div class="container">
             <p class="mb-1 fw-bold brand-footer-text">REGIA & TINA'S CARE</p>
-            <p class="small text-muted mb-0">© 2026 - Central de Segurança do Tutor 🐾</p>
+            <p class="small text-muted mb-0">© 2026 - Central de Segurança do Tutor</p>
         </div>
     </footer>
 
@@ -381,5 +396,6 @@
             form.style.display = form.style.display === 'block' ? 'none' : 'block';
         }
     </script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

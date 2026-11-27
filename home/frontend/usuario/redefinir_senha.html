@@ -107,7 +107,54 @@
             position: absolute;
             left: 30px;
         }
+
+        #btnSendCode.btn-solid,
+        #btnResetPass.btn-solid {
+            background-color: #ffffff;
+            color: #FE8697;
+            font-weight: 700;
+        }
+
+        #btnSendCode.btn-solid:hover,
+        #btnResetPass.btn-solid:hover {
+            background-color: #f8f9fa;
+            color: #e57585;
+        }
+
+        .verification-code-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .input-group input.verification-code-input {
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.75);
+            border-radius: 14px;
+            background: #ffffff;
+            color: #1e272e;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.65rem;
+            text-align: center;
+        }
+
+        .input-group input.verification-code-input:focus {
+            border-color: #1e272e;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+        }
+
+        @media (max-width: 575.98px) {
+            .form-container { padding: 0; }
+            .form-box { padding: 24px 18px; margin: 16px; width: calc(100% - 32px); }
+            .form-header .back-button { left: 0; }
+            .form-box .btn-solid { min-height: 48px; }
+        }
     </style>
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
     <header class="auth-header">Regia & Tinas Care</header>
@@ -139,9 +186,9 @@
                 
                 <form id="resetPasswordForm">
                     <div class="input-group">
-                        <input type="text" id="verification_code" placeholder="Código de 6 dígitos" 
-       maxlength="6" inputmode="numeric" autocomplete="off" required 
-       style="text-align: center; letter-spacing: 5px; font-weight: bold; font-size: 1.2rem;">
+                        <label class="verification-code-label" for="verification_code">Código de 6 dígitos</label>
+                        <input type="text" class="verification-code-input" id="verification_code" placeholder="000000"
+                               maxlength="6" inputmode="numeric" autocomplete="one-time-code" required>
                     </div>
 
                     <div class="input-group">
@@ -152,7 +199,7 @@
                         <input type="password" id="confirm_new_password" placeholder="Confirme a nova senha" required>
                         <i class="bi bi-eye-fill eye-icon toggle-password" data-target="confirm_new_password"></i>
                     </div>
-                    <button type="submit" class="btn btn-solid" id="btnResetPass">SALVAR NOVA SENHA</button>
+                    <button type="submit" class="btn btn-solid" id="btnResetPass">REDEFINIR SENHA</button>
                 </form>
             </div>
 
@@ -177,5 +224,6 @@
         });
     </script>
     <script src="../js/redefinir_senha.js" type="module"></script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

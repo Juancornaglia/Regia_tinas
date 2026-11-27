@@ -15,11 +15,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filtro-status')?.addEventListener('change', loadAndDisplayAppointments);
     document.getElementById('filtro-servico')?.addEventListener('change', loadAndDisplayAppointments);
     document.getElementById('filtro-funcionario')?.addEventListener('change', loadAndDisplayAppointments);
+    document.getElementById('btn-search-appointments')?.addEventListener('click', loadAndDisplayAppointments);
     
     // Busca em tempo real no campo de texto
     document.getElementById('input-busca-agendamento')?.addEventListener('input', (e) => {
         // Implementar busca local ou via debounce para API
         loadAndDisplayAppointments();
+    });
+
+    document.getElementById('mobile-appointments-list')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-mobile-appointment-action]');
+        if (!button) return;
+        const id = button.dataset.appointmentId;
+        if (button.dataset.mobileAppointmentAction === 'complete') window.concluirAgendamento(id);
+        if (button.dataset.mobileAppointmentAction === 'cancel') window.cancelarAgendamento(id);
+        if (button.dataset.mobileAppointmentAction === 'whatsapp') {
+            window.avisarWhatsapp(
+                button.dataset.phone,
+                button.dataset.client,
+                button.dataset.pet,
+                button.dataset.service,
+                button.dataset.datetime
+            );
+        }
     });
 });
 
@@ -80,7 +98,7 @@ function createAppointmentRowHtml(ag) {
         <tr>
             <td>
                 <div class="fw-bold text-dark">${ag.cliente_nome || 'Cliente'}</div>
-                <small class="text-muted">🐾 ${ag.nome_pet || 'Pet'}</small>
+                <small class="text-muted">${ag.nome_pet || 'Pet'}</small>
             </td>
             <td>
                 <span class="badge bg-light text-dark border-0 shadow-sm mb-1">${ag.nome_servico}</span><br>
@@ -115,6 +133,7 @@ function createAppointmentRowHtml(ag) {
 // --- 3. CARREGAMENTO INICIAL E FILTRAGEM ---
 async function loadAndDisplayAppointments() {
     const tableBody = document.getElementById('appointments-table-body');
+    const mobileList = document.getElementById('mobile-appointments-list');
     const loadingRow = document.getElementById('loading-row-appointments');
     const noAppointmentsRow = document.getElementById('no-appointments-row');
 
@@ -137,6 +156,7 @@ async function loadAndDisplayAppointments() {
         if (!response.ok) throw new Error("Erro ao buscar agendamentos.");
 
         const agendamentos = await response.json();
+        renderMobileAppointments(Array.isArray(agendamentos) ? agendamentos : []);
 
         if (loadingRow) loadingRow.style.display = 'none';
         
@@ -156,8 +176,62 @@ async function loadAndDisplayAppointments() {
         }
     } catch (error) {
         if (loadingRow) loadingRow.style.display = 'none';
+        if (mobileList) mobileList.innerHTML = '<p class="text-danger text-center py-3 mb-0">Não foi possível carregar os agendamentos.</p>';
         console.error("Erro na carga:", error);
     }
+}
+
+function renderMobileAppointments(agendamentos) {
+    const container = document.getElementById('mobile-appointments-list');
+    if (!container) return;
+    if (!agendamentos.length) {
+        container.innerHTML = '<p class="text-muted text-center py-3 mb-0">Nenhum agendamento encontrado.</p>';
+        return;
+    }
+
+    container.innerHTML = agendamentos.map((appointment) => {
+        const date = new Date(appointment.data_hora_inicio);
+        const dateText = Number.isNaN(date.getTime())
+            ? 'Data a confirmar'
+            : `${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+        const client = appointment.cliente_nome || 'Cliente';
+        const pet = appointment.nome_pet || 'Pet';
+        const service = appointment.nome_servico || 'Serviço';
+        const staff = appointment.nome_funcionario || 'Pendente';
+        const status = appointment.status || 'pendente';
+        const statusText = status === 'em_andamento' ? 'Em Atendimento' : status;
+        const amount = Number(appointment.valor_cobrado || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        return `<details class="mobile-disclosure">
+            <summary><span>${escapeHtml(client)} · ${escapeHtml(pet)}</span><i class="bi bi-chevron-down mobile-disclosure-chevron" aria-hidden="true"></i></summary>
+            <div class="mobile-disclosure-body">
+                <dl class="row small mb-3">
+                    <dt class="col-5 text-muted">Serviço</dt><dd class="col-7">${escapeHtml(service)}</dd>
+                    <dt class="col-5 text-muted">Profissional</dt><dd class="col-7">${escapeHtml(staff)}</dd>
+                    <dt class="col-5 text-muted">Data e hora</dt><dd class="col-7">${escapeHtml(dateText)}</dd>
+                    <dt class="col-5 text-muted">Valor</dt><dd class="col-7">${escapeHtml(amount)}</dd>
+                    <dt class="col-5 text-muted">Status</dt><dd class="col-7">${escapeHtml(statusText)}</dd>
+                </dl>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill" data-mobile-appointment-action="complete" data-appointment-id="${escapeHtml(appointment.id_agendamento)}" title="Concluir">
+                        <i class="bi bi-check2-circle me-1"></i>Concluir
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm rounded-pill" data-mobile-appointment-action="whatsapp" data-phone="${escapeHtml(appointment.cliente_tel || '')}" data-client="${escapeHtml(client)}" data-pet="${escapeHtml(pet)}" data-service="${escapeHtml(service)}" data-datetime="${escapeHtml(appointment.data_hora_inicio || '')}" title="WhatsApp">
+                        <i class="bi bi-whatsapp me-1"></i>Avisar
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" data-mobile-appointment-action="cancel" data-appointment-id="${escapeHtml(appointment.id_agendamento)}" title="Cancelar">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                </div>
+            </div>
+        </details>`;
+    }).join('');
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
 }
 
 // --- 4. AÇÕES DOS BOTÕES ---
@@ -200,7 +274,7 @@ window.avisarWhatsapp = (telefone, dono, pet, servico, dataHora) => {
     }
     
     const data = new Date(dataHora);
-    const msg = `Olá ${dono}! 🐾 Passando para confirmar o agendamento de ${servico} para o(a) ${pet} no dia ${data.toLocaleDateString()} às ${data.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}. Esperamos por vocês na Regia & Tinas Care!`;
+    const msg = `Olá ${dono}! Passando para confirmar o agendamento de ${servico} para o(a) ${pet} no dia ${data.toLocaleDateString()} às ${data.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}. Esperamos por vocês na Regia & Tinas Care!`;
     
     const link = `https://wa.me/55${telefone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
     window.open(link, '_blank');

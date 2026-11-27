@@ -24,12 +24,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const termo = e.target.value.toLowerCase();
         filtrarTabela(termo);
     });
+    const productSearchInput = document.getElementById('input-busca');
+    const updateProductSearchPlaceholder = () => {
+        if (!productSearchInput) return;
+        productSearchInput.placeholder = window.matchMedia('(max-width: 575.98px)').matches
+            ? 'O que você procura?'
+            : 'O que você está procurando?';
+    };
+    updateProductSearchPlaceholder();
+    window.addEventListener('resize', updateProductSearchPlaceholder);
+    document.getElementById('btn-search-products')?.addEventListener('click', () => {
+        filtrarTabela(document.getElementById('input-busca')?.value.toLowerCase() || '');
+    });
 
     // Limpar form ao abrir para "Novo"
     document.getElementById('add-product-button')?.addEventListener('click', () => {
         document.getElementById('productForm').reset();
         document.getElementById('editProductId').value = '';
         document.getElementById('productModalLabel').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Novo Produto para Loja';
+    });
+
+    document.getElementById('mobile-products-list')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-mobile-product-action]');
+        if (!button) return;
+        if (button.dataset.mobileProductAction === 'edit') window.prepararEdicao(button.dataset.productId);
+        if (button.dataset.mobileProductAction === 'delete') window.deleteProduct(button.dataset.productId);
     });
 });
 
@@ -40,7 +59,7 @@ async function loadProducts() {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/produtos`, {
+        const response = await fetch(`${API_BASE_URL}/api/admin/produtos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -52,6 +71,8 @@ async function loadProducts() {
     } catch (error) {
         console.error("Erro:", error);
         tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-4 fw-bold">Falha ao conectar com o banco Neon.</td></tr>`;
+        const mobileList = document.getElementById('mobile-products-list');
+        if (mobileList) mobileList.innerHTML = '<p class="text-danger text-center py-3 mb-0">Falha ao carregar os produtos.</p>';
     }
 }
 
@@ -61,6 +82,7 @@ function renderizarTabela(produtos) {
 
     if (produtos.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted p-5">Nenhum item encontrado no catálogo.</td></tr>';
+        renderizarProdutosMobile([]);
         return;
     }
 
@@ -108,6 +130,64 @@ function renderizarTabela(produtos) {
         `;
         tableBody.appendChild(tr);
     });
+    renderizarProdutosMobile(produtos);
+}
+
+function renderizarProdutosMobile(produtos) {
+    const container = document.getElementById('mobile-products-list');
+    if (!container) return;
+    if (!produtos.length) {
+        container.innerHTML = '<p class="text-muted text-center py-3 mb-0">Nenhum item encontrado no catálogo.</p>';
+        return;
+    }
+
+    container.innerHTML = produtos.map((produto) => {
+        const id = escaparHtml(produto.id_produto || produto.id || '');
+        const nome = escaparHtml(produto.nome_produto || 'Produto sem nome');
+        const imagem = escaparHtml(produto.url_imagem || '../img/logo_pequena4.png');
+        const categoria = escaparHtml(produto.tipo_produto || 'Não informada');
+        const marca = escaparHtml(produto.marca || 'Regia & Tinas');
+        const descricao = escaparHtml(produto.descricao || 'Sem descrição cadastrada.');
+        const preco = formatarMoeda(produto.preco);
+        const promocional = produto.preco_promocional ? formatarMoeda(produto.preco_promocional) : 'Não há promoção';
+        const estoque = escaparHtml(produto.quantidade_estoque ?? 0);
+
+        return `<details class="mobile-disclosure">
+            <summary><span>${nome}</span><i class="bi bi-chevron-down mobile-disclosure-chevron" aria-hidden="true"></i></summary>
+            <div class="mobile-disclosure-body">
+                <img src="${imagem}" class="img-fluid rounded-3 mb-3" alt="${nome}" onerror="this.src='../img/logo_pequena4.png'">
+                <dl class="row small mb-3">
+                    <dt class="col-5 text-muted">Preço</dt><dd class="col-7 fw-bold">${preco}</dd>
+                    <dt class="col-5 text-muted">Preço promocional</dt><dd class="col-7">${promocional}</dd>
+                    <dt class="col-5 text-muted">Estoque</dt><dd class="col-7">${estoque} un</dd>
+                    <dt class="col-5 text-muted">Categoria</dt><dd class="col-7">${categoria}</dd>
+                    <dt class="col-5 text-muted">Marca</dt><dd class="col-7">${marca}</dd>
+                    <dt class="col-12 text-muted">Descrição</dt><dd class="col-12 text-break">${descricao}</dd>
+                </dl>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill flex-fill" data-mobile-product-action="edit" data-product-id="${id}">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill flex-fill" data-mobile-product-action="delete" data-product-id="${id}">
+                        <i class="bi bi-trash me-1"></i>Excluir
+                    </button>
+                </div>
+            </div>
+        </details>`;
+    }).join('');
+}
+
+function escaparHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, caractere => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[caractere]);
+}
+
+function formatarMoeda(valor) {
+    const numero = Number(valor);
+    return Number.isFinite(numero)
+        ? numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        : 'Não informado';
 }
 
 // --- 2. SALVAR E ALTERAR (POST e PUT) ---
@@ -146,7 +226,7 @@ async function handleProductSubmit(e) {
         });
 
         if (response.ok) {
-            alert(id ? "✅ Produto atualizado!" : "🚀 Novo produto no catálogo!");
+            alert(id ? "Produto atualizado." : "Novo produto no catálogo.");
             productModal.hide();
             loadProducts();
         } else {

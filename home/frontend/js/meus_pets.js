@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Carrega os pets inicialmente assim que a página abre
+    document.getElementById('lista-pets-mobile')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-mobile-pet-action]');
+        if (!button) return;
+        if (button.dataset.mobilePetAction === 'delete') window.removerPet(button.dataset.petId);
+        if (button.dataset.mobilePetAction === 'edit') alert('Módulo de edição em manutenção técnica no balcão.');
+    });
     await carregarPets(clienteId);
 
     // ==========================================
@@ -62,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 if (res.ok) {
-                    alert(`🐾 ${novoPet.nome_pet} foi cadastrado com sucesso!`);
+                    alert(`${novoPet.nome_pet} foi cadastrado com sucesso!`);
                     
                     const modalEl = document.getElementById('petModal');
                     if (modalEl) {
@@ -92,9 +98,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==========================================
 async function carregarPets(id) {
     const container = document.getElementById('lista-pets');
+    const mobileContainer = document.getElementById('lista-pets-mobile');
     if (!container) return;
 
     container.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border text-secondary" role="status"></div><p class="text-muted small mt-2">Buscando seus amiguinhos...</p></div>';
+    if (mobileContainer) mobileContainer.innerHTML = '<p class="text-muted text-center py-3 mb-0">Buscando seus pets...</p>';
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/pets/usuario/${id}`);
@@ -109,6 +117,7 @@ async function carregarPets(id) {
                     <i class="bi bi-patch-question fs-1 text-muted"></i>
                     <p class="text-muted mt-3">Você ainda não cadastrou nenhum pet.<br>Adicione o seu primeiro amiguinho no botão acima!</p>
                 </div>`;
+            if (mobileContainer) mobileContainer.innerHTML = '<p class="text-muted text-center py-3 mb-0">Você ainda não cadastrou nenhum pet.</p>';
             return;
         }
 
@@ -156,10 +165,43 @@ async function carregarPets(id) {
             `;
         }).join('');
 
+        if (mobileContainer) {
+            mobileContainer.innerHTML = listaPets.map((pet) => {
+                const idPet = escaparHtml(pet.id_pet || pet.id || '');
+                const nome = escaparHtml(pet.nome_pet || 'Meu Pet');
+                const especie = escaparHtml(pet.especie || 'Cão');
+                const raca = escaparHtml(pet.raca || 'SDR (Sem Raça Definida)');
+                const porte = escaparHtml(pet.porte || 'Não informado');
+                const observacoes = escaparHtml(pet.observacoes || pet.observacoes_cliente || 'Nenhuma restrição ou observação informada.');
+                return `<details class="mobile-disclosure">
+                    <summary><span>${nome}</span><i class="bi bi-chevron-down mobile-disclosure-chevron" aria-hidden="true"></i></summary>
+                    <div class="mobile-disclosure-body">
+                        <dl class="row small mb-3">
+                            <dt class="col-5 text-muted">Espécie</dt><dd class="col-7">${especie}</dd>
+                            <dt class="col-5 text-muted">Raça</dt><dd class="col-7">${raca}</dd>
+                            <dt class="col-5 text-muted">Porte</dt><dd class="col-7">${porte}</dd>
+                            <dt class="col-12 text-muted">Observações</dt><dd class="col-12 text-break">${observacoes}</dd>
+                        </dl>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-dark btn-sm rounded-pill flex-fill" data-mobile-pet-action="edit">Editar</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill flex-fill" data-mobile-pet-action="delete" data-pet-id="${idPet}"><i class="bi bi-trash me-1"></i>Excluir</button>
+                        </div>
+                    </div>
+                </details>`;
+            }).join('');
+        }
+
     } catch (error) {
         console.error("Erro ao processar lista de pets:", error);
         container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger small">Não foi possível carregar os seus pets. Verifique a sua conexão.</p></div>';
+        if (mobileContainer) mobileContainer.innerHTML = '<p class="text-danger text-center py-3 mb-0">Não foi possível carregar os seus pets.</p>';
     }
+}
+
+function escaparHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, caractere => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[caractere]);
 }
 
 // ==========================================
@@ -172,7 +214,7 @@ window.removerPet = async (idPet) => {
         const res = await fetch(`${API_BASE_URL}/api/pets/${idPet}`, { method: 'DELETE' });
         
         if (res.ok) {
-            alert("✅ Pet removido com sucesso!");
+            alert("Pet removido com sucesso!");
             const clienteId = localStorage.getItem('usuario_id');
             await carregarPets(clienteId);
         } else {

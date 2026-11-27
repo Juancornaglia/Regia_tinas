@@ -107,27 +107,16 @@
             .gallery-grid img { height: 180px; }
         }
     </style>
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
+    <nav class="navbar navbar-dark navbar-custom shadow-sm sticky-top">
         <div class="container">
-             <a class="btn btn-back fw-bold d-flex align-items-center" href="../index.html">
-                 <i class="bi bi-house-door me-2"></i> Início
+             <a class="site-back-button" href="../index.html">
+                 <i class="bi bi-arrow-left me-2"></i> Voltar
              </a>
-             
-             <span class="navbar-brand fw-bold mx-auto d-none d-md-block">CLÍNICA VETERINÁRIA 24H</span>
-
-             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navVet">
-                <span class="navbar-toggler-icon"></span>
-             </button>
-
-             <div class="collapse navbar-collapse flex-grow-0" id="navVet">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link text-white" href="servicos.html">Banho</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="hotel.html">Hotel</a></li>
-                </ul>
-             </div>
+             <span class="header-page-title">VETERINÁRIA</span>
         </div>
     </nav>
 
@@ -140,7 +129,7 @@
                     <p class="text-secondary">Contamos com estrutura para exames laboratoriais, vacinação importada e consultas especializadas para cães e gatos de todos os tamanhos.</p>
                     
                     <div class="d-grid d-md-block">
-                        <a href="agendamento-fluxo.html" class="btn btn-brand btn-lg mt-4">
+                        <a href="agendamento-fluxo.html?categoria=veterinaria" class="btn btn-brand btn-lg mt-4">
                             <i class="bi bi-calendar-heart me-2"></i> Agendar Consulta
                         </a>
                     </div>
@@ -150,6 +139,18 @@
                 <img src="../img/veteri_1.webp" class="img-fluid rounded-5 shadow-lg" alt="Veterinária" style="max-height: 450px; width: 100%; object-fit: cover;">
             </div>
         </div>
+
+        <section class="mb-5" aria-labelledby="precos-veterinaria-title">
+            <div class="text-center mb-4">
+                <h2 id="precos-veterinaria-title" class="text-brand fw-bold display-6">Serviços e valores</h2>
+                <p class="text-muted mb-0">Valores consultados no catálogo vigente. Serviços sem cadastro aparecem sinalizados.</p>
+            </div>
+            <div class="row g-3 justify-content-center">
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Consultas</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="consulta" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Vacinas</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="vacina" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Exames</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="exame" aria-live="polite">Consultando catálogo...</p></div></article></div>
+            </div>
+        </section>
 
         <div class="gallery-grid">
             <img src="../img/veteri_2.webp" alt="Exame">
@@ -256,6 +257,8 @@
         </div>
     </footer>
 
+    <script src="../js/utils.js"></script>
+    <script src="../js/service-pricing.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -268,7 +271,7 @@
                     btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Enviando...`;
                     
                     setTimeout(() => {
-                        alert('🐾 Mensagem recebida! Nossa equipe veterinária entrará em contato em breve.');
+                        alert('Mensagem recebida! Nossa equipe veterinária entrará em contato em breve.');
                         btn.disabled = false;
                         btn.innerHTML = 'ENVIAR AGORA';
                         form.reset();
@@ -277,5 +280,6 @@
             }
         });
     </script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

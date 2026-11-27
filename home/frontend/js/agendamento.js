@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Função acionada pelo botão do HTML quando o cara está bloqueado
 window.irParaLogin = function() {
     sessionStorage.setItem('url_retorno_agendamento', window.location.href);
-    window.location.href = 'usuario/login.html'; 
+    window.location.href = '../usuario/login.html';
 };
 
 // --- INICIALIZAÇÃO DO AGENDAMENTO ---
@@ -61,18 +61,44 @@ async function loadServicesCatalog() {
         
         const data = await res.json();
         const servicos = Array.isArray(data) ? data : (data.servicos || []);
+        const categoria = new URLSearchParams(window.location.search).get('categoria');
+        const servicosFiltrados = categoria
+            ? servicos.filter(servico => pertenceACategoriaServico(servico.nome_servico, categoria))
+            : servicos;
         
-        select.innerHTML = '<option value="" disabled selected>O que vamos fazer hoje?</option>';
+        const mensagemVazia = categoria
+            ? 'Nenhum serviço disponível nesta categoria.'
+            : 'Nenhum serviço disponível.';
+        select.innerHTML = `<option value="" disabled selected>${servicosFiltrados.length ? 'O que vamos fazer hoje?' : mensagemVazia}</option>`;
 
-        servicos.forEach(s => {
+        servicosFiltrados.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id_servico;
             opt.dataset.preco = s.preco_servico; 
             opt.textContent = s.nome_servico;  
             select.appendChild(opt);
         });
+        if (!servicosFiltrados.length) {
+            document.getElementById('nextButtonStep1').disabled = true;
+        }
     } catch (e) {
         select.innerHTML = '<option value="">Erro operacional ao buscar serviços.</option>';
+    }
+}
+
+function pertenceACategoriaServico(nomeServico, categoria) {
+    const nome = String(nomeServico || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    switch (String(categoria).toLowerCase()) {
+        case 'hotel':
+            return /hotel|hosped|estadia/.test(nome);
+        case 'daycare':
+            return /day\s?care|creche/.test(nome);
+        case 'veterinaria':
+            return /consulta|vacina|exame/.test(nome);
+        case 'banho_tosa':
+            return /banho|tosa|trimming|ozon|corte de unha/.test(nome);
+        default:
+            return false;
     }
 }
 
@@ -205,7 +231,7 @@ async function loadUserPets() {
                 const opt = new Option(p.nome_pet, p.id_pet);
                 select.appendChild(opt);
             });
-            select.appendChild(new Option("➕ Cadastrar Outro Pet Agora", "NEW"));
+            select.appendChild(new Option("Cadastrar Outro Pet Agora", "NEW"));
         }
     } catch (e) { 
         containerSelect.style.display = 'none';
@@ -242,6 +268,14 @@ function renderConfirmationSummary() {
 }
 
 function bindInterfaceEvents() {
+    document.getElementById('btn-voltar-agendamento')?.addEventListener('click', () => {
+        if (currentStep > 1) {
+            showStep(currentStep - 1);
+            return;
+        }
+        voltarParaPaginaAnterior();
+    });
+
     document.getElementById('service-select').onchange = (e) => {
         appointmentData.servico_id = e.target.value;
         appointmentData.servico_nome = e.target.options[e.target.selectedIndex].text;
@@ -281,17 +315,35 @@ function bindInterfaceEvents() {
         showStep(5);
     };
 
-    document.querySelectorAll('.btn-prev').forEach(b => {
-        b.onclick = (e) => {
-            e.preventDefault();
-            showStep(currentStep - 1);
-        };
-    });
+    document.getElementById('changeBookingTime')?.addEventListener('click', () => showStep(3));
+    document.getElementById('cancelBookingDraft')?.addEventListener('click', voltarParaPaginaAnterior);
 
     document.getElementById('prevMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
     document.getElementById('nextMonthButton').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); };
 
     document.getElementById('confirmButton').onclick = executeFinalBooking;
+}
+
+function voltarParaPaginaAnterior() {
+    const urlAnterior = sessionStorage.getItem('url_retorno_anterior');
+    if (urlAnterior) {
+        try {
+            const destino = new URL(urlAnterior, window.location.href);
+            if (destino.origin === window.location.origin && destino.href !== window.location.href) {
+                sessionStorage.removeItem('url_retorno_anterior');
+                window.location.assign(destino.href);
+                return;
+            }
+        } catch (error) {
+            console.warn('URL de retorno anterior inválida.', error);
+        }
+    }
+
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '../index.html';
+    }
 }
 
 // --- CONFIRMAÇÃO DO AGENDAMENTO E ENVIO AO NEON ---
@@ -324,19 +376,16 @@ async function executeFinalBooking() {
             body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
-            alert("✨ Perfeito! O seu agendamento foi gravado com sucesso.");
-            // REDIRECIONA PARA A TELA ONDE ELE VE O AGENDAMENTO (perfil.html)
-            window.location.href = '../index.html';
-        } else {
-            const err = await res.json().catch(() => ({}));
-            alert("Ops: " + (err.error || "Falha ao registrar horário."));
-            btn.disabled = false;
-            btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
-        }
+        const resData = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(resData.error || 'Falha ao registrar horário.');
+
+        appointmentData.id_agendamento = resData.id_agendamento || resData.id || null;
+        document.getElementById('confirmation-title').textContent = 'Agendamento confirmado';
+        document.getElementById('booking-review-actions').classList.add('d-none');
+        document.getElementById('post-booking-actions').classList.remove('d-none');
     } catch (e) {
-        alert("Erro de comunicação de rede. Verifique sua internet.");
+        alert(e.message || "Erro de comunicação de rede. Verifique sua internet.");
         btn.disabled = false;
-        btn.innerHTML = 'CONFIRMAR AGENDAMENTO <i class="bi bi-send-fill ms-2"></i>';
+        btn.textContent = 'CONFIRMAR AGENDAMENTO';
     }
 }

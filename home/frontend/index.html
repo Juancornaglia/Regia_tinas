@@ -10,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/site-ui.css">
 </head>
 <body>
 
@@ -51,47 +52,74 @@
 
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
-            <img src="img/logo_pequena4.png" alt="Perfil" class="sidebar-logo rounded-circle bg-light p-1">
+            <img src="img/logo_pequena4.png" alt="Regia & Tinas Care" class="sidebar-logo rounded-circle bg-light p-1">
             <div>
                 <p class="fw-bold mb-0">Bem-vindo!</p>
-                <a href="usuario/login.html">Entre ou Cadastre-se</a>
+                <a id="sidebar-account-link" href="usuario/login.html">Entre ou cadastre-se</a>
             </div>
             <button id="close-sidebar" class="btn-close btn-close-white"></button>
         </div>
         <ul class="sidebar-menu">
-            <li class="menu-item"><button class="submenu-toggle"><i class="bi bi-tag-fill me-2"></i>Categorias</button>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-dog me-2"></i>Cachorros<i class="bi bi-chevron-right menu-chevron"></i></button>
+                <ul class="submenu">
+                    <li><a href="busca.html?q=racao+cachorro">Rações</a></li>
+                    <li><a href="busca.html?q=petisco+cachorro">Petiscos</a></li>
+                    <li><a href="busca.html?q=brinquedo+cachorro">Brinquedos</a></li>
+                    <li><a href="busca.html?q=acessorio+cachorro">Acessórios</a></li>
+                </ul>
+            </li>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-cat me-2"></i>Gatos<i class="bi bi-chevron-right menu-chevron"></i></button>
+                <ul class="submenu">
+                    <li><a href="busca.html?q=racao+gato">Rações</a></li>
+                    <li><a href="busca.html?q=arranhador">Arranhadores</a></li>
+                    <li><a href="busca.html?q=areia+gato">Areia Sanitária</a></li>
+                    <li><a href="busca.html?q=brinquedo+gato">Brinquedos</a></li>
+                </ul>
+            </li>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-feather me-2"></i>Pássaros<i class="bi bi-chevron-right menu-chevron"></i></button>
+                <ul class="submenu">
+                    <li><a href="busca.html?q=racao+passaro">Alimentos</a></li>
+                    <li><a href="busca.html?q=gaiola">Gaiolas e acessórios</a></li>
+                    <li><a href="busca.html?q=brinquedo+passaro">Brinquedos</a></li>
+                </ul>
+            </li>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-water me-2"></i>Peixes<i class="bi bi-chevron-right menu-chevron"></i></button>
+                <ul class="submenu">
+                    <li><a href="busca.html?q=racao+peixe">Alimentos</a></li>
+                    <li><a href="busca.html?q=aquario">Aquários</a></li>
+                    <li><a href="busca.html?q=acessorio+aquario">Acessórios</a></li>
+                </ul>
+            </li>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-stars me-2"></i>Outros Pets<i class="bi bi-chevron-right menu-chevron"></i></button>
+                <ul class="submenu">
+                    <li><a href="busca.html?q=coelho">Coelhos</a></li>
+                    <li><a href="busca.html?q=hamster">Hamsters</a></li>
+                    <li><a href="busca.html?q=roedor">Pequenos roedores</a></li>
+                </ul>
+            </li>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-grid me-2"></i>Todas as Categorias<i class="bi bi-chevron-right menu-chevron"></i></button>
                 <ul class="submenu">
                     <li><a href="busca.html?q=racao">Rações</a></li>
                     <li><a href="busca.html?q=petisco">Petiscos</a></li>
                     <li><a href="busca.html?q=brinquedo">Brinquedos</a></li>
                     <li><a href="busca.html?q=higiene">Higiene</a></li>
                     <li><a href="busca.html?q=acessorio">Acessórios</a></li>
+                    <li><a href="busca.html">Ver catálogo completo</a></li>
                 </ul>
             </li>
-            <li class="menu-item"><button class="submenu-toggle">🐶 Cachorros</button>
-                <ul class="submenu">
-                    <li><a href="busca.html?q=racao+cachorro">Rações para Cães</a></li>
-                    <li><a href="busca.html?q=petisco+cachorro">Petiscos para Cães</a></li>
-                    <li><a href="busca.html?q=brinquedo+cachorro">Brinquedos para Cães</a></li>
+            <li class="sidebar-divider" aria-hidden="true"></li>
+            <li class="menu-item"><button class="submenu-toggle" type="button" aria-expanded="false"><i class="bi bi-heart-pulse me-2"></i>Serviços Pet<i class="bi bi-chevron-right menu-chevron"></i></button>
+                <ul class="submenu service-menu">
+                    <li><a href="servicos/servicos.html">Banho &amp; Tosa</a></li>
+                    <li><a href="servicos/veterinaria.html">Veterinária</a></li>
+                    <li><a href="servicos/hotel.html">Hotel Pet</a></li>
+                    <li><a href="servicos/day_care.html">Day Care</a></li>
                 </ul>
             </li>
-            <li class="menu-item"><button class="submenu-toggle">🐱 Gatos</button>
-                <ul class="submenu">
-                    <li><a href="busca.html?q=racao+gato">Rações para Gatos</a></li>
-                    <li><a href="busca.html?q=arranhador">Arranhadores</a></li>
-                    <li><a href="busca.html?q=areia+gato">Areia Sanitária</a></li>
-                </ul>
-            </li>
-            <hr class="text-white-50 my-2">
-            <li><a href="servicos/agendamento-fluxo.html"><i class="bi bi-calendar-plus me-2"></i> <strong>Agendar Serviço</strong></a></li>
-            <li><a href="servicos/veterinaria.html">🐾 Clínica Veterinária</a></li>
-            <li><a href="servicos/servicos.html">✂️ Banho & Tosa</a></li>
-            <li><a href="servicos/hotel.html">🏨 Hotel Pet</a></li>
-            <li><a href="servicos/day_care.html">🎉 Day Care</a></li>
-            <hr class="text-white-50 my-2">
+            <li class="sidebar-divider" aria-hidden="true"></li>
             <li><a href="paginas_institucionais/lojas.html"><i class="bi bi-shop me-2"></i>Nossas Lojas</a></li>
-            <li><a href="paginas_institucionais/contatos.html">📞 Contatos</a></li>
-            <li><a href="paginas_institucionais/sobre.html">ℹ️ Sobre Nós</a></li>
+            <li><a href="paginas_institucionais/sobre.html"><i class="bi bi-info-circle me-2"></i>Sobre Nós</a></li>
+            <li><a href="paginas_institucionais/contatos.html"><i class="bi bi-telephone me-2"></i>Contato / WhatsApp</a></li>
         </ul>
     </div>
     <div id="overlay"></div>
@@ -115,6 +143,11 @@
                             <img src="img/banner3.png" class="d-block w-100" alt="Banner 3">
                         </div>
                     </div>
+                    <div class="carousel-indicators carousel-indicators-custom d-flex justify-content-center">
+                        <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                        <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                        <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                    </div>
                 </div>
 
                 <button class="carousel-nav-side d-none d-md-flex" type="button" data-bs-target="#bannerCarousel" data-bs-slide="next">
@@ -122,14 +155,9 @@
                 </button>
             </div>
 
-            <div class="carousel-indicators-custom d-flex justify-content-center mt-3">
-                <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
-                <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
-            </div>
         </div>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <h2 class="fw-bold mb-4" style="font-family: 'Pacifico', cursive;">Nosso Menu</h2>
             <ul class="nav nav-tabs border-0 mb-0" id="menuTab" role="tablist">
                 <li class="nav-item" role="presentation">
@@ -140,24 +168,15 @@
                 </li>
             </ul>
 
-            <div class="tab-content menu-container-box p-5 shadow-sm" id="menuTabContent">
+            <div class="tab-content menu-container-box shadow-sm" id="menuTabContent">
                 <div class="tab-pane fade show active" id="dog-content" role="tabpanel">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h4 class="fw-bold mb-4" style="color: #FE8697;">🐾 Tipos de Banho</h4>
+                        <div class="col-md-12">
+                            <h4 class="fw-bold mb-4" style="color: #FE8697;"><i class="bi bi-droplet-half me-2"></i>Tipos de Banho</h4>
                             <ul class="list-unstyled menu-list">
                                 <li><strong>BANHO SIMPLES</strong><p>Com hidratação, corte de unhas, limpeza de ouvidos e escovação.</p></li>
                                 <li><strong>BANHO COMPLETO</strong><p>Com hidratação, corte de unhas, tosa higiênica, limpeza de ouvidos, retirada de nós e escovação.</p></li>
                                 <li><strong>BANHO DE OZÔNIO</strong><p>O Ozônio age profundamente na pele e nos pelos, promovendo limpeza intensa e cicatrização.</p></li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h4 class="fw-bold mb-4" style="color: #FE8697;"><i class="bi bi-scissors"></i> Tosa</h4>
-                            <ul class="list-unstyled menu-list fw-bold text-uppercase">
-                                <li>TOSA BEBE . . . . . . . . . . . . . . . .</li>
-                                <li>TOSA NA MÁQUINA . . . . . . . . . .</li>
-                                <li>TOSA NA TESOURA . . . . . . . . . .</li>
-                                <li>TRIMMING EM GOLDEN . . . . . . .</li>
                             </ul>
                         </div>
                     </div>
@@ -165,7 +184,7 @@
                 <div class="tab-pane fade" id="cat-content" role="tabpanel">
                     <div class="row">
                         <div class="col-md-12">
-                            <h4 class="fw-bold mb-4" style="color: #FE8697;">🐱 Tipos de Banho (Gatos)</h4>
+                            <h4 class="fw-bold mb-4" style="color: #FE8697;"><i class="bi bi-droplet-fill me-2"></i>Tipos de Banho (Gatos)</h4>
                             <ul class="list-unstyled menu-list">
                                 <li><strong>BANHO PADRÃO</strong><p>Com hidratação, corte de unhas, limpeza de ouvidos e escovação especial para felinos.</p></li>
                                 <li><strong>BANHO PREMIUM</strong><p>Com hidratação profunda, corte de unhas, tosa higiênica e retirada de nós.</p></li>
@@ -181,7 +200,6 @@
             <div class="services-row justify-content-center">
                 <a href="paginas_institucionais/lojas.html" class="service-pill"><div class="service-text"><div class="service-title">Nossas Lojas</div><div class="service-sub">Encontre a mais próxima</div></div><div class="service-icon-box">
                 <i class="bi bi-shop text-white fs-4"></i></div></a>
-                <a href="servicos/agendamento-fluxo.html" class="service-pill"><div class="service-text"><div class="service-title main-purple-text">Agendar Serviço</div><div class="service-sub">Banho, Tosa, Vet...</div></div><div class="service-icon-box"><i class="bi bi-calendar-plus-fill text-white fs-4"></i></div></a>
                 <a href="servicos/veterinaria.html" class="service-pill"><div class="service-text"><div class="service-title">Veterinária</div><div class="service-sub">Consultas e Vacinas</div></div><div class="service-icon-box"><i class="bi bi-clipboard2-pulse-fill text-white fs-4"></i></div></a>
                 <a href="servicos/servicos.html" class="service-pill"><div class="service-text"><div class="service-title">Banho & Tosa</div><div class="service-sub">Estética Pet</div></div><div class="service-icon-box"><i class="bi bi-scissors text-white fs-4"></i></div></a>
                 <a href="servicos/hotel.html" class="service-pill"><div class="service-text"><div class="service-title">Hotel Pet</div><div class="service-sub">Hospedagem segura</div></div><div class="service-icon-box"><i class="bi bi-house-heart-fill text-white fs-4"></i></div></a>
@@ -189,7 +207,7 @@
             </div>
         </section>
 
-        <section class="container my-5 text-center">
+        <section class="container my-4 text-center">
             <p class="mb-1 fw-bold text-muted small">ANTES E DEPOIS DA TOSA</p>
             <h2 class="fw-bold mb-4" style="font-family: 'Pacifico', cursive; font-size: 2.8rem;">A Transformação</h2>
             <div class="row justify-content-center">
@@ -209,10 +227,10 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="product-slider-wrapper">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="slider-title mb-0">🔥 Super ofertas do dia:</h2>
+                    <h2 class="slider-title mb-0"><i class="bi bi-tag-fill me-2" aria-hidden="true"></i>Super ofertas do dia:</h2>
                     <a href="busca.html?q=ofertas" class="btn btn-sm btn-link text-decoration-none fw-bold main-purple-text">Ver mais <i class="bi bi-chevron-right small"></i></a>
                 </div>
                 <button class="slider-nav prev-btn" id="ofertas-prev"><i class="bi bi-chevron-left"></i></button>
@@ -223,10 +241,10 @@
             </div>
         </section>
 
-        <div class="container my-5"><a href="busca.html"><img src="img/banner1.png" class="img-fluid rounded-3 banner-promo-full" alt="Banner promocional"></a></div>
+        <div class="container my-4"><a href="busca.html"><img src="img/banner1.png" class="img-fluid rounded-3 banner-promo-full" alt="Banner promocional"></a></div>
 
-        <section class="container my-5">
-            <h2 class="fw-bold mb-4">🐶 Nossos Amigos Clientes 🐱</h2>
+        <section class="container my-4">
+            <h2 class="fw-bold mb-4"><i class="bi bi-heart-fill me-2" aria-hidden="true"></i>Nossos Amigos Clientes</h2>
             <div class="row g-2 galeria-fotos">
                 <div class="col-md-3 col-6"><img src="img/animal1.webp" class="img-fluid rounded-3 shadow-sm" alt="Amigo Cliente 1"></div>
                 <div class="col-md-3 col-6"><img src="img/animal2.webp" class="img-fluid rounded-3 shadow-sm" alt="Amigo Cliente 2"></div>
@@ -235,10 +253,10 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="product-slider-wrapper">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="slider-title mb-0">✨ Recomendados para você</h2>
+                    <h2 class="slider-title mb-0"><i class="bi bi-stars me-2" aria-hidden="true"></i>Recomendados para você</h2>
                     <a href="busca.html" class="btn btn-sm btn-link text-decoration-none fw-bold main-purple-text">Ver mais <i class="bi bi-chevron-right small"></i></a>
                 </div>
                 <button class="slider-nav prev-btn" id="recomendados-prev"><i class="bi bi-chevron-left"></i></button>
@@ -249,10 +267,10 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="product-slider-wrapper">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="slider-title mb-0">🚀 Novidades para seu Pet</h2>
+                    <h2 class="slider-title mb-0"><i class="bi bi-bag-plus me-2" aria-hidden="true"></i>Novidades para seu Pet</h2>
                     <a href="busca.html?q=novidades" class="btn btn-sm btn-link text-decoration-none fw-bold main-purple-text">Ver mais <i class="bi bi-chevron-right small"></i></a>
                 </div>
                 <button class="slider-nav prev-btn" id="novidades-prev"><i class="bi bi-chevron-left"></i></button>
@@ -263,10 +281,10 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="product-slider-wrapper">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="slider-title mb-0">🏆 Mais Vendidos</h2>
+                    <h2 class="slider-title mb-0"><i class="bi bi-trophy me-2" aria-hidden="true"></i>Mais Vendidos</h2>
                     <a href="busca.html?q=vendidos" class="btn btn-sm btn-link text-decoration-none fw-bold main-purple-text">Ver mais <i class="bi bi-chevron-right small"></i></a>
                 </div>
                 <button class="slider-nav prev-btn" id="mais-vendidos-prev"><i class="bi bi-chevron-left"></i></button>
@@ -277,35 +295,35 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="row g-4 justify-content-center">
-                <div class="col-md-3">
-                    <div class="card-pet-service service-yellow">
-                        <div class="service-icon">🐶</div>
+                <div class="col-md-3 d-flex">
+                    <div class="card-pet-service service-yellow h-100 w-100 d-flex flex-column justify-content-between">
+                        <div class="service-icon"><i class="bi bi-droplet-half" aria-hidden="true"></i></div>
                         <h3 class="service-name">Banho no AuAu</h3>
                         <p class="service-desc">Cuidamos das unhas, orelhas limpinhas com banho de Ozônio e deixamos os pelinhos sem nós.</p>
                         <a href="servicos/agendamento-fluxo.html" class="btn-agendar-simple">AGENDAR <i class="bi bi-arrow-right"></i></a>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card-pet-service service-blue">
-                        <div class="service-icon">🐱</div>
+                <div class="col-md-3 d-flex">
+                    <div class="card-pet-service service-blue h-100 w-100 d-flex flex-column justify-content-between">
+                        <div class="service-icon"><i class="bi bi-brush-fill" aria-hidden="true"></i></div>
                         <h3 class="service-name">Banho no bichano</h3>
                         <p class="service-desc">Cuidamos das unhas, orelhas limpinhas com banho de Ozônio e deixamos os pelinhos sem nós.</p>
                         <a href="servicos/agendamento-fluxo.html" class="btn-agendar-simple">AGENDAR <i class="bi bi-arrow-right"></i></a>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card-pet-service service-orange">
+                <div class="col-md-3 d-flex">
+                    <div class="card-pet-service service-orange h-100 w-100 d-flex flex-column justify-content-between">
                         <div class="service-icon"><i class="bi bi-heart-pulse-fill"></i></div>
                         <h3 class="service-name">Veterinária</h3>
                         <p class="service-desc">Seu fofinho anda bem? Precisa dar uma olhada na saúde do seu amigão?</p>
                         <a href="servicos/agendamento-fluxo.html" class="btn-agendar-simple">AGENDAR <i class="bi bi-arrow-right"></i></a>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card-pet-service service-green">
-                        <div class="service-icon">🐾</div>
+                <div class="col-md-3 d-flex">
+                    <div class="card-pet-service service-green h-100 w-100 d-flex flex-column justify-content-between">
+                        <div class="service-icon"><i class="bi bi-telephone-fill" aria-hidden="true"></i></div>
                         <h3 class="service-name">Contato</h3>
                         <p class="service-desc">Telefone:<br><strong>+55 11 97106-1329</strong></p>
                         <a href="paginas_institucionais/contatos.html" class="btn-agendar-simple">CONTATO <i class="bi bi-arrow-right"></i></a>
@@ -314,7 +332,7 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="row align-items-center">
                 <div class="col-lg-3 mb-4 mb-lg-0">
                     <h2 class="fw-bold" style="font-family: 'Pacifico', cursive; font-size: 2.5rem;">A melhor escolha</h2>
@@ -324,8 +342,8 @@
                 </div>
                 <div class="col-lg-9">
                     <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="pacote-card shadow-sm">
+                        <div class="col-md-4 d-flex">
+                            <div class="pacote-card shadow-sm h-100 w-100 d-flex flex-column justify-content-between">
                                 <p class="small text-muted mb-1">Um banho por mês, um pet sempre limpo!</p>
                                 <h4 class="fw-bold mb-3" style="font-family: 'Pacifico', cursive;">Cheirinho Bom</h4>
                                 <div class="pacote-icon-box"><img src="img/animal1.webp" alt="Dog Icon" class="rounded-circle"></div>
@@ -338,8 +356,8 @@
                                 </ul>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="pacote-card shadow destaque" style="background-color: #FE8697;">
+                        <div class="col-md-4 d-flex">
+                            <div class="pacote-card shadow destaque h-100 w-100 d-flex flex-column justify-content-between" style="background-color: #FE8697;">
                                 <p class="small mb-1 text-white-50">Porque quem é de casa merece o melhor toda semana.</p>
                                 <h4 class="fw-bold mb-3 text-white" style="font-family: 'Pacifico', cursive;">Pet de Casa</h4>
                                 <div class="pacote-icon-box"><img src="img/animal2.webp" alt="Dog Icon" class="rounded-circle"></div>
@@ -352,8 +370,8 @@
                                 </ul>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="pacote-card shadow-sm">
+                        <div class="col-md-4 d-flex">
+                            <div class="pacote-card shadow-sm h-100 w-100 d-flex flex-column justify-content-between">
                                 <p class="small text-muted mb-1">Seu pet sempre pronto para qualquer passeio!</p>
                                 <h4 class="fw-bold mb-3" style="font-family: 'Pacifico', cursive;">Sempre Pronto</h4>
                                 <div class="pacote-icon-box"><img src="img/animal3.webp" alt="Dog Icon" class="rounded-circle"></div>
@@ -371,7 +389,7 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="row align-items-center">
                 <div class="col-lg-5 mb-4 mb-lg-0">
                     <h2 class="fw-bold mb-4" style="font-family: 'Pacifico', cursive; font-size: 2.8rem;">Vem conhecer a gente</h2>
@@ -409,11 +427,11 @@
             </div>
         </section>
 
-        <section class="container my-5">
+        <section class="container my-4">
             <div class="product-slider-wrapper">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="slider-title mb-0">🎬 Momentos Regia & Tina</h2>
-                    <a href="paginas_institucionais/avaliacoes.html" class="btn btn-sm btn-link text-decoration-none fw-bold main-purple-text">Ver mais <i class="bi bi-chevron-right small"></i></a>
+                    <h2 class="slider-title mb-0"><i class="bi bi-camera-reels me-2" aria-hidden="true"></i>Momentos Regia &amp; Tina</h2>
+                    <a href="#videos-track" class="btn btn-sm btn-link text-decoration-none fw-bold main-purple-text">Ver mais <i class="bi bi-chevron-right small"></i></a>
                 </div>
                 <button class="slider-nav prev-btn" id="videos-prev"><i class="bi bi-chevron-left"></i></button>
                 <div class="slider-track" id="videos-track">
@@ -483,5 +501,6 @@
     <script src="js/utils.js"></script> 
     <script src="js/geolocator.js" type="module"></script>
     <script src="js/home.js" type="module"></script>
+<script src="js/site_navigation.js" defer></script>
 </body>
 </html>

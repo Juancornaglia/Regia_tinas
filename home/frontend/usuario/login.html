@@ -81,7 +81,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px; /* Aumentei um pouco o espaço aqui */
+            margin-bottom: 20px;
             color: white;
             font-size: 0.9rem;
         }
@@ -91,8 +91,8 @@
 
         .form-buttons {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: stretch;
             gap: 15px;
             margin-top: 10px;
         }
@@ -103,6 +103,10 @@
             font-weight: bold;
             transition: 0.3s;
             padding: 10px 15px;
+            border: 2px solid #ffffff;
+            border-radius: 25px;
+            background: transparent;
+            text-align: center;
         }
         .btn-outline:hover { color: #f8f9fa !important; transform: scale(1.05); }
 
@@ -116,8 +120,24 @@
             transition: 0.3s;
             cursor: pointer;
         }
+        .form-buttons .btn-solid {
+            background-color: #ffffff !important;
+            color: #FE8697 !important;
+            border: 2px solid #ffffff !important;
+            width: 100%;
+        }
         .btn-solid:hover { background-color: #f8f9fa; transform: scale(1.05); }
+
+        @media (max-width: 575.98px) {
+            .form-container { padding: 0; }
+            .form-box { padding: 24px 18px; margin: 16px; width: calc(100% - 32px); }
+            .form-buttons { flex-direction: column; align-items: stretch; gap: 12px; }
+            .form-buttons .btn-outline,
+            .form-buttons .btn-solid { width: 100%; min-height: 48px; }
+            .form-options { flex-wrap: wrap; gap: 8px; }
+        }
     </style>
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
     <header class="auth-header">Regia & Tinas Care</header>
@@ -138,15 +158,14 @@
                     <input type="password" id="senha" placeholder="Digite sua senha" required>
                     <i class="bi bi-eye-slash-fill eye-icon" id="togglePassword" title="Mostrar/Esconder Senha"></i>
                 </div>
-                
                 <div class="form-options">
                     <label style="cursor: pointer;"><input type="checkbox" id="remember"> Lembrar de mim</label>
                     <a href="redefinir_senha.html" class="forgot-link">Esqueci a senha</a>
                 </div>
                 
                 <div class="form-buttons">
-                    <a href="criar_conta.html" class="btn-outline">CRIAR CONTA</a>
                     <button type="submit" class="btn-solid">ENTRAR</button>
+                    <a href="criar_conta.html" class="btn-outline">CRIAR CONTA</a>
                 </div>
                 <div style="margin-top: 15px; text-align: center;">
                     <button type="button" id="btnGoogleLogin" class="btn-solid" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #fff; color: #444;">
@@ -159,5 +178,6 @@
     </div>
 
    <script src="../js/login.js" defer></script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

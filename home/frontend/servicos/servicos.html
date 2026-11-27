@@ -66,10 +66,14 @@
         .list-paws { list-style: none; padding-left: 0; }
         .list-paws li { position: relative; padding-left: 35px; margin-bottom: 15px; font-weight: 500; color: #555; }
         .list-paws li::before { 
-            content: '🐾'; 
+            content: '';
             position: absolute; 
-            left: 0; 
-            color: var(--brand-pink);
+            left: 8px;
+            top: 0.65em;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--brand-pink);
         }
 
         /* --- Galeria de Clientes --- */
@@ -104,28 +108,16 @@
             .gallery-grid img { height: 180px; }
         }
     </style>
+<link rel="stylesheet" href="../css/site-ui.css">
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
+    <nav class="navbar navbar-dark navbar-custom shadow-sm sticky-top">
         <div class="container">
-            <a class="btn btn-back fw-bold d-flex align-items-center" href="../index.html">
-                <i class="bi bi-house-door me-2"></i> Início
+            <a class="site-back-button" href="../index.html">
+                <i class="bi bi-arrow-left me-2"></i> Voltar
             </a>
-            
-            <span class="navbar-brand fw-bold mx-auto d-none d-md-block">ESTÉTICA PET & CUIDADO</span>
-
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navEstetica">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse flex-grow-0" id="navEstetica">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link text-white" href="hotel.html">Hotel</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="day_care.html">Creche</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="veterinaria.html">Clínica</a></li>
-                </ul>
-            </div>
+            <span class="header-page-title">BANHO &amp; TOSA</span>
         </div>
     </nav>
 
@@ -147,7 +139,7 @@
                     </ul>
                     
                     <div class="d-grid d-md-block">
-                        <a href="agendamento-fluxo.html" class="btn btn-brand btn-lg mt-4">
+                        <a href="agendamento-fluxo.html?categoria=banho_tosa" class="btn btn-brand btn-lg mt-4">
                             <i class="bi bi-calendar-check me-2"></i> Agendar Banho Online
                         </a>
                     </div>
@@ -159,6 +151,23 @@
         </div>
 
         <hr class="my-5 opacity-10">
+
+        <section class="mb-5" aria-labelledby="precos-estetica-title">
+            <div class="text-center mb-4">
+                <h2 id="precos-estetica-title" class="text-brand fw-bold display-6">Serviços e valores</h2>
+                <p class="text-muted mb-0">Valores consultados no catálogo vigente. Serviços sem cadastro aparecem sinalizados.</p>
+            </div>
+            <div class="row g-3">
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Banho Simples</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="banho simples" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Banho Completo</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="banho completo" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Banho de Ozônio</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="ozon" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Tosa Higiênica</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="tosa higienica" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Tosa na Máquina</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="maquina" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Tosa na Tesoura</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="tesoura" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Trimming</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="trimming" aria-live="polite">Consultando catálogo...</p></div></article></div>
+                <div class="col-12 col-sm-6 col-lg-4"><article class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body p-4"><h3 class="h5 fw-bold">Corte de Unhas</h3><p class="fs-5 fw-bold text-brand mb-0" data-service-pricing="corte de unha" aria-live="polite">Consultando catálogo...</p></div></article></div>
+            </div>
+        </section>
 
         <div class="text-center mb-5">
             <h2 class="text-brand fw-bold display-6">Nossos Clientes Estilosos</h2>
@@ -185,7 +194,7 @@
                     <a href="https://wa.me/5511971061329" target="_blank" class="btn btn-outline-dark rounded-pill px-4 fw-bold">
                         <i class="bi bi-whatsapp me-2"></i>Chamar Consultor
                     </a>
-                    <a href="agendamento-fluxo.html" class="btn btn-brand rounded-pill px-5">
+                    <a href="agendamento-fluxo.html?categoria=banho_tosa" class="btn btn-brand rounded-pill px-5">
                         Ver Preços e Horários
                     </a>
                 </div>
@@ -225,6 +234,9 @@
         </div>
     </footer>
 
+    <script src="../js/utils.js"></script>
+    <script src="../js/service-pricing.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/site_navigation.js" defer></script>
 </body>
 </html>

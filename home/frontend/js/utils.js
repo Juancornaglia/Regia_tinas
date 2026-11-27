@@ -67,3 +67,26 @@ window.verificarSessao = () => {
         window.location.href = '../usuario/login.html';
     }
 };
+
+document.addEventListener('click', event => {
+    const botaoVoltar = event.target.closest('a.btn-back, a.btn-voltar-home');
+    if (!botaoVoltar) return;
+
+    let temHistoricoInterno = false;
+    try {
+        const origem = new URL(document.referrer);
+        temHistoricoInterno = origem.origin === window.location.origin
+            && window.history.length > 1
+            && (origem.pathname !== window.location.pathname || origem.search !== window.location.search);
+    } catch {
+        temHistoricoInterno = false;
+    }
+
+    event.preventDefault();
+    if (temHistoricoInterno) {
+        window.history.back();
+        return;
+    }
+
+    window.location.href = botaoVoltar.dataset.fallback || botaoVoltar.getAttribute('href') || '../index.html';
+}, true);

@@ -10,9 +10,10 @@ const PRONTU_API_URL = window.location.hostname === "localhost" || window.locati
 // Estados globais
 let petSelecionado = null;
 let historicoClinico = [];
+let acaoRegistroAtual = 'adicionar';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🩺 Sistema de Prontuário iniciado...");
+    console.log("Sistema de Prontuário iniciado.");
     
     // 1. Configura a barra de busca
     const inputBusca = document.getElementById('input-busca-pet');
@@ -30,6 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Configura a lógica visual do formulário (Adicionar/Alterar/Excluir)
     configurarInterfaceModal();
+    configurarExpansaoPerfilPet();
+    document.addEventListener('click', event => {
+        const botao = event.target.closest('[data-record-action]');
+        if (!botao) return;
+        const item = botao.closest('[data-record-id]');
+        const idRegistro = item?.dataset.recordId || historicoClinico[0]?.id_prontuario;
+        abrirEditorProntuario(botao.dataset.recordAction, idRegistro);
+    });
 });
 
 // ==========================================
@@ -74,16 +83,16 @@ function atualizarCardPerfil(p) {
     // Nome e Raça
     const titulo = document.getElementById('pet-nome-titulo');
     if (titulo) {
-        titulo.innerHTML = `${p.nome_pet || p.nome || 'Pet'} <small class="text-muted fs-6 fw-normal">(${p.raca || 'Raça não inf.'})</small>`;
+        titulo.innerHTML = `${escaparHTML(p.nome_pet || p.nome || 'Pet')} <small class="text-muted fs-6 fw-normal">· Raça: ${escaparHTML(p.raca || 'Não informada')}</small>`;
     }
     
     // Detalhes (Tutor, Idade, Peso)
     const detalhesContainer = document.getElementById('pet-detalhes-lista');
     if (detalhesContainer) {
         const detalhes = detalhesContainer.querySelectorAll('span');
-        if (detalhes[0]) detalhes[0].innerHTML = `<i class="bi bi-person me-1 brand-pink"></i>Tutor: ${p.nome_tutor || p.nome_cliente || 'Não informado'}`;
-        if (detalhes[1]) detalhes[1].innerHTML = `<i class="bi bi-calendar-event me-1 brand-pink"></i>Idade: ${p.idade ? `${p.idade} anos` : 'Não inf.'}`;
-        if (detalhes[2]) detalhes[2].innerHTML = `<i class="bi bi-speedometer2 me-1 brand-pink"></i>Peso: ${p.peso ? `${p.peso}kg` : 'Não inf.'}`;
+        if (detalhes[0]) detalhes[0].innerHTML = `<i class="bi bi-person me-1 brand-pink"></i>Tutor: ${escaparHTML(p.nome_tutor || p.nome_cliente || 'Não informado')}`;
+        if (detalhes[1]) detalhes[1].innerHTML = `<i class="bi bi-calendar-event me-1 brand-pink"></i>Idade: ${escaparHTML(p.idade ? `${p.idade} anos` : 'Não inf.')}`;
+        if (detalhes[2]) detalhes[2].innerHTML = `<i class="bi bi-speedometer2 me-1 brand-pink"></i>Peso: ${escaparHTML(p.peso ? `${p.peso}kg` : 'Não inf.')}`;
     }
 
     // Imagem
@@ -95,8 +104,44 @@ function atualizarCardPerfil(p) {
     const btnPerfil = document.getElementById('btn-perfil-completo');
     if (btnPerfil) {
         btnPerfil.disabled = false;
-        btnPerfil.innerText = "Paciente Ativo";
+        btnPerfil.innerText = "Abrir prontuário";
     }
+    document.getElementById('pet-record-content')?.classList.add('d-none');
+    const resumoPerfil = document.querySelector('#card-perfil-pet [data-pet-profile-summary]');
+    resumoPerfil?.setAttribute('aria-expanded', 'false');
+    document.getElementById('pet-record-chevron')?.classList.remove('is-expanded');
+    if (btnPerfil) btnPerfil.textContent = 'Abrir prontuário';
+    atualizarAcoesProntuario();
+}
+
+function configurarExpansaoPerfilPet() {
+    const resumo = document.querySelector('#card-perfil-pet [data-pet-profile-summary]');
+    const botao = document.getElementById('btn-perfil-completo');
+    const cartao = document.getElementById('card-perfil-pet');
+    const conteudo = document.getElementById('pet-record-content');
+    if (!resumo || !cartao || !conteudo) return;
+
+    resumo.setAttribute('role', 'button');
+    resumo.setAttribute('tabindex', '0');
+    resumo.setAttribute('aria-expanded', 'false');
+    resumo.style.cursor = 'pointer';
+
+    const alternar = () => {
+        if (!petSelecionado) return;
+        const aberto = conteudo.classList.toggle('d-none') === false;
+        resumo.setAttribute('aria-expanded', String(aberto));
+        if (botao) botao.textContent = aberto ? 'Fechar prontuário' : 'Abrir prontuário';
+        document.getElementById('pet-record-chevron')?.classList.toggle('is-expanded', aberto);
+    };
+
+    resumo.addEventListener('click', alternar);
+    resumo.addEventListener('keydown', event => {
+        if (event.target.closest('button')) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            alternar();
+        }
+    });
 }
 
 // ==========================================
@@ -117,6 +162,8 @@ async function carregarHistoricoMedico(idPet) {
 
         if (!Array.isArray(historicoClinico) || historicoClinico.length === 0) {
             timeline.innerHTML = '<p class="text-muted ps-2">Nenhum histórico médico registrado para este pet.</p>';
+            historicoClinico = [];
+            atualizarAcoesProntuario();
             return;
         }
 
@@ -134,8 +181,10 @@ function renderizarTimeline() {
     
     timeline.innerHTML = historicoClinico.map(h => {
         const categoria = h.categoria || 'Consulta';
+        const idRegistro = h.id_prontuario || h.id;
+        const idSeguro = escaparHTML(idRegistro || '');
         return `
-        <div class="timeline-item">
+        <div class="timeline-item" data-record-id="${idSeguro}">
             <div class="timeline-marker"></div>
             <div class="history-card shadow-sm">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -147,9 +196,55 @@ function renderizarTimeline() {
                 <div class="mt-3 text-end border-top pt-2">
                     <small class="fw-bold brand-pink"><i class="bi bi-person-badge me-1"></i>Registrado por: ${h.nome_funcionario || 'Equipe Técnica'}</small>
                 </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button type="button" class="btn btn-sm text-white rounded-pill" style="background:#FE8697" data-record-action="adicionar"><i class="bi bi-plus-lg me-1"></i>Adicionar Info</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-record-action="alterar" ${idRegistro ? '' : 'disabled'}><i class="bi bi-pencil me-1"></i>Atualizar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-record-action="cancelar" ${idRegistro ? '' : 'disabled'}><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                </div>
             </div>
         </div>
     `}).join('');
+}
+
+function atualizarAcoesProntuario() {
+    const temPet = Boolean(petSelecionado);
+    const temRegistro = historicoClinico.length > 0 && Boolean(historicoClinico[0].id_prontuario || historicoClinico[0].id);
+    document.querySelectorAll('#card-perfil-pet [data-record-action="adicionar"]').forEach(botao => { botao.disabled = !temPet; });
+    document.querySelectorAll('#card-perfil-pet [data-record-action="alterar"], #card-perfil-pet [data-record-action="cancelar"]')
+        .forEach(botao => { botao.disabled = !temPet || !temRegistro; });
+}
+
+function abrirEditorProntuario(acao, idRegistro) {
+    if (!petSelecionado) {
+        alert('Busque e selecione um pet antes de continuar.');
+        return;
+    }
+
+    acaoRegistroAtual = acao;
+    const registro = historicoClinico.find(item => String(item.id_prontuario || item.id) === String(idRegistro));
+    if (acao !== 'adicionar' && !registro) {
+        alert('Selecione um registro médico válido.');
+        return;
+    }
+    if (acao === 'cancelar') {
+        if (!confirm('Cancelar este registro médico?')) return;
+        document.getElementById('reg-id-prontuario').value = registro.id_prontuario || registro.id;
+        solicitarAssinatura(finalizarRegistroProntuario);
+        return;
+    }
+
+    const form = document.getElementById('form-prontuario') || document.getElementById('formRegistroClinico');
+    form?.reset();
+    document.getElementById('reg-id-prontuario').value = acao === 'alterar' ? (registro.id_prontuario || registro.id) : '';
+    document.getElementById('reg-categoria').value = registro?.categoria || 'Consulta';
+    document.getElementById('reg-titulo').value = registro?.titulo || '';
+    document.getElementById('reg-descricao').value = registro?.descricao || '';
+    const radio = document.querySelector(`input[name="tipo_prontu"][value="${acao}"]`);
+    if (radio) radio.checked = true;
+    const modalEl = document.getElementById('modalGerenciarProntuario') || document.getElementById('modalNovoRegistro');
+    const titulo = modalEl?.querySelector('.modal-header h5');
+    if (titulo) titulo.textContent = acao === 'alterar' ? 'Atualizar registro clínico' : 'Adicionar informação clínica';
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 function getCategoriaStyle(cat) {
@@ -194,23 +289,25 @@ window.prepararAssinaturaProntuario = function() {
         return;
     }
 
+    const acao = document.querySelector('input[name="tipo_prontu"]:checked')?.value || acaoRegistroAtual;
     const descricao = document.getElementById('reg-descricao')?.value.trim();
-    if (!descricao) {
+    if (acao !== 'cancelar' && !descricao) {
         alert("Preencha as observações clínicas antes de prosseguir!");
         return;
     }
 
-    const modalEl = document.getElementById('modalGerenciarProntuario');
+    const modalEl = document.getElementById('modalGerenciarProntuario') || document.getElementById('modalNovoRegistro');
     const modalInst = bootstrap.Modal.getInstance(modalEl);
     if (modalInst) modalInst.hide();
 
+    acaoRegistroAtual = acao;
     solicitarAssinatura(finalizarRegistroProntuario);
 };
 
 async function finalizarRegistroProntuario(idFuncionario) {
     if (!petSelecionado) return;
 
-    const acao = document.querySelector('input[name="tipo_prontu"]:checked')?.value || 'adicionar';
+    const acao = acaoRegistroAtual || document.querySelector('input[name="tipo_prontu"]:checked')?.value || 'adicionar';
     const categoria = document.getElementById('reg-categoria')?.value || 'Consulta';
     const titulo = document.getElementById('reg-titulo')?.value.trim() || categoria;
     const descricao = document.getElementById('reg-descricao')?.value.trim() || '';
@@ -221,7 +318,8 @@ async function finalizarRegistroProntuario(idFuncionario) {
         categoria: categoria,
         titulo: titulo,
         descricao: descricao,
-        tipo_acao: acao
+        tipo_acao: acao,
+        id_registro: document.getElementById('reg-id-prontuario')?.value || null
     };
 
     try {
@@ -232,9 +330,10 @@ async function finalizarRegistroProntuario(idFuncionario) {
         });
 
         if (res.ok) {
-            alert(`✅ Registro de ${acao} salvo e assinado no prontuário!`);
-            document.getElementById('form-prontuario')?.reset();
-            carregarHistoricoMedico(dados.id_pet);
+            alert(`Registro de ${acao} salvo e assinado no prontuário!`);
+            (document.getElementById('form-prontuario') || document.getElementById('formRegistroClinico'))?.reset();
+            await carregarHistoricoMedico(dados.id_pet);
+            atualizarAcoesProntuario();
         } else {
             const err = await res.json();
             alert(err.error || "Não foi possível salvar o registro no prontuário.");
@@ -246,6 +345,12 @@ async function finalizarRegistroProntuario(idFuncionario) {
 }
 
 // Auxiliares
+function escaparHTML(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, caractere => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[caractere]);
+}
+
 function formatarData(dataISO) {
     if (!dataISO) return "--/--/----";
     const d = new Date(dataISO);

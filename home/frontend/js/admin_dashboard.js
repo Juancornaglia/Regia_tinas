@@ -26,8 +26,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function atualizarBoasVindas() {
     const nome = localStorage.getItem('usuario_nome');
-    const display = document.querySelector('h2.fw-bold');
-    if (display && nome) display.innerHTML = `Olá, ${nome.split(' ')[0]} 🚀`;
+    const display = document.getElementById('admin-welcome');
+    if (display && nome) display.textContent = `Bem-vindo, ${nome.split(' ')[0]}!`;
+    const data = document.getElementById('admin-date');
+    if (data) data.textContent = new Date().toLocaleDateString('pt-BR', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
 }
 
 async function carregarDadosDashboard() {

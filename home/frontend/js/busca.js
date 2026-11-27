@@ -11,6 +11,54 @@ let termoBuscaAtual = "";
 
 const LOGO_FALLBACK = 'img/logo_pequena4.png';
 
+function normalizarTexto(str) {
+    return String(str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+const SINONIMOS_BUSCA = {
+    gato: ['gato', 'gatos'],
+    gatos: ['gato', 'gatos'],
+    cachorro: ['cachorro', 'cachorros', 'cao', 'caes'],
+    cachorros: ['cachorro', 'cachorros', 'cao', 'caes'],
+    cao: ['cachorro', 'cachorros', 'cao', 'caes'],
+    caes: ['cachorro', 'cachorros', 'cao', 'caes'],
+    racao: ['racao', 'racoes'],
+    racoes: ['racao', 'racoes']
+};
+
+function expandirPalavraBusca(palavra) {
+    if (SINONIMOS_BUSCA[palavra]) return SINONIMOS_BUSCA[palavra];
+    return palavra.endsWith('s') ? [palavra, palavra.slice(0, -1)] : [palavra, `${palavra}s`];
+}
+
+function produtoCorrespondeBusca(produto, termo) {
+    const palavras = normalizarTexto(termo).split(/\s+/).filter(Boolean);
+    const palavrasChave = palavras.filter(palavra => !['de', 'da', 'do', 'das', 'dos'].includes(palavra));
+    if (!palavrasChave.length) return true;
+
+    const camposProduto = [
+        produto.nome_produto,
+        produto.categoria,
+        produto.tipo_produto,
+        produto.subcategoria,
+        produto.descricao,
+        produto.marca
+    ];
+    const palavrasProduto = new Set(
+        camposProduto
+            .map(normalizarTexto)
+            .join(' ')
+            .split(/[^a-z0-9]+/)
+            .filter(Boolean)
+    );
+
+    return palavrasChave.every(palavra =>
+        expandirPalavraBusca(palavra).some(variacao =>
+            [...palavrasProduto].some(palavraProduto => palavraProduto.startsWith(variacao))
+        )
+    );
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     termoBuscaAtual = (params.get('q') || '').trim();
@@ -54,15 +102,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.getElementById('btn-limpar-filtros')?.addEventListener('click', limparTodosFiltros);
+    document.getElementById('mobileFiltersModal')?.addEventListener('show.bs.modal', sincronizarFiltrosMobile);
+    document.getElementById('mobile-price-range')?.addEventListener('input', (event) => {
+        const value = document.getElementById('mobile-price-value');
+        if (value) value.textContent = `R$ ${event.target.value}`;
+    });
+    document.getElementById('mobile-clear-filters')?.addEventListener('click', () => {
+        limparFiltrosMobile();
+        aplicarFiltrosMobile();
+        aplicarFiltros();
+    });
+    document.getElementById('mobile-apply-filters')?.addEventListener('click', () => {
+        aplicarFiltrosMobile();
+        aplicarFiltros();
+    });
 
     // Atalhos vindos da Home (?q=ofertas, ?q=vendidos)
-    if (termoBuscaAtual.toLowerCase() === 'ofertas') {
+    if (normalizarTexto(termoBuscaAtual) === 'ofertas') {
         const promoCheck = document.getElementById('filtro-apenas-promocao');
         const sortSelect = document.getElementById('sort-select');
         if (promoCheck) promoCheck.checked = true;
         if (sortSelect) sortSelect.value = 'ofertas';
         termoBuscaAtual = '';
-    } else if (termoBuscaAtual.toLowerCase() === 'vendidos') {
+    } else if (normalizarTexto(termoBuscaAtual) === 'vendidos') {
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) sortSelect.value = 'destaques';
         termoBuscaAtual = '';
@@ -148,28 +210,45 @@ async function loadProducts(containerId) {
         popularFiltrosLaterais(todosOsProdutos);
         aplicarFiltros();
     } catch (e) { 
-        console.error("❌ Erro ao carregar produtos:", e); 
+        console.error("Erro ao carregar produtos:", e);
         container.innerHTML = `<div class="col-12 text-center text-danger py-5 w-100">Erro ao comunicar com o servidor.</div>`;
     }
 }
 
 function popularFiltrosLaterais(produtos) {
     const catContainer = document.getElementById('category-filters');
+    const mobileCatContainer = document.getElementById('mobile-category-filters');
     const priceRange = document.getElementById('price-range');
     const priceValue = document.getElementById('price-value');
+    const mobilePriceRange = document.getElementById('mobile-price-range');
+    const mobilePriceValue = document.getElementById('mobile-price-value');
 
     const categorias = [...new Set(produtos.map(p => p.categoria).filter(Boolean))].sort();
+    const categoryMarkup = categorias.length > 0
+        ? categorias.map((cat, idx) => {
+            const safeCategory = escaparHtml(cat);
+            return `<div class="form-check mb-1">
+                <input class="form-check-input filtro-categoria" type="checkbox" value="${safeCategory}" id="cat-${idx}">
+                <label class="form-check-label" for="cat-${idx}">${safeCategory}</label>
+            </div>`;
+        }).join('')
+        : '<span class="text-muted">Nenhuma categoria</span>';
 
     if (catContainer) {
-        catContainer.innerHTML = categorias.length > 0
-            ? categorias.map((cat, idx) => `
-                <div class="form-check mb-1">
-                    <input class="form-check-input filtro-categoria" type="checkbox" value="${cat}" id="cat-${idx}">
-                    <label class="form-check-label" for="cat-${idx}">${cat}</label>
-                </div>`).join('')
-            : '<span class="text-muted">Nenhuma categoria</span>';
+        catContainer.innerHTML = categoryMarkup;
 
         catContainer.querySelectorAll('.filtro-categoria').forEach(cb => cb.addEventListener('change', aplicarFiltros));
+    }
+    if (mobileCatContainer) {
+        mobileCatContainer.innerHTML = categorias.length > 0
+            ? categorias.map((cat, idx) => {
+                const safeCategory = escaparHtml(cat);
+                return `<div class="form-check mb-1">
+                    <input class="form-check-input mobile-filtro-categoria" type="checkbox" value="${safeCategory}" id="mobile-cat-${idx}">
+                    <label class="form-check-label" for="mobile-cat-${idx}">${safeCategory}</label>
+                </div>`;
+            }).join('')
+            : '<span class="text-muted">Nenhuma categoria</span>';
     }
 
     if (priceRange && produtos.length > 0) {
@@ -177,6 +256,11 @@ function popularFiltrosLaterais(produtos) {
         priceRange.max = maiorPreco;
         priceRange.value = maiorPreco;
         if (priceValue) priceValue.textContent = `R$ ${maiorPreco}`;
+        if (mobilePriceRange) {
+            mobilePriceRange.max = maiorPreco;
+            mobilePriceRange.value = maiorPreco;
+            if (mobilePriceValue) mobilePriceValue.textContent = `R$ ${maiorPreco}`;
+        }
     }
 }
 
@@ -200,8 +284,90 @@ function limparTodosFiltros() {
         priceRange.value = priceRange.max;
         if (priceValue) priceValue.textContent = `R$ ${priceRange.max}`;
     }
+    limparFiltrosMobile();
 
     aplicarFiltros();
+}
+
+function sincronizarFiltrosMobile() {
+    const desktopSort = document.getElementById('sort-select');
+    const mobileSort = document.getElementById('mobile-sort-select');
+    if (desktopSort && mobileSort) mobileSort.value = desktopSort.value;
+
+    const promo = document.getElementById('filtro-apenas-promocao');
+    const mobilePromo = document.getElementById('mobile-filtro-apenas-promocao');
+    if (promo && mobilePromo) mobilePromo.checked = promo.checked;
+
+    const stock = document.getElementById('filtro-apenas-estoque');
+    const mobileStock = document.getElementById('mobile-filtro-apenas-estoque');
+    if (stock && mobileStock) mobileStock.checked = stock.checked;
+
+    const selectedCategories = new Set(
+        Array.from(document.querySelectorAll('#category-filters .filtro-categoria:checked')).map(input => input.value)
+    );
+    document.querySelectorAll('#mobile-category-filters .mobile-filtro-categoria').forEach(input => {
+        input.checked = selectedCategories.has(input.value);
+    });
+
+    const price = document.getElementById('price-range');
+    const mobilePrice = document.getElementById('mobile-price-range');
+    const mobileValue = document.getElementById('mobile-price-value');
+    if (price && mobilePrice) {
+        mobilePrice.max = price.max;
+        mobilePrice.value = price.value;
+        if (mobileValue) mobileValue.textContent = `R$ ${mobilePrice.value}`;
+    }
+}
+
+function aplicarFiltrosMobile() {
+    const desktopSort = document.getElementById('sort-select');
+    const mobileSort = document.getElementById('mobile-sort-select');
+    if (desktopSort && mobileSort) desktopSort.value = mobileSort.value;
+
+    const promo = document.getElementById('filtro-apenas-promocao');
+    const mobilePromo = document.getElementById('mobile-filtro-apenas-promocao');
+    if (promo && mobilePromo) promo.checked = mobilePromo.checked;
+
+    const stock = document.getElementById('filtro-apenas-estoque');
+    const mobileStock = document.getElementById('mobile-filtro-apenas-estoque');
+    if (stock && mobileStock) stock.checked = mobileStock.checked;
+
+    const selectedCategories = new Set(
+        Array.from(document.querySelectorAll('#mobile-category-filters .mobile-filtro-categoria:checked')).map(input => input.value)
+    );
+    document.querySelectorAll('#category-filters .filtro-categoria').forEach(input => {
+        input.checked = selectedCategories.has(input.value);
+    });
+
+    const price = document.getElementById('price-range');
+    const mobilePrice = document.getElementById('mobile-price-range');
+    const priceValue = document.getElementById('price-value');
+    if (price && mobilePrice) {
+        price.value = mobilePrice.value;
+        if (priceValue) priceValue.textContent = `R$ ${price.value}`;
+    }
+}
+
+function limparFiltrosMobile() {
+    const mobilePromo = document.getElementById('mobile-filtro-apenas-promocao');
+    const mobileStock = document.getElementById('mobile-filtro-apenas-estoque');
+    const mobileSort = document.getElementById('mobile-sort-select');
+    const mobilePrice = document.getElementById('mobile-price-range');
+    const mobilePriceValue = document.getElementById('mobile-price-value');
+    if (mobilePromo) mobilePromo.checked = false;
+    if (mobileStock) mobileStock.checked = false;
+    if (mobileSort) mobileSort.value = 'destaques';
+    document.querySelectorAll('.mobile-filtro-categoria').forEach(input => input.checked = false);
+    if (mobilePrice) {
+        mobilePrice.value = mobilePrice.max;
+        if (mobilePriceValue) mobilePriceValue.textContent = `R$ ${mobilePrice.max}`;
+    }
+}
+
+function escaparHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
 }
 
 // 2. RENDERIZAÇÃO DA VITRINE (5 COLUNAS NO DESKTOP)
@@ -235,7 +401,7 @@ function renderizarVitrine(produtos) {
             : `<span class="fw-bold" style="color: var(--brand-pink); font-size: 0.95rem;">R$ ${p.preco_final.toFixed(2).replace('.', ',')}</span>`;
 
         return `
-        <div class="col">
+        <div class="col d-flex">
             <div class="product-card shadow-sm" onclick="abrirModalProduto('${id}')">
                 <div class="img-container">
                     ${p.tem_promocao ? `<span class="badge-promo">-${descontoPct}%</span>` : ''}
@@ -264,14 +430,8 @@ function aplicarFiltros() {
     const ordenacao = document.getElementById('sort-select')?.value || 'destaques';
     const priceRange = document.getElementById('price-range');
     const precoMaximo = priceRange ? parseFloat(priceRange.value) : Infinity;
-    const termo = termoBuscaAtual.toLowerCase();
-
     let filtrados = todosOsProdutos.filter(p => {
-        const nome = p.nome_produto.toLowerCase();
-        const cat = p.categoria.toLowerCase();
-        const desc = (p.descricao || '').toLowerCase();
-
-        const passaTexto = !termo || nome.includes(termo) || cat.includes(termo) || desc.includes(termo);
+        const passaTexto = !normalizarTexto(termoBuscaAtual) || produtoCorrespondeBusca(p, termoBuscaAtual);
         const passaCategoria = categoriasSelecionadas.length === 0 || categoriasSelecionadas.includes(p.categoria);
         const passaPreco = p.preco_final <= precoMaximo;
         const passaPromo = !apenasPromocao || p.tem_promocao;
